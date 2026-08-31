@@ -1,0 +1,1 @@
+"""Outbound application ports."""

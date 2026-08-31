@@ -1,0 +1,19 @@
+# Allianz local RAG
+
+This repository starts with a reproducible inspection of the supplied source manual.
+
+```bash
+uv run --project backend allianz inspect-manual \
+  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
+```
+
+The command returns JSON with the SHA-256, filename, and PDF page count. It reads the
+source without writing to it. This verifies the source identity and that it is readable;
+it does not extract tables or provide RAG answers.
+
+Run the backend quality checks with:
+
+```bash
+make check-backend
+```
