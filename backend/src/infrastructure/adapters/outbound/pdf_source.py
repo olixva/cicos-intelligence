@@ -17,6 +17,7 @@ class OpenPdfSource:
 
     manifest: DocumentManifest
     reader: PdfReader
+    data: bytes = b""
 
 
 def open_pdf_source(source: Path) -> OpenPdfSource:
@@ -46,4 +47,5 @@ def open_pdf_source(source: Path) -> OpenPdfSource:
             page_count=page_count,
         ),
         reader=reader,
+        data=data,
     )

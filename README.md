@@ -30,6 +30,21 @@ explicit parser version. The resulting `manifest.json` and `pages.jsonl` preserv
 physical PDF page, including blank pages. See [the baseline review](docs/ingestion-baseline.md)
 for known extraction losses.
 
+## Structured ingestion
+
+```bash
+uv run --project backend --group ingestion allianz ingest \
+  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  --parser docling \
+  --output data/extractions
+```
+
+This explicit mode retains source-based elements, raw Docling JSON and Markdown, diagnostics, the
+exact original PDF, and an independent 144 dpi PNG for every physical page. The CLI prints asset
+hashes and sizes rather than binary content. See the
+[parser comparison](docs/ingestion/parser-comparison.md) for the page 32 OCR limitation and the
+unverified page 101 matrix extraction.
+
 Run the backend quality checks with:
 
 ```bash

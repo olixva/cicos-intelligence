@@ -21,10 +21,15 @@ def build_inspect_manual() -> InspectManual:
 
 
 def build_ingest_document(output: Path, parser: str = "pypdf") -> IngestDocument:
-    """Build baseline ingestion with pypdf evidence stored under its exact version."""
-    if parser != "pypdf":
+    """Build an explicit parser without loading optional ingestion dependencies by default."""
+    if parser == "pypdf":
+        document_parser = PypdfDocumentParser()
+    elif parser == "docling":
+        from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
+
+        document_parser = DoclingParser()
+    else:
         raise ValueError(f"Unsupported parser: {parser}")
-    document_parser = PypdfDocumentParser()
     return IngestDocumentUseCase(
         parser=document_parser,
         repository=FilesystemEvidenceRepository(output, document_parser.parser),

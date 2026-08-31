@@ -21,6 +21,10 @@ dev = [
     "pyright>=1.1.400",
     "ruff>=0.15.0",
 ]
+ingestion = [
+    "docling==2.124.0",
+    "pypdfium2==5.13.0",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

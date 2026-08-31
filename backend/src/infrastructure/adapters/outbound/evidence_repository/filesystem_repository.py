@@ -5,11 +5,12 @@ import re
 import shutil
 import tempfile
 from dataclasses import asdict
-from pathlib import Path
+from hashlib import sha256
+from pathlib import Path, PurePosixPath
 from typing import cast
 
 from domain.models.document import DocumentManifest
-from domain.models.evidence import Extraction, PageEvidence
+from domain.models.evidence import ElementEvidence, Extraction, PageEvidence
 
 _PARSER_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 _EVIDENCE_ID_PATTERN = re.compile(r"sha256:([0-9a-f]{64}):page:([1-9][0-9]*)")
@@ -79,6 +80,7 @@ class FilesystemEvidenceRepository:
             raise EvidenceNotFoundError("Stored evidence is inconsistent")
         pages = tuple(_page_evidence(record) for record in page_records)
         _validate_stored_pages(manifest, pages)
+        _validate_stored_assets(directory, manifest, pages, self._parser)
         page_index = int(requested_page) - 1
         if page_index >= len(pages):
             raise EvidenceNotFoundError("Evidence page was not found")
@@ -102,6 +104,23 @@ class FilesystemEvidenceRepository:
             ):
                 raise EvidencePublicationError("Extraction page identity is invalid")
 
+        asset_paths: set[str] = set()
+        for asset in extraction.assets:
+            if not _is_safe_asset_path(asset.path) or asset.path in asset_paths:
+                raise EvidencePublicationError("Invalid or duplicate asset path")
+            asset_paths.add(asset.path)
+            if asset.path == "original.pdf" and sha256(asset.data).hexdigest() != manifest.sha256:
+                raise EvidencePublicationError("The original asset does not match the source hash")
+        for path in asset_paths:
+            if any(str(parent) in asset_paths for parent in PurePosixPath(path).parents):
+                raise EvidencePublicationError("Asset paths overlap")
+        for page in extraction.pages:
+            if page.image_path is not None and page.image_path not in asset_paths:
+                raise EvidencePublicationError("Page image is missing its asset")
+            for element in page.elements:
+                if not element.element_id.startswith(f"{manifest.document_id}:element:"):
+                    raise EvidencePublicationError("Element identity is not source-based")
+
     def _write_extraction(self, extraction: Extraction, directory: Path) -> None:
         with (directory / "manifest.json").open("w", encoding="utf-8") as manifest_file:
             json.dump(asdict(extraction.manifest), manifest_file, sort_keys=True)
@@ -110,6 +129,15 @@ class FilesystemEvidenceRepository:
             for page in extraction.pages:
                 json.dump(_page_record(page), pages_file, sort_keys=True)
                 pages_file.write("\n")
+
+        if extraction.assets or any(page.elements for page in extraction.pages):
+            (directory / "extraction.json").write_text(
+                json.dumps(_extraction_record(extraction), sort_keys=True) + "\n", encoding="utf-8"
+            )
+        for asset in extraction.assets:
+            target = directory / asset.path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(asset.data)
 
     def _validate_published(self, extraction: Extraction, directory: Path) -> None:
         stored_manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
@@ -122,8 +150,29 @@ class FilesystemEvidenceRepository:
             or len(stored_pages) != extraction.manifest.page_count
         ):
             raise EvidencePublicationError("Written evidence does not match the extraction")
-        if stored_pages != [_page_record(page) for page in extraction.pages]:
+        # T2 records omitted optional layout fields; retain compatibility on repeat ingestion.
+        expected_pages = [_page_record(page) for page in extraction.pages]
+        for record in stored_pages:
+            for key in ("elements", "width", "height"):
+                if key in record and record[key] in (None, []):
+                    del record[key]
+        if stored_pages != expected_pages:
             raise EvidencePublicationError("Written page evidence does not match the extraction")
+
+        if extraction.assets or any(page.elements for page in extraction.pages):
+            metadata = json.loads((directory / "extraction.json").read_text(encoding="utf-8"))
+            if metadata != _extraction_record(extraction):
+                raise EvidencePublicationError("Written extraction metadata does not match")
+        for asset in extraction.assets:
+            target = directory / asset.path
+            if target.is_symlink() or target.read_bytes() != asset.data:
+                raise EvidencePublicationError("Written asset does not match the extraction")
+        try:
+            _validate_stored_assets(
+                directory, extraction.manifest, extraction.pages, extraction.parser
+            )
+        except EvidenceNotFoundError as error:
+            raise EvidencePublicationError("Written assets are inconsistent") from error
 
     def _matches(self, extraction: Extraction, directory: Path) -> bool:
         try:
@@ -152,6 +201,9 @@ def _page_evidence(record: object) -> PageEvidence:
             printed_label=_optional_string(record["printed_label"]),
             image_path=_optional_string(record["image_path"]),
             regions=regions,
+            elements=_elements(record.get("elements", [])),
+            width=_optional_number(record.get("width")),
+            height=_optional_number(record.get("height")),
         )
     except (KeyError, TypeError, ValueError) as error:
         raise EvidenceNotFoundError("Stored evidence is unreadable") from error
@@ -190,13 +242,155 @@ def _validate_stored_pages(manifest: DocumentManifest, pages: tuple[PageEvidence
             or page.evidence_id != f"{manifest.document_id}:page:{expected_page}"
         ):
             raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        if any(
+            not element.element_id.startswith(f"{manifest.document_id}:element:")
+            for element in page.elements
+        ):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+
+
+def _validate_stored_assets(
+    directory: Path,
+    manifest: DocumentManifest,
+    pages: tuple[PageEvidence, ...],
+    parser: str,
+) -> None:
+    """Bind every listed byte asset and page reference to its persisted hash metadata."""
+    metadata_path = directory / "extraction.json"
+    if not metadata_path.exists():
+        if any(page.image_path is not None or page.elements for page in pages):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        return
+    try:
+        metadata_value: object = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent") from error
+    if not isinstance(metadata_value, dict):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    metadata = cast(dict[str, object], metadata_value)
+    if set(metadata) != {"parser", "warnings", "assets"}:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    if metadata["parser"] != parser:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    warnings_value = metadata["warnings"]
+    assets_value = metadata["assets"]
+    if (
+        not isinstance(warnings_value, list)
+        or not all(isinstance(warning, str) for warning in cast(list[object], warnings_value))
+        or not isinstance(assets_value, list)
+    ):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    assets = cast(list[object], assets_value)
+
+    paths: set[str] = set()
+    original_digest: str | None = None
+    for value in assets:
+        if not isinstance(value, dict):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        record = cast(dict[str, object], value)
+        if set(record) != {"path", "sha256", "size"}:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        path = record["path"]
+        digest = record["sha256"]
+        size = record["size"]
+        if (
+            not isinstance(path, str)
+            or not _is_safe_asset_path(path)
+            or path in paths
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            or isinstance(size, bool)
+            or not isinstance(size, int)
+            or size < 0
+        ):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        paths.add(path)
+        if path == "original.pdf":
+            original_digest = digest
+        target = directory / path
+        try:
+            data = target.read_bytes()
+        except OSError as error:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent") from error
+        if target.is_symlink() or len(data) != size or sha256(data).hexdigest() != digest:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+
+    if paths and "original.pdf" not in paths:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    if original_digest is not None and original_digest != manifest.sha256:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    if any(page.image_path is not None and page.image_path not in paths for page in pages):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+
+    expected_files = {"manifest.json", "pages.jsonl", "extraction.json", *paths}
+    actual_files: set[str] = set()
+    for entry in directory.rglob("*"):
+        if entry.is_symlink():
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        if entry.is_file():
+            actual_files.add(entry.relative_to(directory).as_posix())
+    if actual_files != expected_files:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+
+
+def _is_safe_asset_path(value: str) -> bool:
+    path = PurePosixPath(value)
+    return not (
+        path.is_absolute()
+        or ".." in path.parts
+        or "\\" in value
+        or not path.parts
+        or str(path) != value
+        or path.parts[0] in {"manifest.json", "pages.jsonl", "extraction.json"}
+    )
 
 
 def _page_record(page: PageEvidence) -> dict[str, object]:
     """Produce the JSON-compatible representation used for one page record."""
-    record = asdict(page)
-    record["regions"] = [list(region) for region in page.regions]
+    record = cast(dict[str, object], json.loads(json.dumps(asdict(page))))
+    for key in ("elements", "width", "height"):
+        if record[key] in (None, []):
+            del record[key]
     return record
+
+
+def _extraction_record(extraction: Extraction) -> dict[str, object]:
+    return {
+        "parser": extraction.parser,
+        "warnings": list(extraction.warnings),
+        "assets": [
+            {"path": asset.path, "sha256": sha256(asset.data).hexdigest(), "size": len(asset.data)}
+            for asset in extraction.assets
+        ],
+    }
+
+
+def _elements(value: object) -> tuple[ElementEvidence, ...]:
+    if not isinstance(value, list):
+        raise ValueError("Invalid elements")
+    result: list[ElementEvidence] = []
+    for item in cast(list[object], value):
+        if not isinstance(item, dict):
+            raise ValueError("Invalid element")
+        record = cast(dict[str, object], item)
+        raw_regions = record["regions"]
+        if not isinstance(raw_regions, list):
+            raise ValueError("Invalid regions")
+        result.append(
+            ElementEvidence(
+                element_id=_required_string(record["element_id"]),
+                kind=_required_string(record["kind"]),
+                text=_required_string(record["text"]),
+                section=_optional_string(record["section"]),
+                content_layer=_required_string(record["content_layer"]),
+                regions=tuple(_region(region) for region in cast(list[object], raw_regions)),
+            )
+        )
+    return tuple(result)
+
+
+def _optional_number(value: object) -> float | None:
+    return None if value is None else _number(value)
 
 
 def _optional_string(value: object) -> str | None:

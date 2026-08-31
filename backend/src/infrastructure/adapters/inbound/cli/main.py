@@ -5,10 +5,12 @@ import json
 import sys
 from collections.abc import Sequence
 from dataclasses import asdict
+from hashlib import sha256
 from pathlib import Path
 
 from bootstrap import build_ingest_document, build_inspect_manual
 from domain.models.document import SourceInspectionError, SourceIntegrityError
+from domain.models.evidence import Extraction
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
     EvidencePublicationError,
 )
@@ -22,7 +24,7 @@ def _build_parser() -> argparse.ArgumentParser:
     inspect_manual.add_argument("--expected-sha256")
     ingest = subcommands.add_parser("ingest")
     ingest.add_argument("source", type=Path)
-    ingest.add_argument("--parser", choices=("pypdf",), required=True)
+    ingest.add_argument("--parser", choices=("pypdf", "docling"), required=True)
     ingest.add_argument("--output", type=Path, required=True)
     return parser
 
@@ -55,8 +57,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 2
 
-    print(json.dumps(asdict(result), sort_keys=True))
+    payload = _extraction_metadata(result) if isinstance(result, Extraction) else asdict(result)
+    print(json.dumps(payload, sort_keys=True))
     return 0
+
+
+def _extraction_metadata(extraction: Extraction) -> dict[str, object]:
+    """Return CLI-safe publication metadata without copying source or rendered bytes."""
+    return {
+        **asdict(extraction.manifest),
+        "parser": extraction.parser,
+        "warnings": list(extraction.warnings),
+        "assets": [
+            {
+                "path": asset.path,
+                "sha256": sha256(asset.data).hexdigest(),
+                "size": len(asset.data),
+            }
+            for asset in extraction.assets
+        ],
+    }
 
 
 if __name__ == "__main__":
