@@ -2,7 +2,7 @@
 
 Fecha: 31 de agosto de 2026. Versión de diseño: 1.
 
-Estado: consolidación de las decisiones aprobadas durante el diseño, preparada para revisión final del documento antes del plan de implementación. No acredita código implementado, dependencias verificadas en conjunto, un golden set publicado ni resultados experimentales.
+Estado: especificación aprobada por el usuario el 31 de agosto de 2026; autoriza preparar el plan e iniciar la siguiente fase en Git local, sin publicar en GitHub todavía. No acredita código implementado, dependencias verificadas en conjunto, un golden set publicado ni resultados experimentales.
 
 ## 1. Resultado que se quiere entregar
 
