@@ -128,3 +128,68 @@ def test_get_rejects_a_malformed_stored_page_record(tmp_path: Path) -> None:
 
     with pytest.raises(EvidenceNotFoundError, match="Stored evidence is unreadable"):
         repository.get(extraction.pages[0].evidence_id)
+
+
+def test_get_rejects_a_corrupt_stored_manifest(tmp_path: Path) -> None:
+    """A page cannot be trusted when its persisted manifest is malformed."""
+    from infrastructure.adapters.outbound.document_parser.pypdf_parser import PypdfDocumentParser
+    from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
+        EvidenceNotFoundError,
+        FilesystemEvidenceRepository,
+    )
+
+    source = tmp_path / "blank.pdf"
+    _blank_pdf(source)
+    extraction = PypdfDocumentParser().parse(source)
+    repository = FilesystemEvidenceRepository(tmp_path / "extractions", extraction.parser)
+    published = repository.publish(extraction)
+    (published / "manifest.json").write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(EvidenceNotFoundError, match="Stored evidence is unreadable"):
+        repository.get(extraction.pages[0].evidence_id)
+
+
+def test_get_rejects_page_with_a_mismatched_document_hash(tmp_path: Path) -> None:
+    """A returned page must be tied to the hash encoded in its evidence identifier."""
+    from infrastructure.adapters.outbound.document_parser.pypdf_parser import PypdfDocumentParser
+    from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
+        EvidenceNotFoundError,
+        FilesystemEvidenceRepository,
+    )
+
+    source = tmp_path / "blank.pdf"
+    _blank_pdf(source)
+    extraction = PypdfDocumentParser().parse(source)
+    repository = FilesystemEvidenceRepository(tmp_path / "extractions", extraction.parser)
+    published = repository.publish(extraction)
+    records = [json.loads(line) for line in (published / "pages.jsonl").read_text().splitlines()]
+    records[0]["document_hash"] = "0" * 64
+    (published / "pages.jsonl").write_text(
+        "".join(f"{json.dumps(record, sort_keys=True)}\n" for record in records), encoding="utf-8"
+    )
+
+    with pytest.raises(EvidenceNotFoundError, match="Stored evidence is inconsistent"):
+        repository.get(extraction.pages[0].evidence_id)
+
+
+def test_get_rejects_page_with_non_string_text(tmp_path: Path) -> None:
+    """Text evidence must retain its stored type instead of coercing corruption to text."""
+    from infrastructure.adapters.outbound.document_parser.pypdf_parser import PypdfDocumentParser
+    from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
+        EvidenceNotFoundError,
+        FilesystemEvidenceRepository,
+    )
+
+    source = tmp_path / "blank.pdf"
+    _blank_pdf(source)
+    extraction = PypdfDocumentParser().parse(source)
+    repository = FilesystemEvidenceRepository(tmp_path / "extractions", extraction.parser)
+    published = repository.publish(extraction)
+    records = [json.loads(line) for line in (published / "pages.jsonl").read_text().splitlines()]
+    records[0]["text"] = 42
+    (published / "pages.jsonl").write_text(
+        "".join(f"{json.dumps(record, sort_keys=True)}\n" for record in records), encoding="utf-8"
+    )
+
+    with pytest.raises(EvidenceNotFoundError, match="Stored evidence is unreadable"):
+        repository.get(extraction.pages[0].evidence_id)

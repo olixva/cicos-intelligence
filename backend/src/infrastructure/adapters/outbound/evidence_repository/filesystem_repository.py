@@ -8,6 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import cast
 
+from domain.models.document import DocumentManifest
 from domain.models.evidence import Extraction, PageEvidence
 
 _PARSER_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
@@ -64,23 +65,24 @@ class FilesystemEvidenceRepository:
         if match is None:
             raise EvidenceNotFoundError("Invalid evidence identifier")
         document_hash, requested_page = match.groups()
-        pages_file = self._root / document_hash / self._parser / "pages.jsonl"
+        directory = self._root / document_hash / self._parser
         try:
-            lines = pages_file.read_text(encoding="utf-8").splitlines()
-        except OSError as error:
+            manifest_record = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+            page_records = [
+                json.loads(line)
+                for line in (directory / "pages.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+        except (OSError, json.JSONDecodeError) as error:
             raise EvidenceNotFoundError("Evidence version was not found") from error
-        for line in lines:
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError as error:
-                raise EvidenceNotFoundError("Stored evidence is unreadable") from error
-            evidence = _page_evidence(record)
-            if evidence.evidence_id != evidence_id:
-                continue
-            if evidence.pdf_page != int(requested_page):
-                raise EvidenceNotFoundError("Stored evidence is inconsistent")
-            return evidence
-        raise EvidenceNotFoundError("Evidence page was not found")
+        manifest = _document_manifest(manifest_record)
+        if manifest.sha256 != document_hash:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        pages = tuple(_page_evidence(record) for record in page_records)
+        _validate_stored_pages(manifest, pages)
+        page_index = int(requested_page) - 1
+        if page_index >= len(pages):
+            raise EvidenceNotFoundError("Evidence page was not found")
+        return pages[page_index]
 
     def _validate_extraction(self, extraction: Extraction) -> None:
         if extraction.parser != self._parser:
@@ -143,16 +145,51 @@ def _page_evidence(record: object) -> PageEvidence:
         raw_regions = cast(list[object], raw_regions)
         regions = tuple(_region(region) for region in raw_regions)
         return PageEvidence(
-            evidence_id=str(record["evidence_id"]),
-            document_hash=str(record["document_hash"]),
+            evidence_id=_required_string(record["evidence_id"]),
+            document_hash=_required_string(record["document_hash"]),
             pdf_page=_page_number(record["pdf_page"]),
-            text=str(record["text"]),
+            text=_required_string(record["text"]),
             printed_label=_optional_string(record["printed_label"]),
             image_path=_optional_string(record["image_path"]),
             regions=regions,
         )
     except (KeyError, TypeError, ValueError) as error:
         raise EvidenceNotFoundError("Stored evidence is unreadable") from error
+
+
+def _document_manifest(record: object) -> DocumentManifest:
+    """Decode and validate the identity of a persisted extraction manifest."""
+    if not isinstance(record, dict):
+        raise EvidenceNotFoundError("Stored evidence is unreadable")
+    record = cast(dict[str, object], record)
+    try:
+        manifest = DocumentManifest(
+            document_id=_required_string(record["document_id"]),
+            sha256=_required_string(record["sha256"]),
+            filename=_required_string(record["filename"]),
+            page_count=_page_number(record["page_count"]),
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise EvidenceNotFoundError("Stored evidence is unreadable") from error
+    if (
+        re.fullmatch(r"[0-9a-f]{64}", manifest.sha256) is None
+        or manifest.document_id != f"sha256:{manifest.sha256}"
+    ):
+        raise EvidenceNotFoundError("Stored evidence is unreadable")
+    return manifest
+
+
+def _validate_stored_pages(manifest: DocumentManifest, pages: tuple[PageEvidence, ...]) -> None:
+    """Require every persisted physical page to match the persisted manifest identity."""
+    if len(pages) != manifest.page_count:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    for expected_page, page in enumerate(pages, start=1):
+        if (
+            page.document_hash != manifest.sha256
+            or page.pdf_page != expected_page
+            or page.evidence_id != f"{manifest.document_id}:page:{expected_page}"
+        ):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
 
 
 def _page_record(page: PageEvidence) -> dict[str, object]:
@@ -166,6 +203,12 @@ def _optional_string(value: object) -> str | None:
     if value is None or isinstance(value, str):
         return value
     raise ValueError("Expected a string or null")
+
+
+def _required_string(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError("Expected a string")
+    return value
 
 
 def _region(value: object) -> tuple[float, float, float, float]:
