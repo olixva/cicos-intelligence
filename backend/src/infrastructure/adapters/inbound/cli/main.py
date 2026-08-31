@@ -7,8 +7,11 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
 
-from bootstrap import build_inspect_manual
+from bootstrap import build_ingest_document, build_inspect_manual
 from domain.models.document import SourceInspectionError, SourceIntegrityError
+from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
+    EvidencePublicationError,
+)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -17,6 +20,10 @@ def _build_parser() -> argparse.ArgumentParser:
     inspect_manual = subcommands.add_parser("inspect-manual")
     inspect_manual.add_argument("source", type=Path)
     inspect_manual.add_argument("--expected-sha256")
+    ingest = subcommands.add_parser("ingest")
+    ingest.add_argument("source", type=Path)
+    ingest.add_argument("--parser", choices=("pypdf",), required=True)
+    ingest.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -28,18 +35,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     except SystemExit as error:
         return error.code if isinstance(error.code, int) else 2
 
-    if arguments.command != "inspect-manual":
-        parser.error("Unknown command")
-
     try:
-        manifest = build_inspect_manual().execute(
-            arguments.source, expected_sha256=arguments.expected_sha256
-        )
-    except (SourceInspectionError, SourceIntegrityError) as error:
+        if arguments.command == "inspect-manual":
+            result = build_inspect_manual().execute(
+                arguments.source, expected_sha256=arguments.expected_sha256
+            )
+        elif arguments.command == "ingest":
+            result = build_ingest_document(arguments.output, arguments.parser).execute(
+                arguments.source
+            )
+        else:
+            parser.error("Unknown command")
+    except (
+        EvidencePublicationError,
+        SourceInspectionError,
+        SourceIntegrityError,
+        ValueError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 
-    print(json.dumps(asdict(manifest), sort_keys=True))
+    print(json.dumps(asdict(result), sort_keys=True))
     return 0
 
 

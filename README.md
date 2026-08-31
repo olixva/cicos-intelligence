@@ -12,6 +12,24 @@ The command returns JSON with the SHA-256, filename, and PDF page count. It read
 source without writing to it. This verifies the source identity and that it is readable;
 it does not extract tables or provide RAG answers.
 
+## Baseline ingestion
+
+```bash
+uv run --project backend allianz ingest \
+  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  --parser pypdf \
+  --output data/extractions
+```
+
+The composition root maps `pypdf` to `PypdfDocumentParser` and constructs its
+`FilesystemEvidenceRepository` with that parser's exact version (currently
+`pypdf-6.16.2`). It reads each source once, so the manifest hash and extracted pages
+come from the same bytes. The repository writes a complete temporary publication and
+renames it to `data/extractions/{sha256}/{parser-version}/`; retrieval is bound to that
+explicit parser version. The resulting `manifest.json` and `pages.jsonl` preserve every
+physical PDF page, including blank pages. See [the baseline review](docs/ingestion-baseline.md)
+for known extraction losses.
+
 Run the backend quality checks with:
 
 ```bash
