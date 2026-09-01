@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from collections.abc import Collection, Sequence
 from hashlib import sha256
-from typing import Literal
+from re import Pattern
+from typing import ClassVar, Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 
 from infrastructure.adapters.outbound.evaluation.golden_schema import (
     SCHEMA_VERSION,
@@ -31,12 +33,42 @@ class ReleaseManifest(BaseModel):
     content_sha256: str
     schema_sha256: str
 
+    _case_id_pattern: ClassVar[Pattern[str]] = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*\Z")
+    _sha256_pattern: ClassVar[Pattern[str]] = re.compile(r"[0-9a-f]{64}\Z")
+
     @field_validator("dataset_name", "dataset_version")
     @classmethod
     def validate_identity(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("release identity must be nonempty")
         return value
+
+    @field_validator("content_sha256", "schema_sha256")
+    @classmethod
+    def validate_sha256(cls, value: str) -> str:
+        if cls._sha256_pattern.fullmatch(value) is None:
+            raise ValueError("release hash must be a lowercase SHA-256 digest")
+        return value
+
+    @model_validator(mode="after")
+    def validate_snapshot_identity(self) -> ReleaseManifest:
+        if self.schema_version != SCHEMA_VERSION:
+            raise ValueError("release schema version is unsupported")
+        if self.item_count < 0:
+            raise ValueError("release item count must be nonnegative")
+        if len(self.case_ids) != self.item_count or len(set(self.case_ids)) != len(self.case_ids):
+            raise ValueError("release case identifiers must be unique and match item count")
+        if any(self._case_id_pattern.fullmatch(case_id) is None for case_id in self.case_ids):
+            raise ValueError("release case identifier is invalid")
+        expected_partitions = {"development", "holdout"}
+        partitions = tuple(partition for partition, _ in self.partition_counts)
+        if set(partitions) != expected_partitions or len(partitions) != len(expected_partitions):
+            raise ValueError("release partition counts must include each partition exactly once")
+        if any(count < 0 for _, count in self.partition_counts):
+            raise ValueError("release partition count must be nonnegative")
+        if sum(count for _, count in self.partition_counts) != self.item_count:
+            raise ValueError("release partition counts must match item count")
+        return self
 
 
 def check_family_splits(assignments: Sequence[tuple[str, str]]) -> None:

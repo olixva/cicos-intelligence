@@ -201,6 +201,24 @@ def test_release_manifest_partition_counts_are_immutable() -> None:
         manifest.partition_counts[0] = ("development", 99)  # type: ignore[index]
 
 
+def test_release_manifest_rejects_an_adulterated_deserialized_identity() -> None:
+    from infrastructure.adapters.outbound.evaluation.release_validation import ReleaseManifest
+
+    with pytest.raises(ValueError):
+        ReleaseManifest.model_validate(
+            {
+                "schema_version": "not-current",
+                "dataset_name": "technical-fixture",
+                "dataset_version": "v1",
+                "item_count": -5,
+                "case_ids": [],
+                "partition_counts": [["development", -9], ["development", 999]],
+                "content_sha256": "not-a-hash",
+                "schema_sha256": "also-not-a-hash",
+            }
+        )
+
+
 def test_committed_schema_artifact_matches_the_release_schema() -> None:
     from infrastructure.adapters.outbound.evaluation.golden_schema import canonical_schema_bytes
 
