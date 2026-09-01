@@ -75,6 +75,11 @@ async def build_and_publish_retrieval_index(
     from infrastructure.config.profiles import load_profile
 
     profile = load_profile(profile_name, profile_catalog_dir())
+    # The CLI passes only the parser family name (e.g. ``pypdf``); the
+    # filesystem layer requires the fully versioned directory name (e.g.
+    # ``pypdf-6.16.2``). Resolve the version here so callers do not
+    # have to thread the version through.
+    resolved_parser = _resolve_published_parser(evidence_root, document_hash, parser)
     client = AsyncQdrantClient(url=qdrant_url)
     try:
         publisher = QdrantIndexBuilder(
@@ -87,10 +92,10 @@ async def build_and_publish_retrieval_index(
             active_alias="allianz-manual-active",
         )
         return await BuildRetrievalIndexUseCase(
-            evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
+            evidence_repository=FilesystemEvidenceRepository(evidence_root, resolved_parser),
             publisher=publisher,
             profile=profile,
-        ).execute(document_hash=document_hash, resolved_parser=parser)
+        ).execute(document_hash=document_hash, resolved_parser=resolved_parser)
     finally:
         await client.close()
 
