@@ -7,8 +7,10 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.outbound.evidence_repository import EvidenceRepository
+from infrastructure.adapters.inbound.api.routes.claims import build_claim_router
 from infrastructure.adapters.inbound.api.routes.manual import (
     RegisteredSource,
     build_manual_router,
@@ -30,6 +32,7 @@ def create_app(
     active_version: str | None = None,
     required_index_ready: Callable[[], bool] | None = None,
     answer_question: AnswerQuestion | None = None,
+    analyze_claim: AnalyzeClaim | None = None,
 ) -> FastAPI:
     """Create the API with explicit dependencies or safe local defaults."""
 
@@ -71,6 +74,8 @@ def create_app(
     )
     if answer_question is not None:
         app.include_router(build_question_router(answer_question))
+    if analyze_claim is not None:
+        app.include_router(build_claim_router(analyze_claim))
     return app
 
 

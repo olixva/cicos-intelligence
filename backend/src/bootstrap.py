@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -27,7 +28,7 @@ from infrastructure.adapters.outbound.source_inspector.pypdf_source_inspector im
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
-
+    from langfuse.experiment import EvaluatorFunction, ExperimentResult
 
 def build_inspect_manual() -> InspectManual:
     """Build the manual-inspection use case with its PDF adapter."""
@@ -252,9 +253,97 @@ def _require_local_langfuse_environment() -> None:
         raise ValueError("LANGFUSE_BASE_URL must be http://127.0.0.1:3000 for local execution")
 
 
-def build_api() -> FastAPI:
-    """Build the local HTTP adapter through its dependency-aware factory."""
+def build_api(
+    *,
+    profile_name: str | None = None,
+    question_profile: str | None = None,
+    claim_profile: str | None = None,
+) -> FastAPI:
+    """Build the local HTTP adapter through its dependency-aware factory.
+
+    Both the explicit question and the explicit claim routers are wired only
+    when their respective factories succeed. When ``profile_name`` is provided
+    it acts as the default for both routers; ``question_profile`` and
+    ``claim_profile`` override it on a per-router basis. A configuration that
+    builds no router at all is treated as a hard failure so the operator is
+    not silently served an empty API.
+    """
 
     from infrastructure.adapters.inbound.api.app import create_app
 
-    return create_app()
+    answer_question = _try_build_answer_question(question_profile or profile_name)
+    analyze_claim = _try_build_analyze_claim(claim_profile or profile_name)
+    if answer_question is None and analyze_claim is None:
+        raise RuntimeError(
+            "build_api() could not compose any workflow port; "
+            "pass profile_name or both question_profile/claim_profile, "
+            "or fix the Langfuse/Qdrant configuration before serving the API"
+        )
+    return create_app(answer_question=answer_question, analyze_claim=analyze_claim)
+
+
+def _try_build_answer_question(profile: str | None) -> AnswerQuestion | None:
+    if profile is None:
+        return None
+    try:
+        return build_answer_question(profile)
+    except (ValueError, OSError) as error:
+        return _log_skipped_port("answer_question", profile, error)
+
+
+def _try_build_analyze_claim(profile: str | None) -> AnalyzeClaim | None:
+    if profile is None:
+        return None
+    try:
+        return build_analyze_claim(profile)
+    except (ValueError, OSError) as error:
+        return _log_skipped_port("analyze_claim", profile, error)
+
+
+def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
+    """Surface a single informative line when a workflow port cannot be built.
+
+    The adapter intentionally continues so other ports can still mount; only
+    when every port fails does ``build_api`` raise.
+    """
+
+    import sys
+
+    print(
+        f"build_api: skipping {port_name} port for profile {profile!r}: {error}",
+        file=sys.stderr,
+    )
+    return None
+
+
+def build_question_experiment_runner(profile_name: str) -> Callable[..., ExperimentResult]:
+    """Return a closure that runs native Langfuse question experiments.
+
+    The closure injects the live ``Langfuse`` client into
+    ``run_question_experiment`` so tests can substitute fakes without
+    monkeypatching module globals.
+    """
+
+    from langfuse import Langfuse
+
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        run_question_experiment,
+    )
+
+    _require_local_langfuse_environment()
+    client = Langfuse()
+
+    def runner(
+        dataset_name: str,
+        dataset_version: str,
+        evaluators: Sequence[EvaluatorFunction],
+    ) -> ExperimentResult:
+        return run_question_experiment(
+            profile_name=profile_name,
+            dataset_name=dataset_name,
+            dataset_version=dataset_version,
+            evaluators=evaluators,
+            langfuse_client=client,
+        )
+
+    return runner
