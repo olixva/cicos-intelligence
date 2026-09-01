@@ -295,10 +295,14 @@ for family_id, partition in assignments:
 
 ## Task 10: Experimentos nativos Langfuse y conexión con Ragas
 
-**Estado de ejecución (1 de septiembre de 2026):** iniciada. El aislamiento de entrada,
-la serialización y el evaluador FactualCorrectness nativo están implementados y comprobados
-contra Ragas 0.4.3/Langfuse 4.15.1; faltan la llamada nativa al dataset y la
-publicación/validación de releases.
+**Estado de ejecución (1 de septiembre de 2026):** runner nativo cerrado. El aislamiento de entrada,
+la serialización, el evaluador FactualCorrectness nativo y la llamada nativa a
+`DatasetClient.run_experiment` están implementados y comprobados contra
+Ragas 0.4.3/Langfuse 4.15.1; el runner inyecta el cliente Langfuse para
+tests sin monkeypatching global, valida `dataset_name`/`dataset_version`/
+`profile_name` no blank, y usa `ALLIANZ_LANGFUSE_MAX_CONCURRENCY` (default 4)
+en lugar del default 50 del SDK. Faltan la publicación/validación de releases
+y un smoke nativo contra un dataset real registrado en Langfuse.
 
 **Files:** Crear `backend/src/infrastructure/adapters/outbound/evaluation/langfuse_experiments.py`, `ragas_evaluators.py`, `dataset_releases.py`, `backend/tests/test_evaluation_input_boundary.py`, `backend/tests/integration/test_langfuse_experiments.py`. Modificar CLI y configuración.
 
@@ -425,11 +429,13 @@ return MatrixLookup(status="resolved" if cell else "undetermined", cell=cell)
 
 ## Task 14: Recorrido de siniestros con hechos atribuibles
 
-**Estado de ejecución (1 de septiembre de 2026):** iniciada. Modelos, invariantes,
+**Estado de ejecución (1 de septiembre de 2026):** flujo claim cableado a la API. Modelos, invariantes,
 puertos y el uso de la aplicabilidad están implementados. El adaptador LangGraph ya
 recorre extracción detrás de puerto, recuperación de criterios, aplicación determinista,
 explicación y validación; el extractor OpenAI estructurado está aislado del contexto del
-manual y probado. Falta conectarlo al bootstrap/API, ejecutar los cinco casos de desarrollo
+manual y probado. El router `POST /api/v1/claims/analyze` está montado por
+`bootstrap.build_api()` cuando el puerto `analyze_claim` se compone con éxito;
+su DTO omite cualquier `image_path` local. Faltan los cinco casos de desarrollo
 auditados y cerrar las reglas/matriz de T13.
 
 **Files:** Crear `backend/src/application/ports/inbound/analyze_claim.py`, `ports/outbound/claim_workflow.py`, `use_cases/analyze_claim_use_case.py`, `services/claim_analysis.py`, `backend/src/infrastructure/adapters/outbound/claim_workflow/langgraph_workflow.py`, `backend/tests/test_claim_workflow.py`. Ampliar modelos claim/decision y el serializador de ejecución de T10.
@@ -494,10 +500,13 @@ La implementación del grafo conserva esa exclusividad y usa los casos existente
 
 ## Task 17: API de los tres modos, estados y streaming
 
-**Estado de ejecución (1 de septiembre de 2026):** iniciada. La ruta explícita de pregunta
-documental (`POST /api/v1/questions/answer`) traduce únicamente el puerto inbound, conserva
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. Las rutas explícitas de pregunta y de
+siniestros están montadas por `bootstrap.build_api()` cuando el puerto
+correspondiente se compone con éxito; el router de claims omite cualquier
+`image_path` local en su respuesta. La ruta explícita de pregunta
+(`POST /api/v1/questions/answer`) traduce únicamente el puerto inbound, conserva
 contexto/citas/trace ID y diferencia un fallo técnico (500) de `insufficient_evidence` (200).
-Faltan el endpoint de caso, automático, el DTO común y streaming.
+La rama automática (T16), el DTO común y el streaming siguen pendientes.
 
 **Files:** Crear `backend/src/infrastructure/adapters/inbound/api/routes/queries.py`, `schemas/query.py`, `streaming.py`, `errors.py`, `backend/tests/test_query_api.py`, `backend/tests/test_streaming_api.py`, `docs/api/openapi.json`. Modificar app y bootstrap.
 
