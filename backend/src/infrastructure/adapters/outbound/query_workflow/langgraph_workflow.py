@@ -1,0 +1,219 @@
+"""Closed-enum LangGraph selector and thin LLM classifier adapter for auto routing."""
+
+from __future__ import annotations
+
+import asyncio
+import os
+import uuid
+from collections.abc import Callable
+from typing import NotRequired, Required, TypedDict, cast
+
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.runnables import RunnableConfig
+from langgraph.graph import END, START, StateGraph
+
+from application.models.claim import ClaimExecution
+from application.models.query import QueryExecution, QueryInput, QuestionAnswer
+from application.ports.inbound.analyze_claim import AnalyzeClaim
+from application.ports.inbound.answer_question import AnswerQuestion
+from application.ports.outbound.language_model import LanguageModel
+from application.ports.outbound.query_classifier import QueryClassifier
+from domain.models.claim import ClaimInput
+from domain.models.routing import (
+    ClarificationResult,
+    RouteClassification,
+    RouteDecision,
+    RouteExecution,
+)
+
+_DEFAULT_CLARIFICATION = "Necesito más información para enrutar tu consulta."
+_CLOSED_DECISIONS: tuple[RouteDecision, ...] = (
+    "question",
+    "claim",
+    "clarification_required",
+)
+_ROUTING_METADATA: dict[str, str | int] = {
+    "langfuse_prompt_name": "auto-router",
+    "langfuse_prompt_version": int(os.environ.get("ALLIANZ_ROUTER_PROMPT_VERSION", "1")),
+    "model_name": os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.4"),
+}
+
+
+def routing_metadata() -> dict[str, str | int]:
+    """Return a copy of the prompt/model identity captured at module import."""
+    return dict(_ROUTING_METADATA)
+
+
+class RouteDispatchTimeoutError(TimeoutError):
+    """The complete dispatch graph exceeded its local execution budget."""
+
+
+class RouteExecutionErrorLocal(RuntimeError):
+    """Raised by the dispatch graph when a closed-enum guard trips."""
+
+
+type _DispatchResult = QueryExecution | ClaimExecution | ClarificationResult
+
+
+class _RoutingState(TypedDict, total=False):
+    query: Required[QueryInput]
+    classification: NotRequired[RouteClassification]
+    dispatch: NotRequired[_DispatchResult]
+
+
+class _RoutingUpdate(TypedDict, total=False):
+    classification: RouteClassification
+    dispatch: _DispatchResult
+
+
+def _route_decision(state: _RoutingState) -> RouteDecision:
+    classification = state.get("classification")
+    if classification is None:
+        raise RuntimeError("routing workflow reached dispatch without a classification")
+    decision = classification.decision
+    if decision not in _CLOSED_DECISIONS:
+        raise RouteExecutionErrorLocal(
+            f"unsupported routing decision: {decision!r}; expected one of {_CLOSED_DECISIONS}"
+        )
+    return decision
+
+
+class LLMQueryClassifier:
+    """Adapter that maps the existing ``LanguageModel`` port into ``QueryClassifier``."""
+
+    def __init__(self, language_model: LanguageModel) -> None:
+        self._language_model = language_model
+
+    async def classify(self, query: QueryInput) -> RouteClassification:
+        answer = await self._language_model.generate(query, ())
+        return _classify_from_answer(answer)
+
+
+def _classify_from_answer(answer: QuestionAnswer) -> RouteClassification:
+    status = answer.status
+    if status == "out_of_scope":
+        return RouteClassification("clarification_required", rationale="out_of_scope")
+    if status == "insufficient_evidence":
+        return RouteClassification("clarification_required", rationale="insufficient_evidence")
+    return RouteClassification("question", rationale=status)
+
+
+class LangGraphResolveQuery:
+    """LangGraph state machine that selects exactly one downstream flow per query."""
+
+    def __init__(
+        self,
+        *,
+        classifier: QueryClassifier,
+        answer_question: AnswerQuestion,
+        analyze_claim: AnalyzeClaim,
+        trace_id_factory: Callable[[], str | None] | None = None,
+        callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
+        timeout_seconds: float = 20.0,
+    ) -> None:
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+        self._classifier = classifier
+        self._answer_question = answer_question
+        self._analyze_claim = analyze_claim
+        self._trace_id_factory: Callable[[], str | None] = trace_id_factory or (
+            lambda: str(uuid.uuid4())
+        )
+        self._callback_factory = callback_factory
+        self._timeout_seconds = timeout_seconds
+        self._graph = self._build_graph()
+
+    def _build_graph(self):  # pyright: ignore[reportUnknownParameterType]
+        g = StateGraph(_RoutingState)
+        g.add_node("classify", self._classify)  # pyright: ignore[reportUnknownMemberType]
+        g.add_node("dispatch", self._dispatch)  # pyright: ignore[reportUnknownMemberType]
+        g.add_node("to_question", self._to_question)  # pyright: ignore[reportUnknownMemberType]
+        g.add_node("to_claim", self._to_claim)  # pyright: ignore[reportUnknownMemberType]
+        g.add_node("to_clarification", self._to_clarification)  # pyright: ignore[reportUnknownMemberType]
+        g.add_node("wrap", self._wrap)  # pyright: ignore[reportUnknownMemberType]
+        g.add_edge(START, "classify")  # pyright: ignore[reportUnknownMemberType]
+        g.add_edge("classify", "dispatch")  # pyright: ignore[reportUnknownMemberType]
+        # path_map keys must equal the closed enum; unknown decisions raise in
+        # _route_decision before the graph ever routes anywhere.
+        g.add_conditional_edges(  # pyright: ignore[reportUnknownMemberType]
+            "dispatch",
+            _route_decision,
+            {"question": "to_question", "claim": "to_claim",
+             "clarification_required": "to_clarification"},
+        )
+        for branch in ("to_question", "to_claim", "to_clarification"):
+            g.add_edge(branch, "wrap")  # pyright: ignore[reportUnknownMemberType]
+        g.add_edge("wrap", END)  # pyright: ignore[reportUnknownMemberType]
+        return g.compile()  # pyright: ignore[reportUnknownMemberType]
+
+    async def execute(self, query: QueryInput) -> RouteExecution:
+        trace_id = self._trace_id_factory()
+        config = RunnableConfig(recursion_limit=8)
+        if trace_id is not None and self._callback_factory is not None:
+            config["callbacks"] = [self._callback_factory(trace_id)]  # type: ignore[arg-type]
+        try:
+            async with asyncio.timeout(self._timeout_seconds):
+                raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+                    _RoutingState(query=query), config=config  # type: ignore[arg-type]
+                )
+        except TimeoutError as error:
+            raise RouteDispatchTimeoutError("routing workflow timed out") from error
+        state = cast(_RoutingState, raw)
+        dispatch = state.get("dispatch")
+        classification = state.get("classification")
+        if dispatch is None or classification is None:
+            raise RuntimeError("routing workflow completed without a dispatch")
+        return RouteExecution(
+            query=query, classification=classification, dispatch=dispatch, trace_id=trace_id,
+        )
+
+    async def _classify(self, state: _RoutingState) -> _RoutingUpdate:
+        return _RoutingUpdate(classification=await self._classifier.classify(state["query"]))
+
+    async def _dispatch(self, state: _RoutingState) -> _RoutingUpdate:
+        # Anchor node: holds the conditional edge; never produces dispatch.
+        return _RoutingUpdate()
+
+    async def _to_question(self, state: _RoutingState) -> _RoutingUpdate:
+        return _RoutingUpdate(dispatch=await self._answer_question.execute(state["query"]))
+
+    async def _to_claim(self, state: _RoutingState) -> _RoutingUpdate:
+        query = state["query"]
+        return _RoutingUpdate(
+            dispatch=await self._analyze_claim.execute(
+                ClaimInput(text=query.text, language=query.language, clarifications=())
+            )
+        )
+
+    async def _to_clarification(self, state: _RoutingState) -> _RoutingUpdate:
+        classification = state.get("classification")
+        rationale = classification.rationale if classification is not None else None
+        return _RoutingUpdate(
+            dispatch=ClarificationResult(message=rationale or _DEFAULT_CLARIFICATION)
+        )
+
+    async def _wrap(self, state: _RoutingState) -> _RoutingUpdate:
+        dispatch = state.get("dispatch")
+        if dispatch is None:
+            raise RuntimeError("routing workflow reached wrap without a dispatch")
+        return _RoutingUpdate(dispatch=dispatch)
+
+
+def build_resolve_query_workflow(
+    *,
+    classifier: QueryClassifier,
+    answer_question: AnswerQuestion,
+    analyze_claim: AnalyzeClaim,
+    trace_id_factory: Callable[[], str | None] | None = None,
+    callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
+    timeout_seconds: float = 20.0,
+) -> LangGraphResolveQuery:
+    """Module-level helper to compose the selector with explicit defaults."""
+    return LangGraphResolveQuery(
+        classifier=classifier,
+        answer_question=answer_question,
+        analyze_claim=analyze_claim,
+        trace_id_factory=trace_id_factory,
+        callback_factory=callback_factory,
+        timeout_seconds=timeout_seconds,
+    )

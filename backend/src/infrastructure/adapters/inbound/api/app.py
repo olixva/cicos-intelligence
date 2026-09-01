@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
+from application.ports.inbound.resolve_query import ResolveQuery
 from application.ports.outbound.evidence_repository import EvidenceRepository
 from infrastructure.adapters.inbound.api.routes.claims import build_claim_router
 from infrastructure.adapters.inbound.api.routes.manual import (
@@ -16,6 +17,7 @@ from infrastructure.adapters.inbound.api.routes.manual import (
     build_manual_router,
     load_registered_sources,
 )
+from infrastructure.adapters.inbound.api.routes.queries import build_query_router
 from infrastructure.adapters.inbound.api.routes.questions import build_question_router
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
     FilesystemEvidenceRepository,
@@ -33,6 +35,7 @@ def create_app(
     required_index_ready: Callable[[], bool] | None = None,
     answer_question: AnswerQuestion | None = None,
     analyze_claim: AnalyzeClaim | None = None,
+    resolve_query: ResolveQuery | None = None,
 ) -> FastAPI:
     """Create the API with explicit dependencies or safe local defaults."""
 
@@ -76,6 +79,8 @@ def create_app(
         app.include_router(build_question_router(answer_question))
     if analyze_claim is not None:
         app.include_router(build_claim_router(analyze_claim))
+    if resolve_query is not None:
+        app.include_router(build_query_router(resolve_query))
     return app
 
 

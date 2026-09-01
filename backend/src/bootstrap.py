@@ -11,6 +11,7 @@ from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.ingest_document import IngestDocument
 from application.ports.inbound.inspect_manual import InspectManual
+from application.ports.inbound.resolve_query import ResolveQuery
 from application.use_cases.analyze_claim_use_case import AnalyzeClaimUseCase
 from application.use_cases.answer_question_use_case import AnswerQuestionUseCase
 from application.use_cases.build_retrieval_index_use_case import (
@@ -30,6 +31,10 @@ from infrastructure.adapters.outbound.source_inspector.pypdf_source_inspector im
 if TYPE_CHECKING:
     from fastapi import FastAPI
     from langfuse.experiment import EvaluatorFunction, ExperimentResult
+
+    from infrastructure.adapters.outbound.language_model.openai_language_model import (
+        LangfusePromptClient,
+    )
 
 _SKIPPED_PORT_LOGGER = logging.getLogger(__name__)
 
@@ -315,6 +320,51 @@ def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
         "build_api: skipping %s port for profile %r: %s", port_name, profile, error
     )
     return None
+
+
+def build_resolve_query(profile_name: str) -> ResolveQuery:
+    """Compose the closed-enum auto router against the same active index as questions and claims.
+
+    The classifier is backed by its own ``OpenAILanguageModel`` instance loaded
+    with the dedicated ``auto-router`` prompt version (configurable via
+    ``ALLIANZ_ROUTER_PROMPT_VERSION``); the dispatch graph reuses the existing
+    question and claim factories so retrieval, evidence, and Langfuse traces
+    stay consistent across modes.
+    """
+
+    import os
+
+    from langfuse import Langfuse
+
+    from infrastructure.adapters.outbound.language_model.openai_language_model import (
+        OpenAILanguageModel,
+        load_langfuse_prompt,
+    )
+    from infrastructure.adapters.outbound.query_workflow.langgraph_workflow import (
+        LLMQueryClassifier,
+        build_resolve_query_workflow,
+    )
+
+    _require_local_langfuse_environment()
+    langfuse = Langfuse()
+    prompt = load_langfuse_prompt(
+        cast("LangfusePromptClient", langfuse),
+        name=os.environ.get("ALLIANZ_ROUTER_PROMPT_NAME", "auto-router"),
+        version=_positive_environment_integer("ALLIANZ_ROUTER_PROMPT_VERSION", 1),
+    )
+    classifier = LLMQueryClassifier(
+        OpenAILanguageModel(
+            model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.4"),
+            prompt=prompt,
+        )
+    )
+    answer_question = build_answer_question(profile_name)
+    analyze_claim = build_analyze_claim(profile_name)
+    return build_resolve_query_workflow(
+        classifier=classifier,
+        answer_question=answer_question,
+        analyze_claim=analyze_claim,
+    )
 
 
 def build_question_experiment_runner(profile_name: str) -> Callable[..., ExperimentResult]:
