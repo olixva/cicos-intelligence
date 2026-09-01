@@ -109,9 +109,9 @@ def test_rejects_a_profile_that_does_not_match_the_published_parser() -> None:
 
 
 def test_profile_catalog_is_packaged_next_to_the_backend_project() -> None:
-    from bootstrap import _profile_catalog_dir
+    from bootstrap import profile_catalog_dir
 
-    catalog = _profile_catalog_dir()
+    catalog = profile_catalog_dir()
 
     assert (catalog / "structured.yaml").is_file()
     assert (catalog / "baseline.yaml").is_file()

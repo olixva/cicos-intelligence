@@ -194,6 +194,9 @@ def test_health_is_local_and_catalog_alone_does_not_make_the_api_ready(
         def get(self, evidence_id: str) -> PageEvidence:
             raise AssertionError("health must not read evidence or call a provider")
 
+        def get_document_pages(self, document_hash: str) -> tuple[PageEvidence, ...]:
+            raise AssertionError("health must not read evidence or call a provider")
+
     def index_is_missing() -> bool:
         nonlocal checks
         checks += 1

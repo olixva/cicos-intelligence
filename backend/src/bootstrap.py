@@ -64,7 +64,7 @@ async def build_and_publish_retrieval_index(
     from infrastructure.adapters.outbound.retriever.qdrant_retriever import FastEmbedBm25Encoder
     from infrastructure.config.profiles import load_profile
 
-    profile = load_profile(profile_name, _profile_catalog_dir())
+    profile = load_profile(profile_name, profile_catalog_dir())
     client = AsyncQdrantClient(url=qdrant_url)
     try:
         publisher = QdrantIndexBuilder(
@@ -85,7 +85,7 @@ async def build_and_publish_retrieval_index(
         await client.close()
 
 
-def _profile_catalog_dir() -> Path:
+def profile_catalog_dir() -> Path:
     """Locate the project-owned strict profile catalog outside importable source modules."""
     return Path(__file__).parent.parent / "configs"
 

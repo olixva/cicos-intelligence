@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from application.models.retrieval import (
     FixedChunkingConfig,
     RetrievalProfile,
-    SectionChunkingConfig,
 )
 from application.ports.outbound.evidence_repository import EvidenceRepository
 from application.ports.outbound.index_publisher import IndexPublisher
@@ -43,10 +42,8 @@ class BuildRetrievalIndexUseCase:
         chunker = self._profile.chunker
         if isinstance(chunker, FixedChunkingConfig):
             chunks = chunk_fixed(pages, chunker.size, chunker.overlap)
-        elif isinstance(chunker, SectionChunkingConfig):
-            chunks = chunk_sections(pages, chunker.max_size)
         else:
-            raise TypeError("unsupported retrieval chunker")
+            chunks = chunk_sections(pages, chunker.max_size)
         signature = self._profile.build_index_signature(document_hash, resolved_parser)
         collection = await self._publisher.build_index(chunks, signature)
         return IndexBuildResult(collection=collection, chunk_count=len(chunks))
