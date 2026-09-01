@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -29,6 +30,9 @@ from infrastructure.adapters.outbound.source_inspector.pypdf_source_inspector im
 if TYPE_CHECKING:
     from fastapi import FastAPI
     from langfuse.experiment import EvaluatorFunction, ExperimentResult
+
+_SKIPPED_PORT_LOGGER = logging.getLogger(__name__)
+
 
 def build_inspect_manual() -> InspectManual:
     """Build the manual-inspection use case with its PDF adapter."""
@@ -307,11 +311,8 @@ def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
     when every port fails does ``build_api`` raise.
     """
 
-    import sys
-
-    print(
-        f"build_api: skipping {port_name} port for profile {profile!r}: {error}",
-        file=sys.stderr,
+    _SKIPPED_PORT_LOGGER.warning(
+        "build_api: skipping %s port for profile %r: %s", port_name, profile, error
     )
     return None
 
