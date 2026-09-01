@@ -3,7 +3,11 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from domain.models.claim import MatrixCell
+from domain.models.claim import ClaimContradiction, ClaimEvidenceBlock, ClaimFact, MatrixCell
+
+
+class InvalidDecisionError(ValueError):
+    """Raised when a claim conclusion violates mandatory safety invariants."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,3 +22,28 @@ class MatrixLookup:
             raise ValueError("resolved matrix lookup requires a cell")
         if self.status == "undetermined" and self.cell is not None:
             raise ValueError("undetermined matrix lookup must not contain a cell")
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimAnalysis:
+    """A bounded convention assessment, distinct from a general liability opinion."""
+
+    applicability: Literal["applicable", "not_applicable", "undetermined"]
+    convention: Literal["CIDE", "ASCIDE"] | None
+    decision: Literal["resolved", "conditional", "undetermined", "not_assessed"]
+    party_ids: tuple[str, ...]
+    facts: tuple[ClaimFact, ...]
+    contradictions: tuple[ClaimContradiction, ...]
+    conditions: tuple[str, ...]
+    missing_information: tuple[str, ...]
+    blocks: tuple[ClaimEvidenceBlock, ...]
+
+    def __post_init__(self) -> None:
+        if len(set(self.party_ids)) != len(self.party_ids) or any(
+            not party_id.strip() for party_id in self.party_ids
+        ):
+            raise InvalidDecisionError("claim party identifiers must be nonempty and unique")
+        if self.decision == "conditional" and not self.conditions:
+            raise InvalidDecisionError("a conditional decision must name its conditions")
+        if self.applicability == "not_applicable" and self.decision == "resolved":
+            raise InvalidDecisionError("an inapplicable convention cannot resolve a claim")
