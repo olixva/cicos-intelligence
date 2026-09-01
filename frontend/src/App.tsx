@@ -1,13 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import IndexRoute from '@/routes/_index';
-import { EvidenceProvider } from '@/features/evidence/evidence-context';
 
 /**
  * App — proveedores globales. QueryClient con defaults sensatos:
  *   - retry 1 (los errores deben llegar rápido al UI)
  *   - staleTime 30s (evita refetch innecesario)
  *   - refetchOnWindowFocus false (no agresivo)
+ *
+ * Spec UX v2: el estado del PDF overlay ya no vive en un Context global.
+ * El reducer del thread es local al route; por eso `EvidenceProvider`
+ * ya no se monta aquí.
  */
 export default function App() {
   const [client] = useState(
@@ -28,9 +31,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={client}>
-      <EvidenceProvider>
-        <IndexRoute />
-      </EvidenceProvider>
+      <IndexRoute />
     </QueryClientProvider>
   );
 }

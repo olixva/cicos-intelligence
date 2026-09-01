@@ -17,5 +17,9 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "iconLibrary": "lucide"
+  "iconLibrary": "lucide",
+  "registries": {
+    "magicui": "https://magicui.design/r/styles/default",
+    "originui": "https://originui.com/r/styles/default"
+  }
 }

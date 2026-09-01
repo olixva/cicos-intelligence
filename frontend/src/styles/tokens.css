@@ -100,6 +100,11 @@
   --brand: 216 100% 25%;
   --brand-foreground: 0 0% 100%;
   --brand-muted: 216 100% 95%;
+
+  /* Sub-superficie — burbuja del usuario en el chat agéntico.
+     Spec UX v2: surface-2 es un escalón por encima de background
+     pero por debajo de card, manteniendo el contraste AA. */
+  --color-surface-2: #EAECF0;
 }
 
 /* =====================================================================
@@ -150,6 +155,9 @@
   --brand-foreground: 220 30% 7%;
   --brand-muted: 216 50% 18%;
 
+  /* Sub-superficie oscura — burbuja user. */
+  --color-surface-2: #222A33;
+
   --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.5);
   --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.55), 0 1px 2px -1px hsl(0 0% 0% / 0.55);
   --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.6), 0 2px 4px -2px hsl(0 0% 0% / 0.6);
@@ -187,5 +195,6 @@
     --brand: 216 100% 60%;
     --brand-foreground: 220 30% 7%;
     --brand-muted: 216 50% 18%;
+    --color-surface-2: #222A33;
   }
 }

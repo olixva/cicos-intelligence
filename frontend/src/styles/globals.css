@@ -65,6 +65,85 @@
     background-color: #00378133;
     mix-blend-mode: multiply;
   }
+
+  /* ============================================================
+   * Spec UX v2 — chat agéntico
+   * Animaciones y patrones decorativos.
+   * Mirrorean los keyframes de Magic UI (border-beam, shimmer)
+   * y Origin UI (pulse) para que los primitivos copiados
+   * funcionen out-of-the-box.
+   * ============================================================ */
+
+  /* Shimmer — barrido diagonal para ShimmerButton. */
+  @keyframes shimmer-slide {
+    from {
+      transform: translateX(-150%) skewX(-12deg);
+    }
+    to {
+      transform: translateX(250%) skewX(-12deg);
+    }
+  }
+  .shimmer-slide {
+    animation: shimmer-slide 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Border beam — para BorderBeam (chip en hover). */
+  @keyframes border-beam-rotate {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .border-beam-anim {
+    animation: border-beam-rotate 4s linear infinite;
+  }
+
+  /* Pulsating — para PulsatingButton. */
+  @keyframes pulsating-ring {
+    0% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5);
+    }
+    70% {
+      box-shadow: 0 0 0 12px hsl(var(--primary) / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+    }
+  }
+  .pulsating-ring {
+    animation: pulsating-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Dot pattern — fondo decorativo sutil. 5% claro / 8% oscuro. */
+  .bg-dot-pattern {
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--foreground) / 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+    background-position: 0 0;
+  }
+  [data-theme='dark'] .bg-dot-pattern,
+  :root[data-theme='dark'] .bg-dot-pattern {
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--foreground) / 0.08) 1px,
+      transparent 1px
+    );
+  }
+
+  /* Caret del typewriter streaming. */
+  @keyframes caret-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  .streaming-caret::after {
+    content: '▍';
+    display: inline-block;
+    margin-left: 1px;
+    color: hsl(var(--primary));
+    animation: caret-blink 1s steps(1, end) infinite;
+  }
 }
 
 @layer utilities {
