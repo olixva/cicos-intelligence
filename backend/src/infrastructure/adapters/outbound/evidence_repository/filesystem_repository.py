@@ -68,6 +68,16 @@ class FilesystemEvidenceRepository:
         if match is None:
             raise EvidenceNotFoundError("Invalid evidence identifier")
         document_hash, requested_page = match.groups()
+        pages = self.get_document_pages(document_hash)
+        page_index = int(requested_page) - 1
+        if page_index >= len(pages):
+            raise EvidenceNotFoundError("Evidence page was not found")
+        return pages[page_index]
+
+    def get_document_pages(self, document_hash: str) -> tuple[PageEvidence, ...]:
+        """Read every page from one fully verified, parser-versioned publication."""
+        if re.fullmatch(r"[0-9a-f]{64}", document_hash) is None:
+            raise EvidenceNotFoundError("Invalid document hash")
         directory = self._root / document_hash / self._parser
         publication_files = _validate_publication_root(directory)
         try:
@@ -84,10 +94,7 @@ class FilesystemEvidenceRepository:
         pages = tuple(_page_evidence(record) for record in page_records)
         _validate_stored_pages(manifest, pages)
         _validate_stored_assets(directory, manifest, pages, self._parser, publication_files)
-        page_index = int(requested_page) - 1
-        if page_index >= len(pages):
-            raise EvidenceNotFoundError("Evidence page was not found")
-        return pages[page_index]
+        return pages
 
     def _validate_extraction(self, extraction: Extraction) -> None:
         if extraction.parser != self._parser:

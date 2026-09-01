@@ -1,6 +1,7 @@
 """Command-line entry point for local source inspection."""
 
 import argparse
+import asyncio
 import json
 import sys
 from collections.abc import Sequence
@@ -8,7 +9,11 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
-from bootstrap import build_ingest_document, build_inspect_manual
+from bootstrap import (
+    build_and_publish_retrieval_index,
+    build_ingest_document,
+    build_inspect_manual,
+)
 from domain.models.document import SourceInspectionError, SourceIntegrityError
 from domain.models.evidence import Extraction
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
@@ -26,6 +31,12 @@ def _build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("source", type=Path)
     ingest.add_argument("--parser", choices=("pypdf", "docling"), required=True)
     ingest.add_argument("--output", type=Path, required=True)
+    index = subcommands.add_parser("index")
+    index.add_argument("--document-hash", required=True)
+    index.add_argument("--parser", required=True)
+    index.add_argument("--evidence-root", type=Path, required=True)
+    index.add_argument("--profile", choices=("baseline", "structured"), default="structured")
+    index.add_argument("--qdrant-url", default="http://127.0.0.1:6333")
     prepare = subcommands.add_parser("prepare-ingestion-models")
     prepare.add_argument("--output", type=Path, required=True)
     doctor = subcommands.add_parser("doctor")
@@ -54,6 +65,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = build_ingest_document(arguments.output, arguments.parser).execute(
                 arguments.source
             )
+        elif arguments.command == "index":
+            result = asyncio.run(
+                build_and_publish_retrieval_index(
+                    document_hash=arguments.document_hash,
+                    evidence_root=arguments.evidence_root,
+                    parser=arguments.parser,
+                    profile_name=arguments.profile,
+                    qdrant_url=arguments.qdrant_url,
+                )
+            )
+            print(
+                json.dumps(
+                    {"collection": result.collection, "chunk_count": result.chunk_count},
+                    sort_keys=True,
+                )
+            )
+            return 0
         elif arguments.command == "prepare-ingestion-models":
             from infrastructure.adapters.outbound.document_parser.model_artifacts import (
                 prepare_model_bundle,

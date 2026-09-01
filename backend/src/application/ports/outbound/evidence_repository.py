@@ -16,3 +16,7 @@ class EvidenceRepository(Protocol):
     def get(self, evidence_id: str) -> PageEvidence:
         """Return one page evidence record by its validated identifier."""
         ...
+
+    def get_document_pages(self, document_hash: str) -> tuple[PageEvidence, ...]:
+        """Return all pages from one complete, parser-versioned document publication."""
+        ...

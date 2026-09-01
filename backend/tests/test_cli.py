@@ -171,3 +171,49 @@ def test_prepare_models_reports_verified_bundle_without_downloading_in_test(
         "files": 9,
         "output": str(fake_model_bundle.root),
     }
+
+
+def test_index_runs_the_operational_composition_and_prints_safe_metadata(
+    capsys: CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The technical index command must not expose embeddings or credentials on stdout."""
+    from application.use_cases.build_retrieval_index_use_case import IndexBuildResult
+    from infrastructure.adapters.inbound.cli.main import main
+
+    called: dict[str, object] = {}
+
+    async def publish(**kwargs: object) -> IndexBuildResult:
+        called.update(kwargs)
+        return IndexBuildResult(collection="allianz-corpus-123", chunk_count=42)
+
+    monkeypatch.setattr(
+        "infrastructure.adapters.inbound.cli.main.build_and_publish_retrieval_index", publish
+    )
+
+    result = main(
+        [
+            "index",
+            "--document-hash",
+            "a" * 64,
+            "--parser",
+            "docling-2.124.0-example",
+            "--evidence-root",
+            str(tmp_path / "evidence"),
+            "--profile",
+            "structured",
+            "--qdrant-url",
+            "http://127.0.0.1:6333",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert captured.err == ""
+    assert json.loads(captured.out) == {"chunk_count": 42, "collection": "allianz-corpus-123"}
+    assert called == {
+        "document_hash": "a" * 64,
+        "evidence_root": tmp_path / "evidence",
+        "parser": "docling-2.124.0-example",
+        "profile_name": "structured",
+        "qdrant_url": "http://127.0.0.1:6333",
+    }

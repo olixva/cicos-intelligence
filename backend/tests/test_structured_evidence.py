@@ -60,6 +60,21 @@ def test_assets_are_immutable_complete_and_round_trip(tmp_path: Path) -> None:
         repository.publish(extraction)
 
 
+def test_get_document_pages_returns_only_a_complete_verified_publication(tmp_path: Path) -> None:
+    """Indexing must consume the same complete, immutable evidence as the citation API."""
+    source = tmp_path / "source.pdf"
+    _source(source)
+    extraction = PypdfDocumentParser().parse(source)
+    repository = FilesystemEvidenceRepository(tmp_path / "output", extraction.parser)
+    published = repository.publish(extraction)
+
+    assert repository.get_document_pages(extraction.manifest.sha256) == extraction.pages
+
+    (published / "pages.jsonl").write_text("{}\n", encoding="utf-8")
+    with pytest.raises(EvidenceNotFoundError, match="inconsistent"):
+        repository.get_document_pages(extraction.manifest.sha256)
+
+
 @pytest.mark.parametrize(
     "paths",
     [
