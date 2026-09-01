@@ -295,12 +295,16 @@ for family_id, partition in assignments:
 
 ## Task 10: Experimentos nativos Langfuse y conexión con Ragas
 
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. El aislamiento de entrada y
+la serialización están implementados y comprobados; faltan la llamada nativa al dataset,
+FactualCorrectness y la publicación/validación de releases.
+
 **Files:** Crear `backend/src/infrastructure/adapters/outbound/evaluation/langfuse_experiments.py`, `ragas_evaluators.py`, `dataset_releases.py`, `backend/tests/test_evaluation_input_boundary.py`, `backend/tests/integration/test_langfuse_experiments.py`. Modificar CLI y configuración.
 
 **Interfaces:** `run_question_experiment(dataset_name: str, dataset_version: str, profile_name: str) -> None` carga un dataset registrado, verifica manifiesto y llama a su `run_experiment`. El callback usa el `DatasetItem` nativo; el adaptador devuelve una representación serializable de `QueryExecution`. No se filtra `expected_output` a `QueryInput`.
 
-- [ ] RED: un item contiene una cadena centinela solo en referencia y metadatos; el caso de uso espía no debe recibirla en ningún campo. El spy se define en `test_evaluation_input_boundary.py`, conserva los QueryInput recibidos y devuelve una QuestionAnswer técnica con contexto vacío, sin pasarla por resultado del manual.
-- [ ] Implementar el callback con selección explícita de entrada:
+- [x] RED: un item contiene una cadena centinela solo en referencia y metadatos; el caso de uso espía no debe recibirla en ningún campo. El spy se define en `test_evaluation_input_boundary.py`, conserva los QueryInput recibidos y devuelve una QuestionAnswer técnica con contexto vacío, sin pasarla por resultado del manual.
+- [x] Implementar el callback con selección explícita de entrada:
 
 ```python
 async def task(*, item, **kwargs):
@@ -329,11 +333,15 @@ async def factual_evaluator(*, output, expected_output, **kwargs):
 
 ## Task 11: Métricas de evidencias, decisiones e ingeniería
 
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. Cobertura AND/OR,
+precisión/recall de citas y coste por éxito están implementados y probados; faltan las
+métricas de decisiones, las rúbricas Ragas y el catálogo operativo completo.
+
 **Files:** Crear `backend/src/infrastructure/adapters/outbound/evaluation/domain_evaluators.py`, `run_metrics.py`, `backend/tests/test_evidence_metrics.py`, `backend/tests/test_run_metrics.py`, `docs/evaluation/metric-catalog.md`.
 
 **Interfaces:** `coverage(requirements: Sequence[Sequence[frozenset[str]]], delivered: frozenset[str]) -> float | None`: requisitos externos AND, paquetes alternativos OR, y cada paquete exige todos sus miembros. `cost_per_success(total_cost: float, successes: int) -> float | None`. Evaluadores devuelven `langfuse.Evaluation`, no un tipo Score propio.
 
-- [ ] RED para la excepción ausente y el denominador vacío:
+- [x] RED para la excepción ausente y el denominador vacío:
 
 ```python
 def test_retrieving_rule_without_required_exception_is_not_sufficient():
@@ -344,7 +352,7 @@ def test_retrieving_rule_without_required_exception_is_not_sufficient():
     assert coverage([], frozenset()) is None
 ```
 
-- [ ] Implementar la operación de conjuntos, usando `delivered` calculado a partir del contenido real y su alineación con evidencias revisadas. Un ID de página, por sí solo, no demuestra entrega de la frase o región requerida. Núcleo:
+- [x] Implementar la operación de conjuntos, usando `delivered` calculado a partir del contenido real y su alineación con evidencias revisadas. Un ID de página, por sí solo, no demuestra entrega de la frase o región requerida. Núcleo:
 
 ```python
 if not requirements:
@@ -381,11 +389,15 @@ Configurar idioma y distribución mediante las APIs de la versión instalada. Si
 
 ## Task 13: Tabla y reglas deterministas con requisitos explícitos
 
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. El guard de matriz y el
+primer filtro de aplicabilidad están implementados y probados. La matriz 18×18 y su
+artefacto auditado no existen todavía, por lo que esta tarea no está cerrada.
+
 **Files:** Crear `backend/src/domain/models/claim.py`, `decision.py`, `backend/src/domain/rules/applicability.py`, `cide_matrix.py`, `backend/tests/test_cide_matrix.py`, `backend/tests/test_applicability.py`; artefacto revisado `data/rules/cide-matrix.json` con manifiesto de fuentes.
 
 **Interfaces:** `MatrixCell(a: int, b: int, outcome: str, evidence_ids: tuple[str, ...])`; `MatrixLookup(status: Literal["resolved", "undetermined"], cell: MatrixCell | None)`. `lookup_matrix(cells: Mapping[tuple[int, int], MatrixCell], a: int | None, b: int | None, prerequisites_confirmed: bool) -> MatrixLookup`. Las conclusiones del manual proceden del artefacto revisado T12, no de valores asumidos en el código.
 
-- [ ] RED para requisitos desconocidos, independientemente del contenido de la celda:
+- [x] RED para requisitos desconocidos, independientemente del contenido de la celda:
 
 ```python
 def test_matrix_does_not_decide_without_confirmed_prerequisites():
@@ -396,7 +408,7 @@ def test_matrix_does_not_decide_without_confirmed_prerequisites():
     assert result.cell is None
 ```
 
-- [ ] Implementar el guard antes de cualquier acceso; no inferir checkbox desde una narración:
+- [x] Implementar el guard antes de cualquier acceso; no inferir checkbox desde una narración:
 
 ```python
 if not prerequisites_confirmed or a is None or b is None:
@@ -410,11 +422,15 @@ return MatrixLookup(status="resolved" if cell else "undetermined", cell=cell)
 
 ## Task 14: Recorrido de siniestros con hechos atribuibles
 
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. Modelos, invariantes,
+puertos y el uso de la aplicabilidad están implementados. Falta el adaptador LangGraph,
+el extractor estructurado, recuperación de criterios y pruebas de recorrido completo.
+
 **Files:** Crear `backend/src/application/ports/inbound/analyze_claim.py`, `ports/outbound/claim_workflow.py`, `use_cases/analyze_claim_use_case.py`, `services/claim_analysis.py`, `backend/src/infrastructure/adapters/outbound/claim_workflow/langgraph_workflow.py`, `backend/tests/test_claim_workflow.py`. Ampliar modelos claim/decision y el serializador de ejecución de T10.
 
 **Interfaces:** `ClaimInput(text: str, language: Literal["es", "en"], clarifications: tuple[str, ...])`; `ClaimFact(name: str, value: str | None, asserted_by: str | None, source_text: str)`; `ClaimContradiction(fact_name: str, statements: tuple[ClaimFact, ...])`; `ClaimAnalysis(applicability: Literal["applicable", "not_applicable", "undetermined"], convention: Literal["CIDE", "ASCIDE"] | None, decision: Literal["resolved", "conditional", "undetermined", "not_assessed"], party_ids: tuple[str, ...], facts: tuple[ClaimFact, ...], contradictions: tuple[ClaimContradiction, ...], conditions: tuple[str, ...], missing_information: tuple[str, ...], blocks: tuple[AnswerBlock, ...])`. `AnalyzeClaim.execute(claim: ClaimInput) -> Awaitable[ClaimExecution]`; `ClaimExecution(result: ClaimAnalysis, context: tuple[ContextEvidence, ...], trace_id: str | None)`. Los campos de decisión no se guardan como dict libre.
 
-- [ ] RED con dos relatos incompatibles de A/B: ambas afirmaciones se conservan con atribución, ninguna se convierte en reconocimiento conjunto. Otro test de guard: una propuesta `conditional` sin condiciones es rechazada.
+- [x] RED con dos relatos incompatibles de A/B: ambas afirmaciones se conservan con atribución, ninguna se convierte en reconocimiento conjunto. Otro test de guard: una propuesta `conditional` sin condiciones es rechazada.
 - [ ] Implementar extracción estructurada contra el texto original y nodos `extract_facts`, `retrieve_criteria`, `apply_rules`, `explain`, `validate`. Comprobación mínima sobre hechos y conclusión:
 
 ```python
