@@ -15,3 +15,11 @@ data/
 ops/local.env
 *.tar.gz
 *.whl
+
+# Frontend (pnpm workspace)
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/src/types/api.gen.ts

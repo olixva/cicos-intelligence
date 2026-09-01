@@ -1,0 +1,22 @@
+{
+  "name": "allianz-cicos",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Allianz CICOS Claims Intelligence RAG — monorepo root (pnpm workspace).",
+  "scripts": {
+    "frontend:dev": "pnpm --filter frontend dev",
+    "frontend:build": "pnpm --filter frontend build",
+    "frontend:preview": "pnpm --filter frontend preview",
+    "frontend:lint": "pnpm --filter frontend lint",
+    "frontend:typecheck": "pnpm --filter frontend typecheck",
+    "frontend:test": "pnpm --filter frontend test",
+    "frontend:e2e": "pnpm --filter frontend e2e",
+    "frontend:openapi:gen": "pnpm --filter frontend openapi:gen",
+    "frontend:openapi:check": "pnpm --filter frontend openapi:check"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.18.0",
+    "pnpm": ">=9.0.0"
+  }
+}

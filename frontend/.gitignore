@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Tipos generados por openapi-typescript (regenerar con `pnpm openapi:gen`)
+src/types/api.gen.ts
