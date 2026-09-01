@@ -295,9 +295,10 @@ for family_id, partition in assignments:
 
 ## Task 10: Experimentos nativos Langfuse y conexión con Ragas
 
-**Estado de ejecución (1 de septiembre de 2026):** iniciada. El aislamiento de entrada y
-la serialización están implementados y comprobados; faltan la llamada nativa al dataset,
-FactualCorrectness y la publicación/validación de releases.
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. El aislamiento de entrada,
+la serialización y el evaluador FactualCorrectness nativo están implementados y comprobados
+contra Ragas 0.4.3/Langfuse 4.15.1; faltan la llamada nativa al dataset y la
+publicación/validación de releases.
 
 **Files:** Crear `backend/src/infrastructure/adapters/outbound/evaluation/langfuse_experiments.py`, `ragas_evaluators.py`, `dataset_releases.py`, `backend/tests/test_evaluation_input_boundary.py`, `backend/tests/integration/test_langfuse_experiments.py`. Modificar CLI y configuración.
 
@@ -316,7 +317,9 @@ result = dataset.run_experiment(name=run_name, task=task, evaluators=evaluators)
 ```
 
 `serialize_execution` se define en el mismo adaptador: devuelve `result`, `answer_text` (bloques unidos por dos saltos de línea), `context` y `trace_id`. Conserva salida/contexto realmente entregado; no envía las páginas completas por comodidad. Usar la firma de la versión fijada para concurrencia y evaluadores por run. La integración con un dataset técnico debe demostrar aislamiento de errores y comparación en UI; una lista Python sola no cumple ese control.
-- [ ] Conectar FactualCorrectness mediante la API nativa comprobada:
+- [x] Conectar FactualCorrectness mediante la API nativa comprobada. El adaptador usa las
+APIs públicas instaladas, recibe únicamente `output.answer_text` y
+`expected_output.reference`, y está probado con un doble sin llamadas pagadas:
 
 ```python
 from langfuse import Evaluation
@@ -490,6 +493,11 @@ La implementación del grafo conserva esa exclusividad y usa los casos existente
 - [ ] Ejecutar la comparación emparejada automático/ explícito con Langfuse, incluyendo coste y calidad final. GREEN + controles; commit `feat: route automatic queries to the existing workflows`.
 
 ## Task 17: API de los tres modos, estados y streaming
+
+**Estado de ejecución (1 de septiembre de 2026):** iniciada. La ruta explícita de pregunta
+documental (`POST /api/v1/questions/answer`) traduce únicamente el puerto inbound, conserva
+contexto/citas/trace ID y diferencia un fallo técnico (500) de `insufficient_evidence` (200).
+Faltan el endpoint de caso, automático, el DTO común y streaming.
 
 **Files:** Crear `backend/src/infrastructure/adapters/inbound/api/routes/queries.py`, `schemas/query.py`, `streaming.py`, `errors.py`, `backend/tests/test_query_api.py`, `backend/tests/test_streaming_api.py`, `docs/api/openapi.json`. Modificar app y bootstrap.
 

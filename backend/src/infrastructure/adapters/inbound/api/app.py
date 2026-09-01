@@ -7,12 +7,14 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.outbound.evidence_repository import EvidenceRepository
 from infrastructure.adapters.inbound.api.routes.manual import (
     RegisteredSource,
     build_manual_router,
     load_registered_sources,
 )
+from infrastructure.adapters.inbound.api.routes.questions import build_question_router
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
     FilesystemEvidenceRepository,
 )
@@ -27,6 +29,7 @@ def create_app(
     evidence_repository: EvidenceRepository | None = None,
     active_version: str | None = None,
     required_index_ready: Callable[[], bool] | None = None,
+    answer_question: AnswerQuestion | None = None,
 ) -> FastAPI:
     """Create the API with explicit dependencies or safe local defaults."""
 
@@ -66,6 +69,8 @@ def create_app(
             active_version=active_version,
         )
     )
+    if answer_question is not None:
+        app.include_router(build_question_router(answer_question))
     return app
 
 
