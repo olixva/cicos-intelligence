@@ -13,3 +13,5 @@ dist/
 .slim/deepwork/
 data/
 ops/local.env
+*.tar.gz
+*.whl
