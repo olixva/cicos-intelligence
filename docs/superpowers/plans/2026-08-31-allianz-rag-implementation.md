@@ -425,16 +425,16 @@ return MatrixLookup(status="resolved" if cell else "undetermined", cell=cell)
 **Estado de ejecución (1 de septiembre de 2026):** iniciada. Modelos, invariantes,
 puertos y el uso de la aplicabilidad están implementados. El adaptador LangGraph ya
 recorre extracción detrás de puerto, recuperación de criterios, aplicación determinista,
-explicación y validación; las pruebas verifican atribuciones incompatibles y el guard de
-no aplicabilidad. Falta conectar un extractor estructurado de producción, ejecutar los
-cinco casos de desarrollo auditados y cerrar las reglas/matriz de T13.
+explicación y validación; el extractor OpenAI estructurado está aislado del contexto del
+manual y probado. Falta conectarlo al bootstrap/API, ejecutar los cinco casos de desarrollo
+auditados y cerrar las reglas/matriz de T13.
 
 **Files:** Crear `backend/src/application/ports/inbound/analyze_claim.py`, `ports/outbound/claim_workflow.py`, `use_cases/analyze_claim_use_case.py`, `services/claim_analysis.py`, `backend/src/infrastructure/adapters/outbound/claim_workflow/langgraph_workflow.py`, `backend/tests/test_claim_workflow.py`. Ampliar modelos claim/decision y el serializador de ejecución de T10.
 
 **Interfaces:** `ClaimInput(text: str, language: Literal["es", "en"], clarifications: tuple[str, ...])`; `ClaimFact(name: str, value: str | None, asserted_by: str | None, source_text: str)`; `ClaimContradiction(fact_name: str, statements: tuple[ClaimFact, ...])`; `ClaimAnalysis(applicability: Literal["applicable", "not_applicable", "undetermined"], convention: Literal["CIDE", "ASCIDE"] | None, decision: Literal["resolved", "conditional", "undetermined", "not_assessed"], party_ids: tuple[str, ...], facts: tuple[ClaimFact, ...], contradictions: tuple[ClaimContradiction, ...], conditions: tuple[str, ...], missing_information: tuple[str, ...], blocks: tuple[AnswerBlock, ...])`. `AnalyzeClaim.execute(claim: ClaimInput) -> Awaitable[ClaimExecution]`; `ClaimExecution(result: ClaimAnalysis, context: tuple[ContextEvidence, ...], trace_id: str | None)`. Los campos de decisión no se guardan como dict libre.
 
 - [x] RED con dos relatos incompatibles de A/B: ambas afirmaciones se conservan con atribución, ninguna se convierte en reconocimiento conjunto. Otro test de guard: una propuesta `conditional` sin condiciones es rechazada.
-- [x] Implementar el grafo y el puerto de extracción estructurada; los nodos `extract_facts`, `retrieve_criteria`, `apply_rules`, `explain`, `validate` conservan hechos atribuidos, recuperan evidencia y no permiten que una salida generativa sustituya el resultado determinista. Falta el adaptador de producción del extractor. Comprobación mínima sobre hechos y conclusión:
+- [x] Implementar extracción estructurada contra el texto original y nodos `extract_facts`, `retrieve_criteria`, `apply_rules`, `explain`, `validate`. El adaptador OpenAI recibe solo relato/aclaraciones y devuelve hechos atribuidos; los nodos conservan esos hechos, recuperan evidencia y no permiten que una salida generativa sustituya el resultado determinista. Comprobación mínima sobre hechos y conclusión:
 
 ```python
 if analysis.decision == "conditional" and not analysis.conditions:
