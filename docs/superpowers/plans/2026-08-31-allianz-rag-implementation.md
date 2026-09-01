@@ -512,30 +512,43 @@ La implementación del grafo conserva esa exclusividad y usa los casos existente
 
 ## Task 17: API de los tres modos, estados y streaming
 
-**Estado de ejecución (1 de septiembre de 2026):** iniciada. Las rutas explícitas de pregunta y de
-siniestros están montadas por `bootstrap.build_api()` cuando el puerto
-correspondiente se compone con éxito; el router de claims omite cualquier
-`image_path` local en su respuesta. La ruta explícita de pregunta
-(`POST /api/v1/questions/answer`) traduce únicamente el puerto inbound, conserva
-contexto/citas/trace ID y diferencia un fallo técnico (500) de `insufficient_evidence` (200).
-La rama automática (`POST /api/v1/queries/resolve`, T16) está implementada con su
-router y DTO propios pero sigue sin compartir el envelope común con las rutas
-explícitas; el streaming y el OpenAPI export siguen pendientes.
+**Estado de ejecución (1 de septiembre de 2026):** envelope común + SSE + OpenAPI export cerrados. Las tres rutas explícitas (`/api/v1/questions/answer`,
+`/api/v1/claims/analyze`, `/api/v1/queries/resolve`) siguen disponibles y se mantienen
+inalteradas. La nueva ruta envelope `POST /api/v1/queries` dispatcha por el campo
+`mode` del body: `question` y `claim` invocan directamente el puerto explícito
+correspondiente (sin pasar por el router — regla del Oracle Gate 1); `auto` invoca el
+router cerrado. La ruta streaming `POST /api/v1/queries/stream` emite los eventos
+`started` / `stage` / `completed` / `failed` mediante `sse-starlette` (graceful fallback
+cuando la dep falta). El export OpenAPI está disponible vía `scripts/export_openapi.py`
+y verificado por `scripts/check_openapi.py`. Los códigos de error cerrados viven en
+`schemas/errors.py` y nunca filtran trazas internas. Faltan pruebas end-to-end con
+proveedor real y la documentación de operación del `/health/ready` (Oracle R6) en
+`docs/operations/`.
 
-**Files:** Crear `backend/src/infrastructure/adapters/inbound/api/routes/queries.py`, `schemas/query.py`, `streaming.py`, `errors.py`, `backend/tests/test_query_api.py`, `backend/tests/test_streaming_api.py`, `docs/api/openapi.json`. Modificar app y bootstrap.
+**Files:** `backend/src/infrastructure/adapters/inbound/api/schemas/{envelope,errors}.py`,
+`backend/src/infrastructure/adapters/inbound/api/routes/queries.py` (extendido con
+`build_envelope_router` y `build_envelope_stream_router`; preserva `build_query_router`
+del T16), `backend/tests/test_envelope_api.py` (14 tests focales),
+`backend/tests/test_streaming_api.py` (7 tests focales), `scripts/export_openapi.py`,
+`scripts/check_openapi.py`, `docs/api/openapi.json`. `app.py` y `bootstrap.py`
+modificados para `allowed_profiles` y montaje condicional del envelope.
 
-**Interfaces:** Request común `text`, `language`, `stream`, `profile` opcional permitido; siniestros añade `clarifications`. Response `request_id`, `requested_mode`, `resolved_mode`, `result`, `evidence`, `metadata`. `result.kind` discrimina `question`, `claim`, `clarification`; los estados internos conservan los enums de T8/T14/T16. Error `code`, `message`, `request_id`, `retryable`, sin trazas internas. OpenAPI define JSON y eventos `started`, `stage`, `completed`, `failed`.
+**Interfaces:** Request común `text`, `language`, `mode` (`question|claim|auto`), `profile`
+opcional, `clarifications` solo en `mode=claim`, `stream` (ignorado en sync).
+Response: `request_id` (UUID4 server-generated), `requested_mode`, `resolved_mode`
+(`question|claim|clarification`), `result` discriminated por `kind`, `evidence[]`,
+`metadata{trace_id}`. Error: `code` cerrado, `message`, `request_id`, `retryable`.
 
-- [ ] RED: una consulta con resultado `insufficient_evidence` devuelve 200; un timeout de proveedor devuelve error técnico. Explícito no llama al router. Un perfil no permitido devuelve 422. El resultado claim condicionado conserva conditions.
-- [ ] Implementar conversión en infraestructura a esquemas Pydantic discriminados; API solo llama a los puertos de entrada. Para SSE usar soporte FastAPI `EventSourceResponse`/`ServerSentEvent` de la versión fijada, no un protocolo propio. La rama final emite:
+- [x] RED: una consulta con resultado `insufficient_evidence` devuelve 200; un timeout de proveedor devuelve error técnico. Explícito no llama al router. Un perfil no permitido devuelve 422. El resultado claim condicionado conserva conditions.
+- [x] Implementar conversión en infraestructura a esquemas Pydantic discriminados; API solo llama a los puertos de entrada. Para SSE usar soporte FastAPI `EventSourceResponse`/`ServerSentEvent` de la versión fijada, no un protocolo propio. La rama final emite:
 
 ```python
-yield ServerSentEvent(event="completed", data=response.model_dump(mode="json"))
+yield {"event": "completed", "data": response.model_dump_json()}
 ```
 
 `response` es el mismo DTO que se devuelve sin streaming. Registrar progreso real; no enviar conclusiones provisionales que luego se retiren.
-- [ ] Test de generador que falla tras iniciar streaming: emite `failed`; cierre sin terminal es interrupción para el cliente. Comprobar que cancelar no inicia un retry automático ni afirma detener una llamada ya facturada.
-- [ ] Exportar OpenAPI y comprobar referencias/payloads de ejemplo sin referencias esperadas del golden. GREEN y commit `feat: expose typed query APIs with bounded progress streaming`.
+- [x] Test de generador que falla tras iniciar streaming: emite `failed`; cierre sin terminal es interrupción para el cliente. Comprobar que cancelar no inicia un retry automático ni afirma detener una llamada ya facturada.
+- [x] Exportar OpenAPI y comprobar referencias/payloads de ejemplo sin referencias esperadas del golden. GREEN y commit `feat: expose typed query APIs with bounded progress streaming`.
 
 ## Task 18: Frontend independiente y modos de consulta
 

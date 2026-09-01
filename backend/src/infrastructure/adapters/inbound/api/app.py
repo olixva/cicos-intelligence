@@ -17,7 +17,11 @@ from infrastructure.adapters.inbound.api.routes.manual import (
     build_manual_router,
     load_registered_sources,
 )
-from infrastructure.adapters.inbound.api.routes.queries import build_query_router
+from infrastructure.adapters.inbound.api.routes.queries import (
+    build_envelope_router,
+    build_envelope_stream_router,
+    build_query_router,
+)
 from infrastructure.adapters.inbound.api.routes.questions import build_question_router
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
     FilesystemEvidenceRepository,
@@ -36,8 +40,16 @@ def create_app(
     answer_question: AnswerQuestion | None = None,
     analyze_claim: AnalyzeClaim | None = None,
     resolve_query: ResolveQuery | None = None,
+    allowed_profiles: tuple[str, ...] = (),
 ) -> FastAPI:
-    """Create the API with explicit dependencies or safe local defaults."""
+    """Create the API with explicit dependencies or safe local defaults.
+
+    The unified envelope route is mounted only when **all three** ports
+    (answer_question, analyze_claim, resolve_query) are injected. The
+    streaming variant is mounted when the envelope is mounted AND
+    ``sse-starlette`` is importable; the route factory returns ``None``
+    otherwise so the synchronous path is never blocked by a missing dep.
+    """
 
     if (source_catalog is None) != (evidence_repository is None):
         raise ValueError("Source catalog and evidence repository must be supplied together")
@@ -81,6 +93,23 @@ def create_app(
         app.include_router(build_claim_router(analyze_claim))
     if resolve_query is not None:
         app.include_router(build_query_router(resolve_query))
+    if answer_question is not None and analyze_claim is not None and resolve_query is not None:
+        app.include_router(
+            build_envelope_router(
+                answer_question=answer_question,
+                analyze_claim=analyze_claim,
+                resolve_query=resolve_query,
+                allowed_profiles=allowed_profiles,
+            )
+        )
+        stream_router = build_envelope_stream_router(
+            answer_question=answer_question,
+            analyze_claim=analyze_claim,
+            resolve_query=resolve_query,
+            allowed_profiles=allowed_profiles,
+        )
+        if stream_router is not None:
+            app.include_router(stream_router)
     return app
 
 

@@ -1,0 +1,1412 @@
+{
+  "components": {
+    "schemas": {
+      "AnswerBlockResponse": {
+        "additionalProperties": false,
+        "description": "One answer passage and the evidence identifiers it cites.",
+        "properties": {
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "evidence_ids"
+        ],
+        "title": "AnswerBlockResponse",
+        "type": "object"
+      },
+      "ClaimAnalysisRequest": {
+        "additionalProperties": false,
+        "description": "One explicit user narrative for the convention-claim use case.",
+        "properties": {
+          "clarifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clarifications"
+          },
+          "language": {
+            "default": "es",
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "ClaimAnalysisRequest",
+        "type": "object"
+      },
+      "ClaimAnalysisResponse": {
+        "additionalProperties": false,
+        "description": "A bounded convention assessment distinct from a general liability opinion.",
+        "properties": {
+          "applicability": {
+            "enum": [
+              "applicable",
+              "not_applicable",
+              "undetermined"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "attributed_facts": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimFactResponse"
+            },
+            "title": "Attributed Facts",
+            "type": "array"
+          },
+          "conditions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "contradictions": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimContradictionResponse"
+            },
+            "title": "Contradictions",
+            "type": "array"
+          },
+          "convention": {
+            "anyOf": [
+              {
+                "enum": [
+                  "CIDE",
+                  "ASCIDE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Convention"
+          },
+          "decision": {
+            "enum": [
+              "resolved",
+              "conditional",
+              "undetermined",
+              "not_assessed"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "delivered_context": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveredContextResponse"
+            },
+            "title": "Delivered Context",
+            "type": "array"
+          },
+          "evidence_blocks": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimEvidenceBlockResponse"
+            },
+            "title": "Evidence Blocks",
+            "type": "array"
+          },
+          "missing_information": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Information",
+            "type": "array"
+          },
+          "parties": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parties",
+            "type": "array"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "applicability",
+          "convention",
+          "decision",
+          "parties",
+          "attributed_facts",
+          "contradictions",
+          "conditions",
+          "missing_information",
+          "evidence_blocks",
+          "delivered_context",
+          "trace_id"
+        ],
+        "title": "ClaimAnalysisResponse",
+        "type": "object"
+      },
+      "ClaimContradictionResponse": {
+        "additionalProperties": false,
+        "description": "Incompatible attributed statements that never collapse into a shared fact.",
+        "properties": {
+          "fact_name": {
+            "title": "Fact Name",
+            "type": "string"
+          },
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimFactResponse"
+            },
+            "title": "Statements",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fact_name",
+          "statements"
+        ],
+        "title": "ClaimContradictionResponse",
+        "type": "object"
+      },
+      "ClaimEvidenceBlockResponse": {
+        "additionalProperties": false,
+        "description": "One claim explanation passage and its immutable supporting evidence IDs.",
+        "properties": {
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "evidence_ids"
+        ],
+        "title": "ClaimEvidenceBlockResponse",
+        "type": "object"
+      },
+      "ClaimFactResponse": {
+        "additionalProperties": false,
+        "description": "One attributed statement extracted from the user narrative.",
+        "properties": {
+          "asserted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asserted By"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source_text": {
+            "title": "Source Text",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "asserted_by",
+          "source_text"
+        ],
+        "title": "ClaimFactResponse",
+        "type": "object"
+      },
+      "ClaimResult": {
+        "additionalProperties": false,
+        "description": "The synchronous claim branch (subset, no asset paths).",
+        "properties": {
+          "applicability": {
+            "enum": [
+              "applicable",
+              "not_applicable",
+              "undetermined"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "convention": {
+            "anyOf": [
+              {
+                "enum": [
+                  "CIDE",
+                  "ASCIDE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Convention"
+          },
+          "decision": {
+            "enum": [
+              "resolved",
+              "conditional",
+              "undetermined",
+              "not_assessed"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "kind": {
+            "const": "claim",
+            "title": "Kind",
+            "type": "string"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "kind",
+          "applicability",
+          "convention",
+          "decision"
+        ],
+        "title": "ClaimResult",
+        "type": "object"
+      },
+      "ClarificationResultBody": {
+        "additionalProperties": false,
+        "description": "The auto-router branch when the classifier asks for more input.",
+        "properties": {
+          "kind": {
+            "const": "clarification",
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "missing_fields": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "ClarificationResultBody",
+        "type": "object"
+      },
+      "ContextEvidenceResponse": {
+        "additionalProperties": false,
+        "description": "One piece of evidence available to the generation workflow.",
+        "properties": {
+          "delivery": {
+            "enum": [
+              "text",
+              "image",
+              "rule"
+            ],
+            "title": "Delivery",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ContextSourceResponse"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_ids",
+          "text",
+          "delivery",
+          "sources"
+        ],
+        "title": "ContextEvidenceResponse",
+        "type": "object"
+      },
+      "ContextSourceResponse": {
+        "additionalProperties": false,
+        "description": "Public source identity retained from the evidence given to the question flow.",
+        "properties": {
+          "document_hash": {
+            "title": "Document Hash",
+            "type": "string"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "pdf_page": {
+            "title": "Pdf Page",
+            "type": "integer"
+          },
+          "printed_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printed Label"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "document_hash",
+          "pdf_page",
+          "printed_label"
+        ],
+        "title": "ContextSourceResponse",
+        "type": "object"
+      },
+      "DeliveredContextResponse": {
+        "additionalProperties": false,
+        "description": "One piece of evidence available to the claim workflow.\n\n``context_id``, ``document_id``, ``version``, ``page`` and ``region`` are\nthe audit-relevant public fields. Local asset paths (for example\n``image_path``) are deliberately omitted; the claim flow must never\nexpose filesystem locations.",
+        "properties": {
+          "context_id": {
+            "title": "Context Id",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/infrastructure__adapters__inbound__api__schemas__claim__RegionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "context_id",
+          "document_id",
+          "version",
+          "page",
+          "region"
+        ],
+        "title": "DeliveredContextResponse",
+        "type": "object"
+      },
+      "EnvelopeRequest": {
+        "additionalProperties": false,
+        "description": "One unified request across the three modes.\n\n``mode`` selects the explicit flow; ``profile`` optionally\noverrides the composition-root default. The route validates that\n``clarifications`` is only supplied for ``claim`` mode.",
+        "properties": {
+          "clarifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clarifications"
+          },
+          "language": {
+            "default": "es",
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "question",
+              "claim",
+              "auto"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "stream": {
+            "default": false,
+            "title": "Stream",
+            "type": "boolean"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "mode"
+        ],
+        "title": "EnvelopeRequest",
+        "type": "object"
+      },
+      "EnvelopeResponse": {
+        "additionalProperties": false,
+        "description": "The unified response shape across the three modes.",
+        "properties": {
+          "evidence": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Metadata",
+            "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "requested_mode": {
+            "enum": [
+              "question",
+              "claim",
+              "auto"
+            ],
+            "title": "Requested Mode",
+            "type": "string"
+          },
+          "resolved_mode": {
+            "enum": [
+              "question",
+              "claim",
+              "clarification"
+            ],
+            "title": "Resolved Mode",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestionResult"
+              },
+              {
+                "$ref": "#/components/schemas/ClaimResult"
+              },
+              {
+                "$ref": "#/components/schemas/ClarificationResultBody"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "required": [
+          "request_id",
+          "requested_mode",
+          "resolved_mode",
+          "result"
+        ],
+        "title": "EnvelopeResponse",
+        "type": "object"
+      },
+      "EvidenceItem": {
+        "additionalProperties": false,
+        "description": "One piece of evidence exposed in the envelope (no asset paths).\n\nField names mirror the canonical evidence schema\n(``schemas/evidence.py:31-40``): ``document_hash`` and ``pdf_page``.\nNo ``version`` field because ``PageEvidence`` does not carry one;\nthe document hash already pins the version.",
+        "properties": {
+          "delivery": {
+            "default": "text",
+            "enum": [
+              "text",
+              "image",
+              "rule"
+            ],
+            "title": "Delivery",
+            "type": "string"
+          },
+          "document_hash": {
+            "title": "Document Hash",
+            "type": "string"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "pdf_page": {
+            "title": "Pdf Page",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "document_hash",
+          "pdf_page"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
+      "EvidenceResponse": {
+        "additionalProperties": false,
+        "description": "Navigable source evidence without internal filesystem paths.",
+        "properties": {
+          "document_hash": {
+            "title": "Document Hash",
+            "type": "string"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "pdf_page": {
+            "title": "Pdf Page",
+            "type": "integer"
+          },
+          "pdf_url": {
+            "title": "Pdf Url",
+            "type": "string"
+          },
+          "printed_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printed Label"
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/infrastructure__adapters__inbound__api__schemas__evidence__RegionResponse"
+            },
+            "title": "Regions",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "document_hash",
+          "pdf_page",
+          "printed_label",
+          "text",
+          "regions",
+          "pdf_url"
+        ],
+        "title": "EvidenceResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ManualResponse": {
+        "additionalProperties": false,
+        "description": "Metadata for the explicitly active registered manual.",
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "page_count": {
+            "title": "Page Count",
+            "type": "integer"
+          },
+          "pdf_url": {
+            "title": "Pdf Url",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "version",
+          "filename",
+          "page_count",
+          "pdf_url"
+        ],
+        "title": "ManualResponse",
+        "type": "object"
+      },
+      "QueryResolveRequest": {
+        "additionalProperties": false,
+        "description": "One user query for the auto router.",
+        "properties": {
+          "language": {
+            "default": "es",
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "QueryResolveRequest",
+        "type": "object"
+      },
+      "QueryResolveResponse": {
+        "additionalProperties": false,
+        "description": "The selected branch plus the rationale and trace identifier.",
+        "properties": {
+          "decision": {
+            "enum": [
+              "question",
+              "claim",
+              "clarification_required"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "decision",
+          "rationale",
+          "trace_id"
+        ],
+        "title": "QueryResolveResponse",
+        "type": "object"
+      },
+      "QuestionRequest": {
+        "additionalProperties": false,
+        "description": "One explicit question for the document-question use case.",
+        "properties": {
+          "language": {
+            "default": "es",
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "QuestionRequest",
+        "type": "object"
+      },
+      "QuestionResponse": {
+        "additionalProperties": false,
+        "description": "A document answer and the complete context that grounded it.",
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerBlockResponse"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "context": {
+            "items": {
+              "$ref": "#/components/schemas/ContextEvidenceResponse"
+            },
+            "title": "Context",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "answered",
+              "partial",
+              "insufficient_evidence",
+              "out_of_scope"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "status",
+          "blocks",
+          "context",
+          "trace_id"
+        ],
+        "title": "QuestionResponse",
+        "type": "object"
+      },
+      "QuestionResult": {
+        "additionalProperties": false,
+        "description": "The synchronous question branch.",
+        "properties": {
+          "blocks": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "kind": {
+            "const": "question",
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "answered",
+              "partial",
+              "insufficient_evidence",
+              "out_of_scope"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "kind",
+          "status"
+        ],
+        "title": "QuestionResult",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "infrastructure__adapters__inbound__api__schemas__claim__RegionResponse": {
+        "additionalProperties": false,
+        "description": "One normalized region expressed in PDF viewport coordinates.",
+        "properties": {
+          "x0": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X0",
+            "type": "number"
+          },
+          "x1": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X1",
+            "type": "number"
+          },
+          "y0": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y0",
+            "type": "number"
+          },
+          "y1": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y1",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "RegionResponse",
+        "type": "object"
+      },
+      "infrastructure__adapters__inbound__api__schemas__evidence__RegionResponse": {
+        "additionalProperties": false,
+        "description": "One verified region normalized against the visible PDF page.",
+        "properties": {
+          "x0": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X0",
+            "type": "number"
+          },
+          "x1": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X1",
+            "type": "number"
+          },
+          "y0": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y0",
+            "type": "number"
+          },
+          "y1": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y1",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "RegionResponse",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Allianz CICOS Claims Intelligence",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/claims/analyze": {
+      "post": {
+        "operationId": "analyze_claim_route_api_v1_claims_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimAnalysisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analyze Claim Route",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/manual": {
+      "get": {
+        "operationId": "get_manual_api_v1_manual_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Manual",
+        "tags": [
+          "manual"
+        ]
+      }
+    },
+    "/api/v1/manual/evidence/{evidence_id}": {
+      "get": {
+        "operationId": "get_evidence_api_v1_manual_evidence__evidence_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "evidence_id",
+            "required": true,
+            "schema": {
+              "title": "Evidence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Evidence",
+        "tags": [
+          "manual"
+        ]
+      }
+    },
+    "/api/v1/manual/pdf": {
+      "get": {
+        "operationId": "get_pdf_api_v1_manual_pdf_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Pdf",
+        "tags": [
+          "manual"
+        ]
+      }
+    },
+    "/api/v1/queries": {
+      "post": {
+        "operationId": "envelope_api_v1_queries_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvelopeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Envelope",
+        "tags": [
+          "queries"
+        ]
+      }
+    },
+    "/api/v1/queries/resolve": {
+      "post": {
+        "operationId": "resolve_query_route_api_v1_queries_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryResolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResolveResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Query Route",
+        "tags": [
+          "queries"
+        ]
+      }
+    },
+    "/api/v1/queries/stream": {
+      "post": {
+        "operationId": "envelope_stream_api_v1_queries_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvelopeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Envelope Stream",
+        "tags": [
+          "queries"
+        ]
+      }
+    },
+    "/api/v1/questions/answer": {
+      "post": {
+        "operationId": "answer_question_route_api_v1_questions_answer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Question Route",
+        "tags": [
+          "questions"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "live_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Live Health Live Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Live",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}

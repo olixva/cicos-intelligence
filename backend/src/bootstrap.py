@@ -291,6 +291,26 @@ def build_api(
         answer_question=answer_question,
         analyze_claim=analyze_claim,
         resolve_query=resolve_query,
+        allowed_profiles=_known_profiles(),
+    )
+
+
+def _known_profiles() -> tuple[str, ...]:
+    """Catalog of profile names the envelope accepts.
+
+    Phase 4 v1: the envelope validates the ``profile`` body field for
+    shape only; per-request profile override is not yet honored at
+    runtime. Mismatches return 422 with ``code=unsupported_profile``.
+    Profiles are read from the YAML catalog directory when present.
+    """
+
+    catalog = profile_catalog_dir()
+    if not catalog.exists():
+        return ()
+    return tuple(
+        path.stem
+        for path in sorted(catalog.glob("*.yaml"))
+        if path.is_file() and path.stem not in {"__pycache__"}
     )
 
 
