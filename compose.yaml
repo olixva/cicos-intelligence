@@ -1,0 +1,361 @@
+name: allianz-rag
+networks:
+  default:
+    name: allianz-rag_default
+services:
+  clickhouse:
+    environment:
+      - CLICKHOUSE_DB=default
+      - CLICKHOUSE_PASSWORD=${ALLIANZ_CLICKHOUSE_PASSWORD}
+      - CLICKHOUSE_USER=clickhouse
+    healthcheck:
+      interval: 5s
+      retries: 10
+      start_period: 1s
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit
+        1
+      timeout: 5s
+    image: clickhouse/clickhouse-server@sha256:8a790dd3468db22b1d4e7b18a176f378ff5ff6053b9c48dd4ea1fa71a24c5ba6
+    networks:
+      default: null
+    ports: []
+    restart: always
+    user: 101:101
+    volumes:
+      - source: langfuse_clickhouse_data
+        target: /var/lib/clickhouse
+        type: volume
+        volume: {}
+      - source: langfuse_clickhouse_logs
+        target: /var/log/clickhouse-server
+        type: volume
+        volume: {}
+  langfuse-web:
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+        required: true
+      minio:
+        condition: service_healthy
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      - AWS_ACCESS_KEY_ID=
+      - AWS_PROFILE=
+      - AWS_SECRET_ACCESS_KEY=
+      - AWS_SESSION_TOKEN=
+      - CLICKHOUSE_CLUSTER_ENABLED=${CLICKHOUSE_CLUSTER_ENABLED:-false}
+      - CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
+      - CLICKHOUSE_PASSWORD=${ALLIANZ_CLICKHOUSE_PASSWORD}
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USER=clickhouse
+      - DATABASE_URL=postgresql://postgres:${ALLIANZ_POSTGRES_PASSWORD}@postgres:5432/postgres
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-}
+      - ENCRYPTION_KEY=${ALLIANZ_ENCRYPTION_KEY}
+      - LANGFUSE_AI_API_KEY=
+      - LANGFUSE_AI_AWS_BEDROCK_REGION=
+      - LANGFUSE_AI_BASE_URL=
+      - LANGFUSE_AI_EXTRA_HEADERS=
+      - LANGFUSE_AI_MODEL=
+      - LANGFUSE_AI_PROVIDER=
+      - LANGFUSE_AI_SMALL_MODEL=
+      - LANGFUSE_AI_USE_RESPONSES_API=
+      - LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK=${LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK:-false}
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+      - LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS=${LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS:-}
+      - LANGFUSE_INGESTION_QUEUE_DELAY_MS=${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
+      - LANGFUSE_INIT_ORG_ID=allianz-local
+      - LANGFUSE_INIT_ORG_NAME=Allianz Interview Local
+      - LANGFUSE_INIT_PROJECT_ID=allianz-rag
+      - LANGFUSE_INIT_PROJECT_NAME=Allianz RAG
+      - LANGFUSE_INIT_PROJECT_PUBLIC_KEY=${ALLIANZ_LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_INIT_PROJECT_SECRET_KEY=${ALLIANZ_LANGFUSE_SECRET_KEY}
+      - LANGFUSE_INIT_USER_EMAIL=local@allianz.test
+      - LANGFUSE_INIT_USER_NAME=Local Developer
+      - LANGFUSE_INIT_USER_PASSWORD=${ALLIANZ_ADMIN_PASSWORD}
+      - LANGFUSE_IN_APP_AGENT_AWS_PROFILE=
+      - LANGFUSE_IN_APP_AGENT_ENABLED=false
+      - LANGFUSE_IN_APP_AGENT_MAX_ACTIVE_RUNS_PER_ORG=${LANGFUSE_IN_APP_AGENT_MAX_ACTIVE_RUNS_PER_ORG:-}
+      - LANGFUSE_IN_APP_AGENT_MAX_ACTIVE_RUNS_PER_USER=${LANGFUSE_IN_APP_AGENT_MAX_ACTIVE_RUNS_PER_USER:-}
+      - LANGFUSE_IN_APP_AGENT_RUN_QUEUE_PROCESSING_CONCURRENCY=${LANGFUSE_IN_APP_AGENT_RUN_QUEUE_PROCESSING_CONCURRENCY:-}
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_EGRESS_NETWORK_CONNECTOR_ARN=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_EXECUTION_ROLE_ARN=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_IMAGE_IDENTIFIER=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_REGION=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_PROVIDER=
+      - LANGFUSE_JSON_BAD_UNICODE_ESCAPE=${LANGFUSE_JSON_BAD_UNICODE_ESCAPE:-}
+      - LANGFUSE_LLM_CONNECTION_WHITELISTED_HOST=
+      - LANGFUSE_LLM_CONNECTION_WHITELISTED_IPS=
+      - LANGFUSE_LLM_CONNECTION_WHITELISTED_IP_SEGMENTS=
+      - LANGFUSE_MARKDOWN_RENDER_CHARACTER_LIMIT=${LANGFUSE_MARKDOWN_RENDER_CHARACTER_LIMIT:-}
+      - LANGFUSE_MCP_ALLOWED_HOSTS=${LANGFUSE_MCP_ALLOWED_HOSTS:-}
+      - LANGFUSE_MCP_BASE_URL=${LANGFUSE_MCP_BASE_URL:-}
+      - LANGFUSE_OBSERVATION_FIELD_OVERFLOW_ENABLED=${LANGFUSE_OBSERVATION_FIELD_OVERFLOW_ENABLED:-false}
+      - LANGFUSE_OBSERVATION_FIELD_SIZE_LIMIT_BYTES=${LANGFUSE_OBSERVATION_FIELD_SIZE_LIMIT_BYTES:-2097152}
+      - LANGFUSE_OCI_AUTH_TYPE=
+      - LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID=allianz-local
+      - LANGFUSE_S3_BATCH_EXPORT_BUCKET=${LANGFUSE_S3_BATCH_EXPORT_BUCKET:-langfuse}
+      - LANGFUSE_S3_BATCH_EXPORT_ENABLED=${LANGFUSE_S3_BATCH_EXPORT_ENABLED:-false}
+      - LANGFUSE_S3_BATCH_EXPORT_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT=http://localhost:9090
+      - LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE=${LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE:-true}
+      - LANGFUSE_S3_BATCH_EXPORT_PREFIX=${LANGFUSE_S3_BATCH_EXPORT_PREFIX:-exports/}
+      - LANGFUSE_S3_BATCH_EXPORT_REGION=${LANGFUSE_S3_BATCH_EXPORT_REGION:-auto}
+      - LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY=${ALLIANZ_MINIO_PASSWORD}
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=allianz-local
+      - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=langfuse
+      - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=${LANGFUSE_S3_EVENT_UPLOAD_PREFIX:-events/}
+      - LANGFUSE_S3_EVENT_UPLOAD_REGION=${LANGFUSE_S3_EVENT_UPLOAD_REGION:-auto}
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${ALLIANZ_MINIO_PASSWORD}
+      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=allianz-local
+      - LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=langfuse
+      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=http://localhost:9090
+      - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=${LANGFUSE_S3_MEDIA_UPLOAD_PREFIX:-media/}
+      - LANGFUSE_S3_MEDIA_UPLOAD_REGION=${LANGFUSE_S3_MEDIA_UPLOAD_REGION:-auto}
+      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${ALLIANZ_MINIO_PASSWORD}
+      - LANGFUSE_USE_AZURE_BLOB=false
+      - LANGFUSE_USE_OCI_NATIVE_OBJECT_STORAGE=false
+      - NEXTAUTH_SECRET=${ALLIANZ_NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=http://localhost:3000
+      - REDIS_AUTH=${ALLIANZ_REDIS_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_TLS_CA=${REDIS_TLS_CA:-/certs/ca.crt}
+      - REDIS_TLS_CERT=${REDIS_TLS_CERT:-/certs/redis.crt}
+      - REDIS_TLS_ENABLED=false
+      - REDIS_TLS_KEY=${REDIS_TLS_KEY:-/certs/redis.key}
+      - SALT=${ALLIANZ_SALT}
+      - SMTP_CONNECTION_URL=${SMTP_CONNECTION_URL:-}
+      - TELEMETRY_ENABLED=false
+    image: docker.langfuse.com/langfuse/langfuse@sha256:7dcc1419da9062c968a428bc63a4ff0e03d4cc84113125f999754a9037912425
+    networks:
+      default: null
+    ports:
+      - host_ip: 127.0.0.1
+        mode: ingress
+        protocol: tcp
+        published: "3000"
+        target: 3000
+    restart: always
+  langfuse-worker:
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+        required: true
+      minio:
+        condition: service_healthy
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      - AWS_ACCESS_KEY_ID=
+      - AWS_PROFILE=
+      - AWS_SECRET_ACCESS_KEY=
+      - AWS_SESSION_TOKEN=
+      - CLICKHOUSE_CLUSTER_ENABLED=${CLICKHOUSE_CLUSTER_ENABLED:-false}
+      - CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
+      - CLICKHOUSE_PASSWORD=${ALLIANZ_CLICKHOUSE_PASSWORD}
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USER=clickhouse
+      - DATABASE_URL=postgresql://postgres:${ALLIANZ_POSTGRES_PASSWORD}@postgres:5432/postgres
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-}
+      - ENCRYPTION_KEY=${ALLIANZ_ENCRYPTION_KEY}
+      - LANGFUSE_AI_API_KEY=
+      - LANGFUSE_AI_AWS_BEDROCK_REGION=
+      - LANGFUSE_AI_BASE_URL=
+      - LANGFUSE_AI_EXTRA_HEADERS=
+      - LANGFUSE_AI_MODEL=
+      - LANGFUSE_AI_PROVIDER=
+      - LANGFUSE_AI_SMALL_MODEL=
+      - LANGFUSE_AI_USE_RESPONSES_API=
+      - LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK=${LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK:-false}
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+      - LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS=${LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS:-}
+      - LANGFUSE_INGESTION_QUEUE_DELAY_MS=${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
+      - LANGFUSE_IN_APP_AGENT_AWS_PROFILE=
+      - LANGFUSE_IN_APP_AGENT_ENABLED=false
+      - LANGFUSE_IN_APP_AGENT_RUN_QUEUE_PROCESSING_CONCURRENCY=${LANGFUSE_IN_APP_AGENT_RUN_QUEUE_PROCESSING_CONCURRENCY:-}
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_EGRESS_NETWORK_CONNECTOR_ARN=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_EXECUTION_ROLE_ARN=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_IMAGE_IDENTIFIER=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_AWS_LAMBDA_MICROVM_REGION=
+      - LANGFUSE_IN_APP_AGENT_SANDBOX_PROVIDER=
+      - LANGFUSE_JSON_BAD_UNICODE_ESCAPE=${LANGFUSE_JSON_BAD_UNICODE_ESCAPE:-}
+      - LANGFUSE_LLM_CONNECTION_WHITELISTED_HOST=
+      - LANGFUSE_LLM_CONNECTION_WHITELISTED_IPS=
+      - LANGFUSE_LLM_CONNECTION_WHITELISTED_IP_SEGMENTS=
+      - LANGFUSE_MCP_BASE_URL=${LANGFUSE_MCP_BASE_URL:-}
+      - LANGFUSE_OBSERVATION_FIELD_OVERFLOW_ENABLED=${LANGFUSE_OBSERVATION_FIELD_OVERFLOW_ENABLED:-false}
+      - LANGFUSE_OBSERVATION_FIELD_SIZE_LIMIT_BYTES=${LANGFUSE_OBSERVATION_FIELD_SIZE_LIMIT_BYTES:-2097152}
+      - LANGFUSE_OCI_AUTH_TYPE=
+      - LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID=allianz-local
+      - LANGFUSE_S3_BATCH_EXPORT_BUCKET=${LANGFUSE_S3_BATCH_EXPORT_BUCKET:-langfuse}
+      - LANGFUSE_S3_BATCH_EXPORT_ENABLED=${LANGFUSE_S3_BATCH_EXPORT_ENABLED:-false}
+      - LANGFUSE_S3_BATCH_EXPORT_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT=http://localhost:9090
+      - LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE=${LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE:-true}
+      - LANGFUSE_S3_BATCH_EXPORT_PREFIX=${LANGFUSE_S3_BATCH_EXPORT_PREFIX:-exports/}
+      - LANGFUSE_S3_BATCH_EXPORT_REGION=${LANGFUSE_S3_BATCH_EXPORT_REGION:-auto}
+      - LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY=${ALLIANZ_MINIO_PASSWORD}
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=allianz-local
+      - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=langfuse
+      - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=${LANGFUSE_S3_EVENT_UPLOAD_PREFIX:-events/}
+      - LANGFUSE_S3_EVENT_UPLOAD_REGION=${LANGFUSE_S3_EVENT_UPLOAD_REGION:-auto}
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${ALLIANZ_MINIO_PASSWORD}
+      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=allianz-local
+      - LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=langfuse
+      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=${LANGFUSE_S3_MEDIA_UPLOAD_PREFIX:-media/}
+      - LANGFUSE_S3_MEDIA_UPLOAD_REGION=${LANGFUSE_S3_MEDIA_UPLOAD_REGION:-auto}
+      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${ALLIANZ_MINIO_PASSWORD}
+      - LANGFUSE_USE_AZURE_BLOB=false
+      - LANGFUSE_USE_OCI_NATIVE_OBJECT_STORAGE=false
+      - NEXTAUTH_URL=http://localhost:3000
+      - REDIS_AUTH=${ALLIANZ_REDIS_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_TLS_CA=${REDIS_TLS_CA:-/certs/ca.crt}
+      - REDIS_TLS_CERT=${REDIS_TLS_CERT:-/certs/redis.crt}
+      - REDIS_TLS_ENABLED=false
+      - REDIS_TLS_KEY=${REDIS_TLS_KEY:-/certs/redis.key}
+      - SALT=${ALLIANZ_SALT}
+      - SMTP_CONNECTION_URL=${SMTP_CONNECTION_URL:-}
+      - TELEMETRY_ENABLED=false
+    image: docker.langfuse.com/langfuse/langfuse-worker@sha256:9c4da1802500c7ae987e4af1bfb3e1a441f0bff024c2d7a2a5541fa4691155ae
+    networks:
+      default: null
+    ports: []
+    restart: always
+  minio:
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address
+      ":9001" /data'
+    entrypoint: sh
+    environment:
+      - MINIO_ROOT_PASSWORD=${ALLIANZ_MINIO_PASSWORD}
+      - MINIO_ROOT_USER=allianz-local
+    healthcheck:
+      interval: 1s
+      retries: 5
+      start_period: 1s
+      test:
+        - CMD
+        - mc
+        - ready
+        - local
+      timeout: 5s
+    image: cgr.dev/chainguard/minio@sha256:1e408150bcf1bff07a2e468b9ac91347d4da261258921faeaedbe2ed7f0818b4
+    networks:
+      default: null
+    ports:
+      - host_ip: 127.0.0.1
+        mode: ingress
+        protocol: tcp
+        published: "9090"
+        target: 9000
+    restart: always
+    volumes:
+      - source: langfuse_minio_data
+        target: /data
+        type: volume
+        volume: {}
+  postgres:
+    environment:
+      - PGTZ=UTC
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=${ALLIANZ_POSTGRES_PASSWORD}
+      - POSTGRES_USER=postgres
+      - TZ=UTC
+    healthcheck:
+      interval: 3s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres
+      timeout: 3s
+    image: postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+    networks:
+      default: null
+    ports: []
+    restart: always
+    volumes:
+      - source: langfuse_postgres_data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  qdrant:
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
+    image: qdrant/qdrant@sha256:057ee3a8da769fe7310dd3537b4dc7583bf87a95ce8ac43c0af5a46bc580d1fc
+    networks:
+      default: null
+    ports:
+      - host_ip: 127.0.0.1
+        mode: ingress
+        protocol: tcp
+        published: "6333"
+        target: 6333
+    restart: unless-stopped
+    volumes:
+      - source: qdrant_data
+        target: /qdrant/storage
+        type: volume
+        volume: {}
+  redis:
+    command:
+      - --requirepass
+      - ${ALLIANZ_REDIS_PASSWORD}
+      - --maxmemory-policy
+      - noeviction
+    environment:
+      REDISCLI_AUTH: ${ALLIANZ_REDIS_PASSWORD}
+    healthcheck:
+      interval: 3s
+      retries: 10
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 10s
+    image: redis@sha256:71da9275c5f3fcb97d0fa0c8c5b36cc995327265420f17a04bfd544f458059f7
+    networks:
+      default: null
+    ports: []
+    restart: always
+    volumes:
+      - source: langfuse_redis_data
+        target: /data
+        type: volume
+        volume: {}
+volumes:
+  langfuse_clickhouse_data:
+    driver: local
+    name: allianz-rag_langfuse_clickhouse_data
+  langfuse_clickhouse_logs:
+    driver: local
+    name: allianz-rag_langfuse_clickhouse_logs
+  langfuse_minio_data:
+    driver: local
+    name: allianz-rag_langfuse_minio_data
+  langfuse_postgres_data:
+    driver: local
+    name: allianz-rag_langfuse_postgres_data
+  langfuse_redis_data:
+    driver: local
+    name: allianz-rag_langfuse_redis_data
+  qdrant_data:
+    name: allianz-rag_qdrant_data

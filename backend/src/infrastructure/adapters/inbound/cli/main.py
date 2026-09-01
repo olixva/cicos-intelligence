@@ -28,6 +28,12 @@ def _build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("--output", type=Path, required=True)
     prepare = subcommands.add_parser("prepare-ingestion-models")
     prepare.add_argument("--output", type=Path, required=True)
+    doctor = subcommands.add_parser("doctor")
+    doctor.add_argument(
+        "--operation",
+        choices=("services", "containers", "retrieval", "evaluation", "generation", "all"),
+        default="services",
+    )
     return parser
 
 
@@ -65,6 +71,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return 0
+        elif arguments.command == "doctor":
+            from infrastructure.adapters.inbound.cli import doctor
+
+            status = doctor.check_environment(operation=arguments.operation)
+            print(json.dumps(status, sort_keys=True))
+            return 0 if status["ready"] is True else 1
         else:
             parser.error("Unknown command")
     except (

@@ -11,3 +11,4 @@ dist/
 .DS_Store
 .worktrees/
 data/
+ops/local.env
