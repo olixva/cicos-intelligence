@@ -32,6 +32,29 @@ make local-services-up
 make doctor
 ```
 
+La aplicación carga sus credenciales desde el `.env` privado de la raíz. Copia
+`.env.example` a `.env` y completa `OPENAI_API_KEY`, `LANGFUSE_PUBLIC_KEY` y
+`LANGFUSE_SECRET_KEY`. Las dos claves de Langfuse pertenecen al proyecto local y se obtienen en
+sus ajustes; `LANGFUSE_BASE_URL` debe mantenerse en `http://127.0.0.1:3000` para evitar que una
+configuración incompleta use el servicio cloud por defecto.
+
+Antes de consultar, crea en Langfuse el prompt de texto `document-question`. La configuración
+inicial fija `ALLIANZ_QUESTION_PROMPT_VERSION=1`: si se mejora el prompt, crea una versión nueva y
+actualiza ese número explícitamente. El prompt debe ordenar que cada respuesta use únicamente el
+contexto suministrado, cite todos los `evidence_ids` de cada bloque multipágina o ninguno, y devuelva
+el esquema estructurado solicitado por la aplicación. Con el índice activo, el smoke técnico se
+ejecuta así:
+
+```bash
+uv run --project backend --env-file .env allianz answer \
+  --text "¿Cuándo se aplica el convenio CIDE?" \
+  --profile structured
+```
+
+El comando falla antes de abrir Qdrant o Langfuse si falta cualquiera de las tres variables de
+Langfuse. Los errores de timeout o de salida del modelo se muestran como errores técnicos, sin
+convertirse en una respuesta de evidencia insuficiente.
+
 `make doctor` comprueba el motor seleccionado, `Qdrant /readyz` y `Langfuse /api/public/health`
 con timeout. No envía peticiones a proveedores de IA y solo informa de la presencia de credenciales,
 nunca de sus valores. Operaciones concretas permiten una comprobación más precisa:

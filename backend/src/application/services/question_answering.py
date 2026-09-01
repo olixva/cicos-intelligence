@@ -10,13 +10,16 @@ def validate_grounded_answer(
 ) -> QuestionAnswer:
     """Remove unsupported citations and downgrade any affected factual answer."""
 
-    allowed_ids = {item.evidence_id for item in context}
+    delivered_groups = tuple(frozenset(item.evidence_ids) for item in context)
     validated: list[AnswerBlock] = []
     rejected = False
     for block in answer.blocks:
-        supported_ids = tuple(
-            evidence_id for evidence_id in block.evidence_ids if evidence_id in allowed_ids
+        claimed_ids = frozenset(block.evidence_ids)
+        complete_groups = tuple(group for group in delivered_groups if group <= claimed_ids)
+        supported_set: frozenset[str] = frozenset(
+            evidence_id for group in complete_groups for evidence_id in group
         )
+        supported_ids = tuple(item for item in block.evidence_ids if item in supported_set)
         if supported_ids != block.evidence_ids:
             rejected = True
         if not supported_ids:

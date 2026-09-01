@@ -26,7 +26,7 @@ def _context() -> tuple[ContextEvidence, ...]:
         image_path="pages/7.png",
         regions=(),
     )
-    return (ContextEvidence(page.evidence_id, "Sólo este fragmento se entrega.", page),)
+    return (ContextEvidence((page.evidence_id,), "Sólo este fragmento se entrega.", (page,)),)
 
 
 @dataclass(slots=True)
@@ -145,6 +145,32 @@ def test_provider_timeout_remains_a_technical_error() -> None:
             transport=FakeResponsesTransport(TimeoutError("network timeout")),
         )
         with pytest.raises(ModelTimeoutError, match="timed out"):
+            await model.generate(QueryInput("¿Qué dice?", "es"), _context())
+
+    asyncio.run(scenario())
+
+
+def test_application_validation_failure_is_wrapped_as_model_output_error() -> None:
+    """Schema-valid whitespace must not escape the provider boundary as a raw ValueError."""
+    from infrastructure.adapters.outbound.language_model.openai_language_model import (
+        AnswerBlockSchema,
+        AnswerSchema,
+        OpenAILanguageModel,
+        PromptDefinition,
+    )
+
+    async def scenario() -> None:
+        parsed = AnswerSchema(
+            status="answered",
+            blocks=(AnswerBlockSchema(text=" ", evidence_ids=("manual:page:7",)),),
+        )
+        model = OpenAILanguageModel(
+            model="fixture-model",
+            prompt=PromptDefinition("document-question", 4, "Responde con evidencia."),
+            transport=FakeResponsesTransport(FakeParsedResponse(parsed)),
+        )
+
+        with pytest.raises(ModelOutputError, match="invalid structured answer"):
             await model.generate(QueryInput("¿Qué dice?", "es"), _context())
 
     asyncio.run(scenario())

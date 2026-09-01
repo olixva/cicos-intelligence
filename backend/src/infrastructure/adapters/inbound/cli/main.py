@@ -22,6 +22,9 @@ from domain.models.evidence import Extraction
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
     EvidencePublicationError,
 )
+from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+    QuestionWorkflowTimeoutError,
+)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -127,6 +130,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (
         EvidencePublicationError,
         LanguageModelError,
+        QuestionWorkflowTimeoutError,
         SourceInspectionError,
         SourceIntegrityError,
         ValueError,
@@ -149,14 +153,18 @@ def _query_execution_payload(execution: QueryExecution) -> dict[str, object]:
         ],
         "context": [
             {
-                "evidence_id": item.evidence_id,
+                "evidence_ids": list(item.evidence_ids),
                 "text": item.text,
                 "delivery": item.delivery,
-                "source": {
-                    "pdf_page": item.source.pdf_page,
-                    "printed_label": item.source.printed_label,
-                    "image_path": item.source.image_path,
-                },
+                "sources": [
+                    {
+                        "evidence_id": source.evidence_id,
+                        "pdf_page": source.pdf_page,
+                        "printed_label": source.printed_label,
+                        "image_path": source.image_path,
+                    }
+                    for source in item.sources
+                ],
             }
             for item in execution.context
         ],

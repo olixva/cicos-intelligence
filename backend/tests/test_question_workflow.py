@@ -11,11 +11,11 @@ from application.ports.outbound.language_model import LanguageModelError
 from domain.models.evidence import PageEvidence
 
 
-def _page(evidence_id: str = "manual:page:7") -> PageEvidence:
+def _page(evidence_id: str = "manual:page:7", pdf_page: int = 7) -> PageEvidence:
     return PageEvidence(
         evidence_id=evidence_id,
         document_hash="a" * 64,
-        pdf_page=7,
+        pdf_page=pdf_page,
         text="Texto completo que no debe enviarse al modelo.",
         printed_label="7",
         image_path="pages/7.png",
@@ -47,9 +47,55 @@ def test_provider_citation_not_delivered_in_context_is_rejected() -> None:
         execution = await workflow.run(QueryInput("¿Qué indica el manual?", "es"))
 
         assert execution.result == QuestionAnswer("insufficient_evidence", ())
-        assert tuple(item.evidence_id for item in execution.context) == (page.evidence_id,)
+        assert tuple(item.evidence_ids for item in execution.context) == ((page.evidence_id,),)
         assert execution.context[0].text == "Fragmento entregado."
-        assert execution.context[0].source.text != execution.context[0].text
+        assert execution.context[0].sources[0].text != execution.context[0].text
+
+    asyncio.run(scenario())
+
+
+def test_multipage_context_requires_the_complete_source_bundle() -> None:
+    """A single page cannot support text delivered only as one indivisible multipage chunk."""
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    async def scenario() -> None:
+        page_7 = _page("manual:page:7", 7)
+        page_8 = _page("manual:page:8", 8)
+        retriever = FakeRetriever(
+            (
+                Chunk(
+                    "chunk-7-8",
+                    "Tabla que comienza en la página 7 y continúa en la página 8.",
+                    (page_7.evidence_id, page_8.evidence_id),
+                ),
+            )
+        )
+        model = FakeLanguageModel(
+            QuestionAnswer(
+                "answered",
+                (AnswerBlock("Conclusión multipágina.", (page_7.evidence_id,)),),
+            )
+        )
+        workflow = LangGraphQuestionWorkflow(
+            retriever=retriever,
+            evidence_repository=FakeEvidenceRepository((page_7, page_8)),
+            language_model=model,
+        )
+
+        execution = await workflow.run(QueryInput("¿Qué indica la tabla?", "es"))
+
+        assert execution.result == QuestionAnswer("insufficient_evidence", ())
+        assert len(execution.context) == 1
+        assert execution.context[0].evidence_ids == (
+            page_7.evidence_id,
+            page_8.evidence_id,
+        )
+        assert tuple(source.evidence_id for source in execution.context[0].sources) == (
+            page_7.evidence_id,
+            page_8.evidence_id,
+        )
 
     asyncio.run(scenario())
 
@@ -146,7 +192,7 @@ def test_answer_question_use_case_preserves_workflow_execution() -> None:
     class Workflow:
         async def run(self, query: QueryInput) -> QueryExecution:
             page = _page()
-            context = (ContextEvidence(page.evidence_id, "Fragmento.", page),)
+            context = (ContextEvidence((page.evidence_id,), "Fragmento.", (page,)),)
             return QueryExecution(
                 QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),)),
                 context,

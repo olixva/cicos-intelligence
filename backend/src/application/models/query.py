@@ -58,18 +58,22 @@ class QuestionAnswer:
 
 @dataclass(frozen=True, slots=True)
 class ContextEvidence:
-    """The exact payload delivered to the model, linked to immutable source evidence."""
+    """One indivisible delivered payload linked to every source page it spans."""
 
-    evidence_id: str
+    evidence_ids: tuple[str, ...]
     text: str
-    source: PageEvidence
+    sources: tuple[PageEvidence, ...]
     delivery: EvidenceDelivery = "text"
 
     def __post_init__(self) -> None:
-        if not self.evidence_id.strip() or not self.text.strip():
-            raise ValueError("context evidence identifier and text must be nonempty")
-        if self.evidence_id != self.source.evidence_id:
-            raise ValueError("context evidence must match its source identifier")
+        if not self.evidence_ids or any(not item.strip() for item in self.evidence_ids):
+            raise ValueError("context evidence identifiers must be nonempty")
+        if len(set(self.evidence_ids)) != len(self.evidence_ids):
+            raise ValueError("context evidence identifiers must be unique")
+        if not self.text.strip():
+            raise ValueError("context evidence text must be nonempty")
+        if tuple(source.evidence_id for source in self.sources) != self.evidence_ids:
+            raise ValueError("context evidence must match all source identifiers in order")
         if self.delivery not in ("text", "image", "rule"):
             raise ValueError("unsupported evidence delivery")
 

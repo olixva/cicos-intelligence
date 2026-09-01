@@ -98,21 +98,23 @@ class LangGraphQuestionWorkflow:
             RetrievalRequest(query.text, self._retrieval_limit, self._retrieval_mode)
         )
         context: list[ContextEvidence] = []
-        seen: set[tuple[str, str]] = set()
+        seen: set[tuple[tuple[str, ...], str]] = set()
         for chunk in chunks:
-            for evidence_id in chunk.evidence_ids:
-                identity = (evidence_id, chunk.text)
-                if identity in seen:
-                    continue
-                seen.add(identity)
-                context.append(
-                    ContextEvidence(
-                        evidence_id=evidence_id,
-                        text=chunk.text,
-                        source=self._evidence_repository.get(evidence_id),
-                        delivery="text",
-                    )
+            identity = (chunk.evidence_ids, chunk.text)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            context.append(
+                ContextEvidence(
+                    evidence_ids=chunk.evidence_ids,
+                    text=chunk.text,
+                    sources=tuple(
+                        self._evidence_repository.get(evidence_id)
+                        for evidence_id in chunk.evidence_ids
+                    ),
+                    delivery="text",
                 )
+            )
         return _QuestionUpdate(context=tuple(context))
 
     async def _generate(self, state: _QuestionState) -> _QuestionUpdate:

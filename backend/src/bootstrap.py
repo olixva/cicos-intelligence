@@ -119,6 +119,7 @@ def build_answer_question(profile_name: str) -> AnswerQuestion:
     from infrastructure.config.profiles import load_profile
 
     profile = load_profile(profile_name, profile_catalog_dir())
+    _require_local_langfuse_environment()
     document_hash = os.environ.get(
         "ALLIANZ_DOCUMENT_HASH",
         "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
@@ -183,6 +184,17 @@ def _positive_environment_integer(name: str, default: int) -> int:
     if value <= 0:
         raise ValueError(f"{name} must be a positive integer")
     return value
+
+
+def _require_local_langfuse_environment() -> None:
+    import os
+
+    required = ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL")
+    missing = tuple(name for name in required if not os.environ.get(name, "").strip())
+    if missing:
+        raise ValueError(f"missing Langfuse configuration: {', '.join(missing)}")
+    if os.environ["LANGFUSE_BASE_URL"] != "http://127.0.0.1:3000":
+        raise ValueError("LANGFUSE_BASE_URL must be http://127.0.0.1:3000 for local execution")
 
 
 def build_api() -> FastAPI:
