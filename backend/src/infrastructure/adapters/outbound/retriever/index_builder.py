@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Sequence
 
 from qdrant_client import AsyncQdrantClient, models
+from qdrant_client.http.exceptions import ResponseHandlingException
 
 from application.models.retrieval import Chunk, IndexSignature, assert_compatible
 from application.ports.outbound.embedding_provider import EmbeddingProvider
@@ -177,7 +178,7 @@ class QdrantIndexBuilder:
             published = await self.client.update_collection_aliases(
                 change_aliases_operations=operations
             )
-        except (ConnectionError, TimeoutError) as error:
+        except (ConnectionError, TimeoutError, ResponseHandlingException) as error:
             await self._reconcile_alias_publication(collection, previous_collection, error)
             return
         if not published:

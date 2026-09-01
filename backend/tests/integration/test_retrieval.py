@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from qdrant_client import AsyncQdrantClient, models
+from qdrant_client.http.exceptions import ResponseHandlingException
 
 from application.models.retrieval import Chunk, IndexSignature
 
@@ -254,7 +255,9 @@ def test_applied_alias_update_followed_by_connection_error_keeps_active_index(
                 timeout=timeout,
                 **kwargs,
             )
-            raise ConnectionError("connection lost after Qdrant applied alias update")
+            raise ResponseHandlingException(
+                ConnectionError("connection lost after Qdrant applied alias update")
+            )
 
         monkeypatch.setattr(client, "update_collection_aliases", apply_then_disconnect)
         builder = QdrantIndexBuilder(
