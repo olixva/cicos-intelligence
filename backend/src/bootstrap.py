@@ -269,6 +269,7 @@ def build_api(
     question_profile: str | None = None,
     claim_profile: str | None = None,
     resolve_query_profile: str | None = None,
+    required_index_ready: Callable[[], bool] | None = None,
 ) -> FastAPI:
     """Build the local HTTP adapter through its dependency-aware factory.
 
@@ -279,7 +280,14 @@ def build_api(
     per-router basis. A configuration that builds no router at all is
     treated as a hard failure so the operator is not silently served an
     empty API.
+
+    ``required_index_ready`` is forwarded to ``create_app`` so the
+    ``/health/ready`` endpoint reports the real index status. When
+    ``None`` (default), the production safe-default of "not built" is
+    used; local entry points such as ``asgi_local`` pass a probe that
+    checks the Qdrant active alias.
     """
+
 
     from infrastructure.adapters.inbound.api.app import create_app
 
@@ -297,6 +305,7 @@ def build_api(
         analyze_claim=analyze_claim,
         resolve_query=resolve_query,
         allowed_profiles=_known_profiles(),
+        required_index_ready=required_index_ready,
     )
 
 
