@@ -10,5 +10,6 @@ build/
 dist/
 .DS_Store
 .worktrees/
+.slim/deepwork/
 data/
 ops/local.env
