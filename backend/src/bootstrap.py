@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.ingest_document import IngestDocument
 from application.ports.inbound.inspect_manual import InspectManual
+from application.use_cases.answer_question_use_case import AnswerQuestionUseCase
 from application.use_cases.build_retrieval_index_use_case import (
     BuildRetrievalIndexUseCase,
     IndexBuildResult,
@@ -88,6 +90,99 @@ async def build_and_publish_retrieval_index(
 def profile_catalog_dir() -> Path:
     """Locate the project-owned strict profile catalog outside importable source modules."""
     return Path(__file__).parent.parent / "configs"
+
+
+def build_answer_question(profile_name: str) -> AnswerQuestion:
+    """Compose the local question flow against the active Qdrant index and pinned prompt."""
+    import os
+
+    from langchain_core.callbacks import BaseCallbackHandler
+    from langfuse import Langfuse
+    from langfuse.langchain import CallbackHandler
+    from qdrant_client import AsyncQdrantClient
+
+    from infrastructure.adapters.outbound.embedding_provider.openai_embedding_provider import (
+        OpenAIEmbeddingProvider,
+    )
+    from infrastructure.adapters.outbound.language_model.openai_language_model import (
+        LangfusePromptClient,
+        OpenAILanguageModel,
+        load_langfuse_prompt,
+    )
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import (
+        FastEmbedBm25Encoder,
+        QdrantRetriever,
+    )
+    from infrastructure.config.profiles import load_profile
+
+    profile = load_profile(profile_name, profile_catalog_dir())
+    document_hash = os.environ.get(
+        "ALLIANZ_DOCUMENT_HASH",
+        "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+    )
+    evidence_root = Path(os.environ.get("ALLIANZ_EVIDENCE_ROOT", "data/extractions"))
+    parser = _resolve_published_parser(evidence_root, document_hash, profile.parser)
+    signature = profile.build_index_signature(document_hash, parser)
+    langfuse = Langfuse()
+    prompt = load_langfuse_prompt(
+        cast(LangfusePromptClient, langfuse),
+        name=os.environ.get("ALLIANZ_QUESTION_PROMPT_NAME", "document-question"),
+        version=_positive_environment_integer("ALLIANZ_QUESTION_PROMPT_VERSION", 1),
+    )
+    retriever = QdrantRetriever(
+        client=AsyncQdrantClient(url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")),
+        embedding_provider=OpenAIEmbeddingProvider(
+            model=profile.embedding_model, dimensions=profile.dimensions
+        ),
+        sparse_encoder=FastEmbedBm25Encoder(language=profile.lexical_language),
+        collection="allianz-manual-active",
+        expected_signature=signature,
+    )
+
+    def callback_factory(trace_id: str) -> BaseCallbackHandler:
+        return CallbackHandler(trace_context={"trace_id": trace_id})
+
+    return AnswerQuestionUseCase(
+        LangGraphQuestionWorkflow(
+            retriever=retriever,
+            evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
+            language_model=OpenAILanguageModel(
+                model=os.environ.get("OPENAI_ANSWER_MODEL", "gpt-5.4"), prompt=prompt
+            ),
+            trace_id_factory=langfuse.create_trace_id,
+            callback_factory=callback_factory,
+        )
+    )
+
+
+def _resolve_published_parser(root: Path, document_hash: str, parser: str) -> str:
+    publication = root / document_hash
+    try:
+        matches = tuple(
+            path.name
+            for path in publication.iterdir()
+            if path.is_dir() and path.name.startswith(f"{parser}-")
+        )
+    except OSError as error:
+        raise ValueError("evidence publication is unavailable") from error
+    if len(matches) != 1:
+        raise ValueError(f"expected one published {parser} parser, found {len(matches)}")
+    return matches[0]
+
+
+def _positive_environment_integer(name: str, default: int) -> int:
+    import os
+
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError as error:
+        raise ValueError(f"{name} must be a positive integer") from error
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
 
 
 def build_api() -> FastAPI:

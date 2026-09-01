@@ -9,8 +9,11 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
+from application.models.query import QueryExecution, QueryInput
+from application.ports.outbound.language_model import LanguageModelError
 from bootstrap import (
     build_and_publish_retrieval_index,
+    build_answer_question,
     build_ingest_document,
     build_inspect_manual,
 )
@@ -37,6 +40,10 @@ def _build_parser() -> argparse.ArgumentParser:
     index.add_argument("--evidence-root", type=Path, required=True)
     index.add_argument("--profile", choices=("baseline", "structured"), default="structured")
     index.add_argument("--qdrant-url", default="http://127.0.0.1:6333")
+    answer = subcommands.add_parser("answer")
+    answer.add_argument("--text", required=True)
+    answer.add_argument("--profile", choices=("baseline", "structured"), default="structured")
+    answer.add_argument("--language", choices=("es", "en"), default="es")
     prepare = subcommands.add_parser("prepare-ingestion-models")
     prepare.add_argument("--output", type=Path, required=True)
     doctor = subcommands.add_parser("doctor")
@@ -82,6 +89,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return 0
+        elif arguments.command == "answer":
+            execution = asyncio.run(
+                build_answer_question(arguments.profile).execute(
+                    QueryInput(arguments.text, arguments.language)
+                )
+            )
+            print(
+                json.dumps(_query_execution_payload(execution), ensure_ascii=False, sort_keys=True)
+            )
+            return 0
         elif arguments.command == "prepare-ingestion-models":
             from infrastructure.adapters.outbound.document_parser.model_artifacts import (
                 prepare_model_bundle,
@@ -109,6 +126,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.error("Unknown command")
     except (
         EvidencePublicationError,
+        LanguageModelError,
         SourceInspectionError,
         SourceIntegrityError,
         ValueError,
@@ -119,6 +137,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     payload = _extraction_metadata(result) if isinstance(result, Extraction) else asdict(result)
     print(json.dumps(payload, sort_keys=True))
     return 0
+
+
+def _query_execution_payload(execution: QueryExecution) -> dict[str, object]:
+    """Serialize grounded output and effective context without internal state or credentials."""
+    return {
+        "status": execution.result.status,
+        "blocks": [
+            {"text": block.text, "evidence_ids": list(block.evidence_ids)}
+            for block in execution.result.blocks
+        ],
+        "context": [
+            {
+                "evidence_id": item.evidence_id,
+                "text": item.text,
+                "delivery": item.delivery,
+                "source": {
+                    "pdf_page": item.source.pdf_page,
+                    "printed_label": item.source.printed_label,
+                    "image_path": item.source.image_path,
+                },
+            }
+            for item in execution.context
+        ],
+        "trace_id": execution.trace_id,
+    }
 
 
 def _extraction_metadata(extraction: Extraction) -> dict[str, object]:
