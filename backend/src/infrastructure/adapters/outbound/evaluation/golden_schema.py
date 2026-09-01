@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
 SCHEMA_VERSION = "1.0.0"
 _ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*")
@@ -185,9 +186,9 @@ class Provenance(_GoldenModel):
 
 class ReviewRecord(_GoldenModel):
     reviewer_ids: tuple[str, ...] = Field(min_length=1)
-    independent_resolution_checked: bool
-    evidence_checked: bool
-    adversarial_checked: bool
+    independent_resolution_checked: StrictBool
+    evidence_checked: StrictBool
+    adversarial_checked: StrictBool
     adjudication_note: str
     open_discrepancies: tuple[str, ...]
 
@@ -246,6 +247,14 @@ def golden_json_schema() -> dict[str, object]:
     schema["$id"] = f"https://cicos-intelligence.local/schemas/golden/{SCHEMA_VERSION}"
     schema["x-schema-version"] = SCHEMA_VERSION
     return schema
+
+
+def canonical_schema_bytes() -> bytes:
+    """Return the exact schema artifact a release is allowed to bind."""
+    return (
+        json.dumps(golden_json_schema(), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+        + "\n"
+    ).encode()
 
 
 def _identifier(name: str, value: str) -> str:

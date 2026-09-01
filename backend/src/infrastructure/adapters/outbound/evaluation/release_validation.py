@@ -6,12 +6,14 @@ import json
 from collections import Counter
 from collections.abc import Collection, Sequence
 from hashlib import sha256
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from infrastructure.adapters.outbound.evaluation.golden_schema import (
     SCHEMA_VERSION,
     GoldenDatasetItem,
+    canonical_schema_bytes,
 )
 
 
@@ -25,7 +27,7 @@ class ReleaseManifest(BaseModel):
     dataset_version: str
     item_count: int
     case_ids: tuple[str, ...]
-    partition_counts: dict[str, int]
+    partition_counts: tuple[tuple[Literal["development", "holdout"], int], ...]
     content_sha256: str
     schema_sha256: str
 
@@ -128,8 +130,8 @@ def build_release_manifest(
 ) -> ReleaseManifest:
     """Bind canonical item bytes and the external schema document to one release identity."""
 
-    if not schema:
-        raise ValueError("golden schema document cannot be empty")
+    if schema != canonical_schema_bytes():
+        raise ValueError("golden schema document is not the canonical schema")
     validated = validate_release(items, existing_evidence_ids=existing_evidence_ids)
     content = canonical_jsonl(items, existing_evidence_ids=existing_evidence_ids)
     counts = Counter(item.metadata.partition for item in validated)
@@ -139,10 +141,7 @@ def build_release_manifest(
         dataset_version=dataset_version,
         item_count=len(validated),
         case_ids=tuple(item.metadata.case_id for item in validated),
-        partition_counts={
-            "development": counts["development"],
-            "holdout": counts["holdout"],
-        },
+        partition_counts=(("development", counts["development"]), ("holdout", counts["holdout"])),
         content_sha256=sha256(content).hexdigest(),
         schema_sha256=sha256(schema).hexdigest(),
     )

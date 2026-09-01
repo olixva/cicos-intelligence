@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from hashlib import sha256
+from pathlib import Path
 from typing import cast
 
 import pytest
@@ -126,7 +127,20 @@ def test_incomplete_review_checks_block_release() -> None:
         validate_release([item], existing_evidence_ids=_evidence_ids())
 
 
+@pytest.mark.parametrize("value", ["yes", 1, "on"])
+def test_review_flags_must_be_json_booleans(value: object) -> None:
+    from infrastructure.adapters.outbound.evaluation.release_validation import validate_release
+
+    item = _item()
+    review = cast(dict[str, object], cast(dict[str, object], item["metadata"])["review"])
+    review["independent_resolution_checked"] = value
+
+    with pytest.raises(ValueError, match="schema"):
+        validate_release([item], existing_evidence_ids=_evidence_ids())
+
+
 def test_release_manifest_hashes_canonical_jsonl_and_schema() -> None:
+    from infrastructure.adapters.outbound.evaluation.golden_schema import canonical_schema_bytes
     from infrastructure.adapters.outbound.evaluation.release_validation import (
         build_release_manifest,
         canonical_jsonl,
@@ -135,7 +149,7 @@ def test_release_manifest_hashes_canonical_jsonl_and_schema() -> None:
     first = _item(case_id="fixture-case-1", family_id="fixture-family-1")
     second = deepcopy(first)
     cast(dict[str, object], second["metadata"])["case_id"] = "fixture-case-2"
-    schema = b'{"$id":"golden-schema-v1","type":"object"}\n'
+    schema = canonical_schema_bytes()
 
     content = canonical_jsonl([first, second], existing_evidence_ids=_evidence_ids())
     manifest = build_release_manifest(
@@ -151,4 +165,45 @@ def test_release_manifest_hashes_canonical_jsonl_and_schema() -> None:
     assert manifest.case_ids == ("fixture-case-1", "fixture-case-2")
     assert manifest.content_sha256 == sha256(content).hexdigest()
     assert manifest.schema_sha256 == sha256(schema).hexdigest()
-    assert manifest.partition_counts == {"development": 2, "holdout": 0}
+    assert manifest.partition_counts == (("development", 2), ("holdout", 0))
+
+
+def test_release_manifest_rejects_bytes_that_are_not_the_canonical_schema() -> None:
+    from infrastructure.adapters.outbound.evaluation.release_validation import (
+        build_release_manifest,
+    )
+
+    with pytest.raises(ValueError, match="schema"):
+        build_release_manifest(
+            dataset_name="technical-fixture",
+            dataset_version="v1",
+            items=[_item()],
+            schema=b"not a JSON schema\n",
+            existing_evidence_ids=_evidence_ids(),
+        )
+
+
+def test_release_manifest_partition_counts_are_immutable() -> None:
+    from infrastructure.adapters.outbound.evaluation.golden_schema import canonical_schema_bytes
+    from infrastructure.adapters.outbound.evaluation.release_validation import (
+        build_release_manifest,
+    )
+
+    manifest = build_release_manifest(
+        dataset_name="technical-fixture",
+        dataset_version="v1",
+        items=[_item()],
+        schema=canonical_schema_bytes(),
+        existing_evidence_ids=_evidence_ids(),
+    )
+
+    with pytest.raises(TypeError):
+        manifest.partition_counts[0] = ("development", 99)  # type: ignore[index]
+
+
+def test_committed_schema_artifact_matches_the_release_schema() -> None:
+    from infrastructure.adapters.outbound.evaluation.golden_schema import canonical_schema_bytes
+
+    artifact = Path(__file__).parents[2] / "docs" / "evaluation" / "golden-schema.json"
+
+    assert artifact.read_bytes() == canonical_schema_bytes()
