@@ -4,10 +4,10 @@ ALLIANZ_DOCKER_CONTEXT ?= colima-allianz
 LOCAL_COMPOSE = docker --context $(ALLIANZ_DOCKER_CONTEXT) compose --env-file ops/local.env
 
 check-backend:
-	uv run --project backend --group ingestion ruff check backend
-	uv run --project backend --group ingestion ruff format --check backend
-	uv run --project backend --group ingestion pyright --project backend
-	uv run --project backend --group ingestion pytest backend/tests
+	uv run --project backend --group ingestion --extra local-rag ruff check backend
+	uv run --project backend --group ingestion --extra local-rag ruff format --check backend
+	uv run --project backend --group ingestion --extra local-rag pyright --project backend
+	uv run --project backend --group ingestion --extra local-rag pytest backend/tests
 
 local-services-config:
 	$(LOCAL_COMPOSE) config --quiet

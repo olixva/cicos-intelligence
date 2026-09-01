@@ -1,0 +1,1 @@
+"""Dense embedding provider adapters."""
