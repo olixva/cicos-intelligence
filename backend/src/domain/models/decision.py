@@ -47,3 +47,4 @@ class ClaimAnalysis:
             raise InvalidDecisionError("a conditional decision must name its conditions")
         if self.applicability == "not_applicable" and self.decision == "resolved":
             raise InvalidDecisionError("an inapplicable convention cannot resolve a claim")
+
