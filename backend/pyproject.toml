@@ -12,6 +12,12 @@ dependencies = [
     "pypdf>=6.0.0",
 ]
 
+[project.optional-dependencies]
+ingestion = [
+    "docling==2.124.0",
+    "pypdfium2==5.13.0",
+]
+
 [project.scripts]
 allianz = "infrastructure.adapters.inbound.cli.main:main"
 

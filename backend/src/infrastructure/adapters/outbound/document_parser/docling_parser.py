@@ -7,11 +7,16 @@ from hashlib import sha256
 from importlib.metadata import version
 from io import BytesIO
 from pathlib import Path
+from typing import cast
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    PdfPipelineOptions,
+    RapidOcrOptions,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc.common.content_layer import ContentLayer
 from docling_core.types.doc.document import DoclingDocument
@@ -20,6 +25,10 @@ from docling_core.types.doc.items.table.table import TableItem
 from docling_core.types.doc.items.text import SectionHeaderItem, TextItem
 
 from domain.models.evidence import BinaryAsset, ElementEvidence, Extraction, PageEvidence
+from infrastructure.adapters.outbound.document_parser.model_artifacts import (
+    ModelBundle,
+    default_model_bundle,
+)
 from infrastructure.adapters.outbound.document_parser.page_renderer import (
     normalize_layout_pdf,
     render_page_bytes,
@@ -32,20 +41,52 @@ _LOG = logging.getLogger(__name__)
 class DoclingParser:
     """Use PDFium layout, Latin RapidOCR on CPU, and conservative review diagnostics."""
 
-    def __init__(self) -> None:
+    def __init__(self, model_bundle: ModelBundle | None = None) -> None:
+        bundle = model_bundle or default_model_bundle()
+        layout_source = next(
+            source for source in bundle.manifest.sources if source.name == "layout"
+        )
+        defaults = PdfPipelineOptions()
+        layout_options = cast(
+            LayoutObjectDetectionOptions, defaults.layout_options.model_copy(deep=True)
+        )
+        layout_options.model_spec = layout_options.model_spec.model_copy(
+            update={"revision": layout_source.revision}
+        )
         options = PdfPipelineOptions(
-            ocr_options=RapidOcrOptions(backend="torch", lang=["latin"]),
+            artifacts_path=bundle.root,
+            ocr_options=RapidOcrOptions(
+                backend="torch",
+                lang=["latin"],
+                det_model_path=str(bundle.path("ocr_detection")),
+                cls_model_path=str(bundle.path("ocr_classification")),
+                rec_model_path=str(bundle.path("ocr_recognition")),
+                rec_keys_path=str(bundle.path("ocr_dictionary")),
+            ),
+            layout_options=layout_options,
             accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU, num_threads=4),
             generate_page_images=False,
             generate_picture_images=False,
         )
+        pipeline_identity = options.model_dump(mode="json")
+        pipeline_identity["artifacts_path"] = "<verified-model-bundle>"
+        ocr_identity = pipeline_identity["ocr_options"]
+        assert isinstance(ocr_identity, dict)
+        for key, role in (
+            ("det_model_path", "ocr_detection"),
+            ("cls_model_path", "ocr_classification"),
+            ("rec_model_path", "ocr_recognition"),
+            ("rec_keys_path", "ocr_dictionary"),
+        ):
+            ocr_identity[key] = f"<bundle:{role}>"
         self._configuration = {
-            "adapter_revision": 1,
+            "adapter_revision": 2,
             "backend": "PyPdfiumDocumentBackend",
             "renderer": {"name": "pypdfium2", "scale": 2, "draw_annots": True},
             "ocr": {"engine": "RapidOCR", "backend": "torch", "languages": ["latin"]},
             "coordinates": "visible-page-points-top-left-ltrb",
             "layout_input": "zero-origin-visible-crop-rotation-baked-if-needed",
+            "model_bundle": json.loads(bundle.identity_record),
             "versions": {
                 name: version(name)
                 for name in (
@@ -61,13 +102,13 @@ class DoclingParser:
                     "pillow",
                 )
             },
-            "pipeline": options.model_dump(mode="json"),
+            "pipeline": pipeline_identity,
         }
         configuration = _json_bytes(self._configuration)
         fingerprint = sha256(configuration).hexdigest()[:16]
         self.parser = (
             f"docling-{version('docling')}-pdfium-{version('pypdfium2')}"
-            f"-rapidocr-latin-torch-r1-{fingerprint}"
+            f"-rapidocr-latin-torch-r2-{fingerprint}"
         )
         self._converter = DocumentConverter(
             format_options={
@@ -83,7 +124,8 @@ class DoclingParser:
         data = opened.data
         layout_data = normalize_layout_pdf(data)
         warnings: list[str] = []
-        document = DoclingDocument(name=source.stem)
+        canonical_name = f"{opened.manifest.sha256}.pdf"
+        document = DoclingDocument(name=opened.manifest.sha256)
         status = "failed"
         errors: list[dict[str, object]] = []
         _LOG.info(
@@ -91,7 +133,7 @@ class DoclingParser:
         )
         try:
             converted = self._converter.convert(
-                DocumentStream(name=source.name, stream=BytesIO(layout_data)),
+                DocumentStream(name=canonical_name, stream=BytesIO(layout_data)),
                 raises_on_error=False,
             )
             document = converted.document

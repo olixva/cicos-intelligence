@@ -33,15 +33,25 @@ for known extraction losses.
 ## Structured ingestion
 
 ```bash
+uv run --project backend --group ingestion allianz prepare-ingestion-models \
+  --output "$HOME/.cache/allianz-rag/docling-artifacts-v1"
+
 uv run --project backend --group ingestion allianz ingest \
   /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
   --parser docling \
   --output data/extractions
 ```
 
+The preparation command is the only ingestion path that uses the network. It downloads nine files
+from exact upstream revisions, verifies their pinned SHA-256 values, and publishes a 390 MB local
+bundle atomically. Normal ingestion validates that bundle and never downloads models implicitly.
+Set `ALLIANZ_DOCLING_ARTIFACTS` only when using a different local path.
+
 This explicit mode retains source-based elements, raw Docling JSON and Markdown, diagnostics, the
-exact original PDF, and an independent 144 dpi PNG for every physical page. The CLI prints asset
-hashes and sizes rather than binary content. See the
+exact original PDF, and an independent 144 dpi PNG for every physical page. The parser identity
+includes the effective model-bundle digest. The CLI prints asset hashes and sizes rather than
+binary content. A complete run over the supplied 111-page manual measured about 3.40 GiB peak RSS
+on the reviewed macOS environment. See the
 [parser comparison](docs/ingestion/parser-comparison.md) for the page 32 OCR limitation and the
 unverified page 101 matrix extraction.
 

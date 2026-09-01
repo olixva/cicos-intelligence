@@ -26,6 +26,8 @@ def _build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("source", type=Path)
     ingest.add_argument("--parser", choices=("pypdf", "docling"), required=True)
     ingest.add_argument("--output", type=Path, required=True)
+    prepare = subcommands.add_parser("prepare-ingestion-models")
+    prepare.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -46,6 +48,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = build_ingest_document(arguments.output, arguments.parser).execute(
                 arguments.source
             )
+        elif arguments.command == "prepare-ingestion-models":
+            from infrastructure.adapters.outbound.document_parser.model_artifacts import (
+                prepare_model_bundle,
+            )
+
+            bundle = prepare_model_bundle(arguments.output)
+            print(
+                json.dumps(
+                    {
+                        "bundle_sha256": bundle.digest,
+                        "files": len(bundle.manifest.files),
+                        "output": str(bundle.root),
+                    },
+                    sort_keys=True,
+                )
+            )
+            return 0
         else:
             parser.error("Unknown command")
     except (

@@ -153,3 +153,101 @@ def test_get_rejects_corrupt_or_unlisted_asset_bytes(tmp_path: Path) -> None:
     (published / "unlisted.bin").write_bytes(b"unexpected")
     with pytest.raises(EvidenceNotFoundError, match="inconsistent"):
         repository.get(page.evidence_id)
+
+
+@pytest.mark.parametrize("field", ["text", "regions", "elements"])
+def test_get_rejects_modified_canonical_page_metadata(tmp_path: Path, field: str) -> None:
+    """Page text, geometry, and elements must be hash-bound before evidence is returned."""
+    from domain.models.evidence import BinaryAsset, ElementEvidence
+
+    source = tmp_path / "source.pdf"
+    original = _source(source)
+    base = PypdfDocumentParser().parse(source)
+    element = ElementEvidence(
+        element_id=f"{base.manifest.document_id}:element:texts:0",
+        kind="text",
+        text="Original element",
+        section=None,
+        content_layer="body",
+        regions=((1.0, 2.0, 10.0, 12.0),),
+    )
+    page = replace(base.pages[0], elements=(element,), regions=element.regions)
+    extraction = replace(base, pages=(page,), assets=(BinaryAsset("original.pdf", original),))
+    repository = FilesystemEvidenceRepository(tmp_path / "output", base.parser)
+    published = repository.publish(extraction)
+    record = json.loads((published / "pages.jsonl").read_text())
+    if field == "text":
+        record["text"] = "tampered"
+    elif field == "regions":
+        record["regions"] = [[20.0, 20.0, 30.0, 30.0]]
+    else:
+        record["elements"][0]["text"] = "tampered element"
+    (published / "pages.jsonl").write_text(json.dumps(record) + "\n")
+
+    with pytest.raises(EvidenceNotFoundError, match="inconsistent"):
+        repository.get(page.evidence_id)
+
+
+def test_get_rejects_modified_extraction_metadata(tmp_path: Path) -> None:
+    """Warnings and asset declarations are canonical metadata, not mutable sidecars."""
+    from domain.models.evidence import BinaryAsset
+
+    source = tmp_path / "source.pdf"
+    original = _source(source)
+    base = PypdfDocumentParser().parse(source)
+    extraction = replace(base, assets=(BinaryAsset("original.pdf", original),))
+    repository = FilesystemEvidenceRepository(tmp_path / "output", base.parser)
+    published = repository.publish(extraction)
+    metadata = json.loads((published / "extraction.json").read_text())
+    metadata["warnings"].append("tampered warning")
+    (published / "extraction.json").write_text(json.dumps(metadata) + "\n")
+
+    with pytest.raises(EvidenceNotFoundError, match="inconsistent"):
+        repository.get(base.pages[0].evidence_id)
+
+
+def test_get_rejects_asset_symlink_before_reading_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A symlink must be rejected before its target bytes can cross the trust boundary."""
+    from domain.models.evidence import BinaryAsset
+
+    source = tmp_path / "source.pdf"
+    original = _source(source)
+    base = PypdfDocumentParser().parse(source)
+    extraction = replace(base, assets=(BinaryAsset("original.pdf", original),))
+    repository = FilesystemEvidenceRepository(tmp_path / "output", base.parser)
+    published = repository.publish(extraction)
+    asset = published / "original.pdf"
+    target = tmp_path / "outside.pdf"
+    target.write_bytes(original)
+    asset.unlink()
+    asset.symlink_to(target)
+    read_bytes = Path.read_bytes
+
+    def reject_symlink_read(path: Path) -> bytes:
+        if path.is_symlink():
+            raise AssertionError("symlink bytes were read")
+        return read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_symlink_read)
+    with pytest.raises(EvidenceNotFoundError, match="inconsistent"):
+        repository.get(base.pages[0].evidence_id)
+
+
+def test_same_bytes_with_different_filenames_share_one_publication(tmp_path: Path) -> None:
+    """A source alias must not make content-addressed evidence conflict with itself."""
+    first = tmp_path / "a.pdf"
+    data = _source(first)
+    second = tmp_path / "b.pdf"
+    second.write_bytes(data)
+    first_extraction = PypdfDocumentParser().parse(first)
+    second_extraction = PypdfDocumentParser().parse(second)
+    repository = FilesystemEvidenceRepository(tmp_path / "output", first_extraction.parser)
+
+    published = repository.publish(first_extraction)
+
+    assert repository.publish(second_extraction) == published
+    assert repository.get(second_extraction.pages[0].evidence_id) == second_extraction.pages[0]
+    stored = json.loads((published / "manifest.json").read_text())
+    assert stored["filename"] == f"{first_extraction.manifest.sha256}.pdf"

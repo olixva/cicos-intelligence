@@ -17,6 +17,8 @@ from docling_core.types.doc.document import DoclingDocument
 from docling_core.types.doc.labels import DocItemLabel
 from pypdf import PdfWriter
 
+from infrastructure.adapters.outbound.document_parser.model_artifacts import ModelBundle
+
 
 def _two_pages(path: Path) -> bytes:
     writer = PdfWriter()
@@ -29,6 +31,7 @@ def _two_pages(path: Path) -> bytes:
 def test_projection_retains_furniture_geometry_sections_and_missing_pages(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    fake_model_bundle: ModelBundle,
 ) -> None:
     """Dropping furniture, trusting missing OCR, or double-flipping display boxes loses evidence."""
     from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
@@ -65,7 +68,7 @@ def test_projection_retains_furniture_geometry_sections_and_missing_pages(
         return result
 
     monkeypatch.setattr(DocumentConverter, "convert", converted)
-    extraction = DoclingParser().parse(source)
+    extraction = DoclingParser(model_bundle=fake_model_bundle).parse(source)
     assert [page.pdf_page for page in extraction.pages] == [1, 2]
     page = extraction.pages[0]
     assert "Critical note" in page.text
@@ -87,6 +90,7 @@ def test_projection_retains_furniture_geometry_sections_and_missing_pages(
 def test_ocr_failure_is_declared_without_dropping_original_pages(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    fake_model_bundle: ModelBundle,
 ) -> None:
     """A conversion exception must retain each rendered page and an explicit failure warning."""
     from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
@@ -98,7 +102,7 @@ def test_ocr_failure_is_declared_without_dropping_original_pages(
         raise RuntimeError("OCR engine unavailable")
 
     monkeypatch.setattr(DocumentConverter, "convert", failed)
-    extraction = DoclingParser().parse(source)
+    extraction = DoclingParser(model_bundle=fake_model_bundle).parse(source)
     assert len(extraction.pages) == 2
     assert all(page.image_path for page in extraction.pages)
     assert any("OCR engine unavailable" in warning for warning in extraction.warnings)
@@ -109,7 +113,7 @@ def test_ocr_failure_is_declared_without_dropping_original_pages(
 
 
 def test_furniture_uses_the_section_active_on_its_own_page(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_model_bundle: ModelBundle
 ) -> None:
     """Furniture iterated after the body must not inherit the document's final section."""
     from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
@@ -149,7 +153,7 @@ def test_furniture_uses_the_section_active_on_its_own_page(
 
     monkeypatch.setattr(DocumentConverter, "convert", convert)
 
-    extraction = DoclingParser().parse(source)
+    extraction = DoclingParser(model_bundle=fake_model_bundle).parse(source)
 
     footer = next(
         element for element in extraction.pages[0].elements if element.kind == "page_footer"
@@ -158,7 +162,7 @@ def test_furniture_uses_the_section_active_on_its_own_page(
 
 
 def test_configuration_records_effective_ocr_backend(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_model_bundle: ModelBundle
 ) -> None:
     """Changing the RapidOCR runtime backend must change persisted parser configuration."""
     from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
@@ -182,7 +186,7 @@ def test_configuration_records_effective_ocr_backend(
 
     monkeypatch.setattr(DocumentConverter, "convert", convert)
 
-    extraction = DoclingParser().parse(source)
+    extraction = DoclingParser(model_bundle=fake_model_bundle).parse(source)
     configuration = json.loads(
         next(asset.data for asset in extraction.assets if asset.path == "configuration.json")
     )
@@ -192,3 +196,45 @@ def test_configuration_records_effective_ocr_backend(
         "engine": "RapidOCR",
         "languages": ["latin"],
     }
+
+
+def test_source_alias_does_not_change_docling_assets_or_publication(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_model_bundle: ModelBundle,
+) -> None:
+    """Docling's raw exports must use content identity rather than the caller's filename."""
+    from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
+    from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
+        FilesystemEvidenceRepository,
+    )
+
+    first = tmp_path / "a.pdf"
+    original = _two_pages(first)
+    second = tmp_path / "b.pdf"
+    second.write_bytes(original)
+
+    def convert(stream: Any, **kwargs: Any) -> ConversionResult:
+        document = DoclingDocument(name=Path(stream.name).stem)
+        return ConversionResult(
+            input=InputDocument(
+                path_or_stream=BytesIO(original),
+                format=InputFormat.PDF,
+                backend=PyPdfiumDocumentBackend,
+                filename=stream.name,
+            ),
+            document=document,
+            status=ConversionStatus.SUCCESS,
+        )
+
+    monkeypatch.setattr(DocumentConverter, "convert", convert)
+    parser = DoclingParser(model_bundle=fake_model_bundle)
+
+    first_extraction = parser.parse(first)
+    second_extraction = parser.parse(second)
+
+    assert first_extraction.manifest.filename == "a.pdf"
+    assert second_extraction.manifest.filename == "b.pdf"
+    assert first_extraction.assets == second_extraction.assets
+    repository = FilesystemEvidenceRepository(tmp_path / "evidence", parser.parser)
+    assert repository.publish(first_extraction) == repository.publish(second_extraction)

@@ -14,6 +14,8 @@ from domain.models.evidence import ElementEvidence, Extraction, PageEvidence
 
 _PARSER_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 _EVIDENCE_ID_PATTERN = re.compile(r"sha256:([0-9a-f]{64}):page:([1-9][0-9]*)")
+_PUBLICATION_NAME = "publication.json"
+_RESERVED_PATHS = {"manifest.json", "pages.jsonl", "extraction.json", _PUBLICATION_NAME}
 
 
 class EvidencePublicationError(Exception):
@@ -67,6 +69,7 @@ class FilesystemEvidenceRepository:
             raise EvidenceNotFoundError("Invalid evidence identifier")
         document_hash, requested_page = match.groups()
         directory = self._root / document_hash / self._parser
+        publication_files = _validate_publication_root(directory)
         try:
             manifest_record = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
             page_records = [
@@ -80,7 +83,7 @@ class FilesystemEvidenceRepository:
             raise EvidenceNotFoundError("Stored evidence is inconsistent")
         pages = tuple(_page_evidence(record) for record in page_records)
         _validate_stored_pages(manifest, pages)
-        _validate_stored_assets(directory, manifest, pages, self._parser)
+        _validate_stored_assets(directory, manifest, pages, self._parser, publication_files)
         page_index = int(requested_page) - 1
         if page_index >= len(pages):
             raise EvidenceNotFoundError("Evidence page was not found")
@@ -123,7 +126,9 @@ class FilesystemEvidenceRepository:
 
     def _write_extraction(self, extraction: Extraction, directory: Path) -> None:
         with (directory / "manifest.json").open("w", encoding="utf-8") as manifest_file:
-            json.dump(asdict(extraction.manifest), manifest_file, sort_keys=True)
+            json.dump(
+                _canonical_manifest_record(extraction.manifest), manifest_file, sort_keys=True
+            )
             manifest_file.write("\n")
         with (directory / "pages.jsonl").open("w", encoding="utf-8") as pages_file:
             for page in extraction.pages:
@@ -138,15 +143,20 @@ class FilesystemEvidenceRepository:
             target = directory / asset.path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(asset.data)
+        _write_publication_root(directory)
 
     def _validate_published(self, extraction: Extraction, directory: Path) -> None:
+        try:
+            publication_files = _validate_publication_root(directory)
+        except EvidenceNotFoundError as error:
+            raise EvidencePublicationError("Written publication is inconsistent") from error
         stored_manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
         stored_pages = [
             json.loads(line)
             for line in (directory / "pages.jsonl").read_text(encoding="utf-8").splitlines()
         ]
         if (
-            stored_manifest != asdict(extraction.manifest)
+            stored_manifest != _canonical_manifest_record(extraction.manifest)
             or len(stored_pages) != extraction.manifest.page_count
         ):
             raise EvidencePublicationError("Written evidence does not match the extraction")
@@ -169,7 +179,11 @@ class FilesystemEvidenceRepository:
                 raise EvidencePublicationError("Written asset does not match the extraction")
         try:
             _validate_stored_assets(
-                directory, extraction.manifest, extraction.pages, extraction.parser
+                directory,
+                extraction.manifest,
+                extraction.pages,
+                extraction.parser,
+                publication_files,
             )
         except EvidenceNotFoundError as error:
             raise EvidencePublicationError("Written assets are inconsistent") from error
@@ -254,11 +268,14 @@ def _validate_stored_assets(
     manifest: DocumentManifest,
     pages: tuple[PageEvidence, ...],
     parser: str,
+    publication_files: dict[str, tuple[str, int]],
 ) -> None:
     """Bind every listed byte asset and page reference to its persisted hash metadata."""
     metadata_path = directory / "extraction.json"
     if not metadata_path.exists():
-        if any(page.image_path is not None or page.elements for page in pages):
+        if any(page.image_path is not None or page.elements for page in pages) or set(
+            publication_files
+        ) != {"manifest.json", "pages.jsonl"}:
             raise EvidenceNotFoundError("Stored evidence is inconsistent")
         return
     try:
@@ -307,12 +324,7 @@ def _validate_stored_assets(
         paths.add(path)
         if path == "original.pdf":
             original_digest = digest
-        target = directory / path
-        try:
-            data = target.read_bytes()
-        except OSError as error:
-            raise EvidenceNotFoundError("Stored evidence is inconsistent") from error
-        if target.is_symlink() or len(data) != size or sha256(data).hexdigest() != digest:
+        if publication_files.get(path) != (digest, size):
             raise EvidenceNotFoundError("Stored evidence is inconsistent")
 
     if paths and "original.pdf" not in paths:
@@ -323,13 +335,7 @@ def _validate_stored_assets(
         raise EvidenceNotFoundError("Stored evidence is inconsistent")
 
     expected_files = {"manifest.json", "pages.jsonl", "extraction.json", *paths}
-    actual_files: set[str] = set()
-    for entry in directory.rglob("*"):
-        if entry.is_symlink():
-            raise EvidenceNotFoundError("Stored evidence is inconsistent")
-        if entry.is_file():
-            actual_files.add(entry.relative_to(directory).as_posix())
-    if actual_files != expected_files:
+    if set(publication_files) != expected_files:
         raise EvidenceNotFoundError("Stored evidence is inconsistent")
 
 
@@ -341,8 +347,141 @@ def _is_safe_asset_path(value: str) -> bool:
         or "\\" in value
         or not path.parts
         or str(path) != value
-        or path.parts[0] in {"manifest.json", "pages.jsonl", "extraction.json"}
+        or path.parts[0] in _RESERVED_PATHS
     )
+
+
+def _is_safe_publication_path(value: str) -> bool:
+    path = PurePosixPath(value)
+    return not (
+        path.is_absolute()
+        or ".." in path.parts
+        or "\\" in value
+        or not path.parts
+        or str(path) != value
+        or path.parts[0] == _PUBLICATION_NAME
+    )
+
+
+def _contains_symlink(path: Path, root: Path) -> bool:
+    """Check every publication-relative component before crossing it to read bytes."""
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        return True
+    current = root
+    if current.is_symlink():
+        return True
+    for part in relative.parts:
+        current /= part
+        if current.is_symlink():
+            return True
+    return False
+
+
+def _canonical_manifest_record(manifest: DocumentManifest) -> dict[str, object]:
+    """Persist source identity independently from the caller's informational filename alias."""
+    return {
+        "document_id": manifest.document_id,
+        "sha256": manifest.sha256,
+        "filename": f"{manifest.sha256}.pdf",
+        "page_count": manifest.page_count,
+    }
+
+
+def _canonical_json_bytes(value: object) -> bytes:
+    return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
+def _write_publication_root(directory: Path) -> None:
+    files: list[dict[str, object]] = []
+    for entry in directory.rglob("*"):
+        if entry.is_symlink():
+            raise EvidencePublicationError("Written publication contains a symlink")
+        if not entry.is_file():
+            continue
+        relative = entry.relative_to(directory).as_posix()
+        if relative == _PUBLICATION_NAME:
+            continue
+        data = entry.read_bytes()
+        files.append({"path": relative, "sha256": sha256(data).hexdigest(), "size": len(data)})
+    files.sort(key=lambda item: cast(str, item["path"]))
+    payload = {"schema_version": 1, "files": files}
+    record = {**payload, "root_sha256": sha256(_canonical_json_bytes(payload)).hexdigest()}
+    (directory / _PUBLICATION_NAME).write_bytes(_canonical_json_bytes(record))
+
+
+def _validate_publication_root(directory: Path) -> dict[str, tuple[str, int]]:
+    root = directory / _PUBLICATION_NAME
+    if _contains_symlink(root, directory):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    try:
+        raw_root = root.read_bytes()
+        value: object = json.loads(raw_root)
+    except (OSError, json.JSONDecodeError) as error:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent") from error
+    if not isinstance(value, dict):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    record = cast(dict[str, object], value)
+    if set(record) != {"schema_version", "files", "root_sha256"}:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    files_value = record["files"]
+    root_digest = record["root_sha256"]
+    if record["schema_version"] != 1 or not isinstance(files_value, list):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    payload: dict[str, object] = {"schema_version": 1, "files": files_value}
+    if (
+        not isinstance(root_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", root_digest) is None
+        or sha256(_canonical_json_bytes(payload)).hexdigest() != root_digest
+        or raw_root != _canonical_json_bytes(record)
+    ):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+
+    files: dict[str, tuple[str, int]] = {}
+    for item in cast(list[object], files_value):
+        if not isinstance(item, dict):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        file_record = cast(dict[str, object], item)
+        if set(file_record) != {"path", "sha256", "size"}:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        path = file_record["path"]
+        digest = file_record["sha256"]
+        size = file_record["size"]
+        if (
+            not isinstance(path, str)
+            or not _is_safe_publication_path(path)
+            or path in files
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            or isinstance(size, bool)
+            or not isinstance(size, int)
+            or size < 0
+        ):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        target = directory / path
+        if _contains_symlink(target, directory):
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        try:
+            data = target.read_bytes()
+        except OSError as error:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent") from error
+        if len(data) != size or sha256(data).hexdigest() != digest:
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        files[path] = (digest, size)
+
+    if [item["path"] for item in cast(list[dict[str, object]], files_value)] != sorted(files):
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+
+    actual_files: set[str] = set()
+    for entry in directory.rglob("*"):
+        if entry.is_symlink():
+            raise EvidenceNotFoundError("Stored evidence is inconsistent")
+        if entry.is_file():
+            actual_files.add(entry.relative_to(directory).as_posix())
+    if actual_files != {*files, _PUBLICATION_NAME}:
+        raise EvidenceNotFoundError("Stored evidence is inconsistent")
+    return files
 
 
 def _page_record(page: PageEvidence) -> dict[str, object]:

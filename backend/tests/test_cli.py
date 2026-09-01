@@ -15,6 +15,8 @@ from docling_core.types.doc.document import DoclingDocument
 from pypdf import PdfWriter
 from pytest import CaptureFixture
 
+from infrastructure.adapters.outbound.document_parser.model_artifacts import ModelBundle
+
 
 def test_inspect_manual_prints_a_json_manifest(tmp_path: Path, capsys: CaptureFixture[str]) -> None:
     """A valid source must return its manifest as JSON on standard output."""
@@ -55,7 +57,10 @@ def test_inspect_manual_reports_input_errors_without_a_traceback(
 
 
 def test_ingest_docling_prints_metadata_without_binary_assets(
-    capsys: CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    fake_model_bundle: ModelBundle,
 ) -> None:
     """Serializing a structured extraction must never send original or PNG bytes to stdout."""
     from io import BytesIO
@@ -84,6 +89,10 @@ def test_ingest_docling_prints_metadata_without_binary_assets(
         return converted
 
     monkeypatch.setattr(DocumentConverter, "convert", convert)
+    monkeypatch.setattr(
+        "infrastructure.adapters.outbound.document_parser.docling_parser.default_model_bundle",
+        lambda: fake_model_bundle,
+    )
 
     result = main(
         [
@@ -135,3 +144,30 @@ def test_ingest_reports_source_errors_without_a_traceback(
     assert captured.out == ""
     assert "Unable to read source" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_prepare_models_reports_verified_bundle_without_downloading_in_test(
+    capsys: CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    fake_model_bundle: ModelBundle,
+) -> None:
+    from infrastructure.adapters.inbound.cli.main import main
+
+    def prepared(output: Path) -> ModelBundle:
+        return fake_model_bundle
+
+    monkeypatch.setattr(
+        "infrastructure.adapters.outbound.document_parser.model_artifacts.prepare_model_bundle",
+        prepared,
+    )
+
+    result = main(["prepare-ingestion-models", "--output", "/unused"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert captured.err == ""
+    assert json.loads(captured.out) == {
+        "bundle_sha256": fake_model_bundle.digest,
+        "files": 9,
+        "output": str(fake_model_bundle.root),
+    }

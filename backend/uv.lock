@@ -34,6 +34,12 @@ dependencies = [
     { name = "pypdf" },
 ]
 
+[package.optional-dependencies]
+ingestion = [
+    { name = "docling" },
+    { name = "pypdfium2" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pyright" },
@@ -46,7 +52,12 @@ ingestion = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pypdf", specifier = ">=6.0.0" }]
+requires-dist = [
+    { name = "docling", marker = "extra == 'ingestion'", specifier = "==2.124.0" },
+    { name = "pypdf", specifier = ">=6.0.0" },
+    { name = "pypdfium2", marker = "extra == 'ingestion'", specifier = "==5.13.0" },
+]
+provides-extras = ["ingestion"]
 
 [package.metadata.requires-dev]
 dev = [

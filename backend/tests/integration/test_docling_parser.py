@@ -91,7 +91,21 @@ def test_real_manual_preserves_inventory_and_reports_scan_review(tmp_path: Path)
         page.evidence_id for page in baseline.pages
     ]
     assert any(element.kind == "table" for element in extracted.pages[100].elements)
-    assert any("Page 32" in warning and "review" in warning for warning in extracted.warnings)
+    assert any(
+        warning.startswith("Page 32 has little extracted text")
+        and "review original image" in warning
+        for warning in extracted.warnings
+    )
+    assert any(
+        warning.startswith("Page 32 contains picture evidence")
+        and "review original image" in warning
+        for warning in extracted.warnings
+    )
+    assert any(
+        warning.startswith("Page 101 contains an unverified table")
+        and "before using it as rules" in warning
+        for warning in extracted.warnings
+    )
     repository = FilesystemEvidenceRepository(tmp_path / "evidence", extracted.parser)
     published = repository.publish(extracted)
     assert (published / "original.pdf").read_bytes() == source.read_bytes()

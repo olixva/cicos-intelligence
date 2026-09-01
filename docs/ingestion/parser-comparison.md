@@ -4,9 +4,18 @@
 
 The structured adapter uses Docling 2.124.0 with `PyPdfiumDocumentBackend`, RapidOCR 3.9.2
 (`latin`, Torch CPU), and independent pypdfium2 5.13.0 rendering at 2x PDF scale (144 dpi).
-Its effective options and dependency versions are stored in `configuration.json` and hashed into
-the parser identity. The reviewed identity is
-`docling-2.124.0-pdfium-5.13.0-rapidocr-latin-torch-r1-5d1c751cd72c75b2`.
+Its effective options, dependency versions, exact upstream model revisions, and hashes of all nine
+effective model files are stored in `configuration.json` and hashed into the parser identity. The
+reviewed bundle digest is
+`135374b2b3918a3d1bad9dcb295901e24df0928753782cae69a3fa78d25377e1`.
+
+The bundle fixes layout revision `8f39ad3c0b4c58e9c2d2c84a38465abf757272d8`, table-model
+revision `fc0f2d45e2218ea24bce5045f58a389aed16dc23`, and the RapidOCR 3.9.2 release files.
+`allianz prepare-ingestion-models` is the only path allowed to download them. It verifies the
+declared hashes before atomically publishing the 390 MB bundle. Ordinary ingestion requires and
+revalidates this local bundle, supplies every path explicitly to Docling/RapidOCR, and performs no
+implicit model download. Absolute local paths are replaced by stable bundle roles in the parser
+fingerprint.
 
 Docling receives a byte stream derived from the immutable source snapshot. For PDFs with a crop
 offset or `/Rotate`, a layout-only copy first moves the visible crop to a zero origin and bakes the
@@ -57,11 +66,17 @@ not missing page content.
 
 A complete structured publication contains `original.pdf`, one PNG per physical page,
 `document.json`, `document.md`, `diagnostics.json`, `configuration.json`, `manifest.json`,
-`pages.jsonl`, and `extraction.json`. A normalized `layout-input.pdf` is added only when crop or
+`pages.jsonl`, `extraction.json`, and `publication.json`. A normalized `layout-input.pdf` is added only when crop or
 rotation normalization is required. Asset paths must be unique, relative, and non-overlapping.
-Metadata records SHA-256 and size for every asset; reads re-hash the assets, reject symlinks and
-unlisted files, and verify that `original.pdf` matches the manifest hash. Publication occurs by a
-same-filesystem rename only after the complete staged directory validates.
+The publication root records SHA-256 and size for every metadata and binary file; reads validate it
+before decoding page evidence, reject symlinks before reading through them, reject unlisted files,
+and verify that `original.pdf` matches the manifest hash. The persisted source filename is a
+content-derived canonical name, so aliases with identical bytes share one immutable publication.
+Publication occurs by a same-filesystem rename only after the complete staged directory validates.
+
+On the reviewed macOS host, the locked Python environment occupied 1.2 GB, the model bundle 390 MB,
+and the 111-page integration reached 3,648,962,560 bytes maximum RSS (about 3.40 GiB). These are
+local engineering measurements rather than portable resource guarantees.
 
 Docling and RapidOCR currently emit two upstream deprecation warnings during conversion. They do
 not alter the reviewed output, but should be reassessed when upgrading the pinned ingestion group.
