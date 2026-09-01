@@ -193,7 +193,9 @@ def _chunks_from_points(points: Sequence[models.ScoredPoint]) -> tuple[Chunk, ..
         ):
             raise InvalidIndexDataError("retrieval point has an invalid chunk payload")
         evidence_items = cast(list[object], evidence_ids)
-        if not all(isinstance(item, str) and item for item in evidence_items):
+        if not evidence_items or not all(
+            isinstance(item, str) and item.strip() for item in evidence_items
+        ):
             raise InvalidIndexDataError("retrieval point has an invalid chunk payload")
         if chunk_id in seen:
             continue

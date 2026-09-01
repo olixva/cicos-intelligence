@@ -23,6 +23,10 @@ class IndexPublicationError(RuntimeError):
     """Raised when a candidate collection cannot be validated and published."""
 
 
+class AmbiguousIndexPublicationError(IndexPublicationError):
+    """Raised when alias state cannot be reconciled and the candidate must be preserved."""
+
+
 class QdrantIndexBuilder:
     """Build a new collection completely, validate it, then atomically switch its alias."""
 
@@ -51,6 +55,15 @@ class QdrantIndexBuilder:
             raise IndexPublicationError("cannot publish an empty index")
         if len({chunk.chunk_id for chunk in ordered}) != len(ordered):
             raise IndexPublicationError("chunk IDs must be unique")
+        for chunk in ordered:
+            if not chunk.chunk_id.strip():
+                raise IndexPublicationError("chunk_id must be nonempty")
+            if not chunk.text.strip():
+                raise IndexPublicationError("chunk text must be nonempty")
+            if not chunk.evidence_ids or any(
+                not evidence_id.strip() for evidence_id in chunk.evidence_ids
+            ):
+                raise IndexPublicationError("chunk evidence_ids must contain identifiers")
 
         dense = await self.embedding_provider.embed(tuple(chunk.text for chunk in ordered))
         if len(dense) != len(ordered):
@@ -105,6 +118,12 @@ class QdrantIndexBuilder:
             await self._validate_candidate(collection, signature, len(ordered))
             await self._publish_alias(collection)
             return collection
+        except AmbiguousIndexPublicationError:
+            logger.error(
+                "Preserving Qdrant candidate after ambiguous alias publication collection=%s",
+                collection,
+            )
+            raise
         except Exception:
             if created:
                 try:
@@ -138,12 +157,9 @@ class QdrantIndexBuilder:
             raise IndexPublicationError("candidate vector configuration is incompatible")
 
     async def _publish_alias(self, collection: str) -> None:
-        aliases = await self.client.get_aliases()
-        active = next(
-            (alias for alias in aliases.aliases if alias.alias_name == self.active_alias), None
-        )
+        previous_collection = await self._active_collection()
         operations: list[models.DeleteAliasOperation | models.CreateAliasOperation] = []
-        if active is not None:
+        if previous_collection is not None:
             operations.append(
                 models.DeleteAliasOperation(
                     delete_alias=models.DeleteAlias(alias_name=self.active_alias)
@@ -157,11 +173,99 @@ class QdrantIndexBuilder:
                 )
             )
         )
-        published = await self.client.update_collection_aliases(
-            change_aliases_operations=operations
-        )
+        try:
+            published = await self.client.update_collection_aliases(
+                change_aliases_operations=operations
+            )
+        except (ConnectionError, TimeoutError) as error:
+            await self._reconcile_alias_publication(collection, previous_collection, error)
+            return
         if not published:
-            raise IndexPublicationError("Qdrant did not publish the active alias")
+            await self._reconcile_alias_publication(
+                collection,
+                previous_collection,
+                IndexPublicationError("Qdrant did not confirm the active alias publication"),
+            )
+
+    async def _reconcile_alias_publication(
+        self,
+        collection: str,
+        previous_collection: str | None,
+        publication_error: Exception,
+    ) -> None:
+        try:
+            active_collection = await self._active_collection()
+        except Exception as reconciliation_error:
+            raise AmbiguousIndexPublicationError(
+                "could not verify active alias after an ambiguous publication"
+            ) from reconciliation_error
+
+        if active_collection == collection:
+            logger.warning(
+                "Qdrant alias publication succeeded despite transport error alias=%s collection=%s",
+                self.active_alias,
+                collection,
+            )
+            return
+        if active_collection == previous_collection:
+            raise IndexPublicationError(
+                "Qdrant alias publication was not applied"
+            ) from publication_error
+        if active_collection is None and previous_collection is not None:
+            await self._restore_previous_alias(previous_collection, publication_error)
+            raise IndexPublicationError(
+                "Qdrant alias publication failed; previous alias restored"
+            ) from (publication_error)
+        if active_collection is None:
+            raise IndexPublicationError("Qdrant initial alias publication was not applied") from (
+                publication_error
+            )
+        raise AmbiguousIndexPublicationError(
+            f"active alias points to unexpected collection {active_collection}"
+        ) from publication_error
+
+    async def _restore_previous_alias(
+        self, previous_collection: str, publication_error: Exception
+    ) -> None:
+        operation = models.CreateAliasOperation(
+            create_alias=models.CreateAlias(
+                collection_name=previous_collection,
+                alias_name=self.active_alias,
+            )
+        )
+        try:
+            restored = await self.client.update_collection_aliases(
+                change_aliases_operations=[operation]
+            )
+        except Exception:
+            try:
+                active_collection = await self._active_collection()
+            except Exception as reconciliation_error:
+                raise AmbiguousIndexPublicationError(
+                    "could not verify restoration of the previous active alias"
+                ) from reconciliation_error
+            if active_collection == previous_collection:
+                return
+            raise AmbiguousIndexPublicationError(
+                "previous active alias could not be restored after ambiguous publication"
+            ) from publication_error
+        try:
+            active_collection = await self._active_collection()
+        except Exception as reconciliation_error:
+            raise AmbiguousIndexPublicationError(
+                "could not verify restoration of the previous active alias"
+            ) from reconciliation_error
+        if not restored or active_collection != previous_collection:
+            raise AmbiguousIndexPublicationError(
+                "previous active alias could not be restored after ambiguous publication"
+            ) from publication_error
+
+    async def _active_collection(self) -> str | None:
+        aliases = await self.client.get_aliases()
+        active = next(
+            (alias for alias in aliases.aliases if alias.alias_name == self.active_alias), None
+        )
+        return active.collection_name if active is not None else None
 
 
 def _candidate_collection_name(signature: IndexSignature) -> str:

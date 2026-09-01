@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+import uuid
 from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
@@ -105,6 +106,27 @@ def test_bm25_finds_identifier_acronym_and_preserves_spanish_negation(tmp_path: 
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("negation", ["no", "sin", "nunca", "ni"])
+def test_spanish_bm25_keeps_negation_as_contrastive_evidence(negation: str) -> None:
+    """Putting a negation token back into stopwords would collapse opposite documents."""
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import (
+        FastEmbedBm25Encoder,
+    )
+
+    async def scenario() -> None:
+        encoder = FastEmbedBm25Encoder(language="spanish")
+        query = await encoder.embed_query(negation)
+        affirmative, negative = await encoder.embed_documents(
+            ("registro autorizado", f"registro {negation} autorizado")
+        )
+        query_ids = set(query.indices)
+        assert query_ids
+        assert query_ids.isdisjoint(affirmative.indices)
+        assert query_ids <= set(negative.indices)
+
+    asyncio.run(scenario())
+
+
 def test_dense_retrieval_finds_concept_without_literal_overlap(tmp_path: Path) -> None:
     """Using lexical lookup in dense mode would miss the paraphrased weather concept."""
     from application.ports.outbound.retriever import RetrievalRequest
@@ -201,6 +223,163 @@ def test_failed_candidate_validation_does_not_change_active_alias(tmp_path: Path
             assert {
                 item.name for item in (await client.get_collections()).collections
             } == collections_before
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_applied_alias_update_followed_by_connection_error_keeps_active_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Deleting an ambiguously published candidate would leave the active alias dangling."""
+    from infrastructure.adapters.outbound.retriever.index_builder import QdrantIndexBuilder
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import FastEmbedBm25Encoder
+
+    async def scenario() -> None:
+        client, original, _ = await _build_retriever(tmp_path)
+        update_aliases = client.update_collection_aliases
+
+        async def apply_then_disconnect(
+            change_aliases_operations: Sequence[
+                models.CreateAliasOperation
+                | models.RenameAliasOperation
+                | models.DeleteAliasOperation
+            ],
+            timeout: int | None = None,
+            **kwargs: object,
+        ) -> bool:
+            await update_aliases(
+                change_aliases_operations=change_aliases_operations,
+                timeout=timeout,
+                **kwargs,
+            )
+            raise ConnectionError("connection lost after Qdrant applied alias update")
+
+        monkeypatch.setattr(client, "update_collection_aliases", apply_then_disconnect)
+        builder = QdrantIndexBuilder(
+            client=client,
+            embedding_provider=FixtureEmbeddingProvider(),
+            sparse_encoder=FastEmbedBm25Encoder(language="spanish"),
+            active_alias=ACTIVE_ALIAS,
+        )
+        try:
+            published = await builder.build_index(CORPUS, _signature())
+            aliases = await client.get_aliases()
+            active = next(alias for alias in aliases.aliases if alias.alias_name == ACTIVE_ALIAS)
+            assert active.collection_name == published
+            assert active.collection_name != original
+            assert (await client.get_collection(ACTIVE_ALIAS)).points_count == len(CORPUS)
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_unverifiable_alias_update_preserves_candidate_and_previous_active_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unknown publication state must preserve both possible active collections."""
+    from infrastructure.adapters.outbound.retriever.index_builder import (
+        AmbiguousIndexPublicationError,
+        QdrantIndexBuilder,
+    )
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import FastEmbedBm25Encoder
+
+    async def scenario() -> None:
+        client, original, _ = await _build_retriever(tmp_path)
+        get_aliases = client.get_aliases
+        collections_before = {item.name for item in (await client.get_collections()).collections}
+        alias_reads = 0
+
+        async def disconnect_before_confirmation(
+            change_aliases_operations: Sequence[
+                models.CreateAliasOperation
+                | models.RenameAliasOperation
+                | models.DeleteAliasOperation
+            ],
+            timeout: int | None = None,
+            **kwargs: object,
+        ) -> bool:
+            del change_aliases_operations, timeout, kwargs
+            raise ConnectionError("alias update outcome is unknown")
+
+        async def first_read_then_disconnect(**kwargs: object) -> models.CollectionsAliasesResponse:
+            nonlocal alias_reads
+            alias_reads += 1
+            if alias_reads > 1:
+                raise ConnectionError("alias reconciliation is unavailable")
+            return await get_aliases(**kwargs)
+
+        monkeypatch.setattr(client, "update_collection_aliases", disconnect_before_confirmation)
+        monkeypatch.setattr(client, "get_aliases", first_read_then_disconnect)
+        builder = QdrantIndexBuilder(
+            client=client,
+            embedding_provider=FixtureEmbeddingProvider(),
+            sparse_encoder=FastEmbedBm25Encoder(language="spanish"),
+            active_alias=ACTIVE_ALIAS,
+        )
+        try:
+            with pytest.raises(AmbiguousIndexPublicationError, match="could not verify"):
+                await builder.build_index(CORPUS, _signature())
+            collections_after = {item.name for item in (await client.get_collections()).collections}
+            assert collections_before < collections_after
+            assert len(collections_after - collections_before) == 1
+            active = next(
+                alias for alias in (await get_aliases()).aliases if alias.alias_name == ACTIVE_ALIAS
+            )
+            assert active.collection_name == original
+            assert (await client.get_collection(ACTIVE_ALIAS)).points_count == len(CORPUS)
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_builder_rejects_chunk_without_evidence_identifiers(tmp_path: Path) -> None:
+    """Publishing a source-free chunk would make later citations unverifiable."""
+    from infrastructure.adapters.outbound.retriever.index_builder import (
+        IndexPublicationError,
+        QdrantIndexBuilder,
+    )
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import FastEmbedBm25Encoder
+
+    async def scenario() -> None:
+        client = AsyncQdrantClient(path=str(tmp_path / "qdrant"))
+        builder = QdrantIndexBuilder(
+            client=client,
+            embedding_provider=FixtureEmbeddingProvider(),
+            sparse_encoder=FastEmbedBm25Encoder(language="spanish"),
+            active_alias=ACTIVE_ALIAS,
+        )
+        source_free = replace(CORPUS[0], evidence_ids=())
+        try:
+            with pytest.raises(IndexPublicationError, match="evidence_ids"):
+                await builder.build_index((source_free,), _signature())
+            assert (await client.get_collections()).collections == []
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_retriever_rejects_payload_without_evidence_identifiers(tmp_path: Path) -> None:
+    """An empty evidence payload must fail instead of producing an uncitable chunk."""
+    from application.ports.outbound.retriever import RetrievalRequest
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import InvalidIndexDataError
+
+    async def scenario() -> None:
+        client, collection, retriever = await _build_retriever(tmp_path)
+        weather_point = str(uuid.uuid5(uuid.NAMESPACE_URL, "chunk-weather"))
+        await client.set_payload(
+            collection_name=collection,
+            payload={"evidence_ids": []},
+            points=[weather_point],
+            wait=True,
+        )
+        try:
+            with pytest.raises(InvalidIndexDataError, match="chunk payload"):
+                await retriever.retrieve(RetrievalRequest("protección meteorológica", 1, "dense"))
         finally:
             await client.close()
 
