@@ -32,10 +32,6 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
     from langfuse.experiment import EvaluatorFunction, ExperimentResult
 
-    from infrastructure.adapters.outbound.language_model.openai_language_model import (
-        LangfusePromptClient,
-    )
-
 _SKIPPED_PORT_LOGGER = logging.getLogger(__name__)
 
 
@@ -267,28 +263,35 @@ def build_api(
     profile_name: str | None = None,
     question_profile: str | None = None,
     claim_profile: str | None = None,
+    resolve_query_profile: str | None = None,
 ) -> FastAPI:
     """Build the local HTTP adapter through its dependency-aware factory.
 
-    Both the explicit question and the explicit claim routers are wired only
-    when their respective factories succeed. When ``profile_name`` is provided
-    it acts as the default for both routers; ``question_profile`` and
-    ``claim_profile`` override it on a per-router basis. A configuration that
-    builds no router at all is treated as a hard failure so the operator is
-    not silently served an empty API.
+    The question, claim, and resolve routers are wired only when their
+    respective factories succeed. When ``profile_name`` is provided it
+    acts as the default for all three routers; ``question_profile``,
+    ``claim_profile``, and ``resolve_query_profile`` override it on a
+    per-router basis. A configuration that builds no router at all is
+    treated as a hard failure so the operator is not silently served an
+    empty API.
     """
 
     from infrastructure.adapters.inbound.api.app import create_app
 
     answer_question = _try_build_answer_question(question_profile or profile_name)
     analyze_claim = _try_build_analyze_claim(claim_profile or profile_name)
-    if answer_question is None and analyze_claim is None:
+    resolve_query = _try_build_resolve_query(resolve_query_profile or profile_name)
+    if answer_question is None and analyze_claim is None and resolve_query is None:
         raise RuntimeError(
             "build_api() could not compose any workflow port; "
-            "pass profile_name or both question_profile/claim_profile, "
+            "pass profile_name or any of question_profile/claim_profile/resolve_query_profile, "
             "or fix the Langfuse/Qdrant configuration before serving the API"
         )
-    return create_app(answer_question=answer_question, analyze_claim=analyze_claim)
+    return create_app(
+        answer_question=answer_question,
+        analyze_claim=analyze_claim,
+        resolve_query=resolve_query,
+    )
 
 
 def _try_build_answer_question(profile: str | None) -> AnswerQuestion | None:
@@ -309,6 +312,15 @@ def _try_build_analyze_claim(profile: str | None) -> AnalyzeClaim | None:
         return _log_skipped_port("analyze_claim", profile, error)
 
 
+def _try_build_resolve_query(profile: str | None) -> ResolveQuery | None:
+    if profile is None:
+        return None
+    try:
+        return build_resolve_query(profile)
+    except (ValueError, OSError) as error:
+        return _log_skipped_port("resolve_query", profile, error)
+
+
 def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
     """Surface a single informative line when a workflow port cannot be built.
 
@@ -325,11 +337,14 @@ def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
 def build_resolve_query(profile_name: str) -> ResolveQuery:
     """Compose the closed-enum auto router against the same active index as questions and claims.
 
-    The classifier is backed by its own ``OpenAILanguageModel`` instance loaded
-    with the dedicated ``auto-router`` prompt version (configurable via
-    ``ALLIANZ_ROUTER_PROMPT_VERSION``); the dispatch graph reuses the existing
-    question and claim factories so retrieval, evidence, and Langfuse traces
-    stay consistent across modes.
+    The classifier is backed by its own ``OpenAIRoutingLanguageModel``
+    instance loaded with the dedicated ``auto-router`` prompt version
+    (configurable via ``ALLIANZ_ROUTER_PROMPT_VERSION``); it uses a
+    separate structured output schema (``RouteDecisionSchema``) so the
+    model can emit any of the three closed-enum routes. The dispatch
+    graph reuses the existing question and claim factories so
+    retrieval, evidence, and Langfuse traces stay consistent across
+    modes.
     """
 
     import os
@@ -337,26 +352,27 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
     from langfuse import Langfuse
 
     from infrastructure.adapters.outbound.language_model.openai_language_model import (
-        OpenAILanguageModel,
-        load_langfuse_prompt,
+        LangfuseTextPrompt,
+    )
+    from infrastructure.adapters.outbound.language_model.openai_routing_language_model import (
+        OpenAIRoutingLanguageModel,
+        RoutingPrompt,
     )
     from infrastructure.adapters.outbound.query_workflow.langgraph_workflow import (
-        LLMQueryClassifier,
         build_resolve_query_workflow,
     )
 
     _require_local_langfuse_environment()
     langfuse = Langfuse()
-    prompt = load_langfuse_prompt(
-        cast("LangfusePromptClient", langfuse),
-        name=os.environ.get("ALLIANZ_ROUTER_PROMPT_NAME", "auto-router"),
-        version=_positive_environment_integer("ALLIANZ_ROUTER_PROMPT_VERSION", 1),
-    )
-    classifier = LLMQueryClassifier(
-        OpenAILanguageModel(
-            model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.4"),
-            prompt=prompt,
-        )
+    prompt_name = os.environ.get("ALLIANZ_ROUTER_PROMPT_NAME", "auto-router")
+    prompt_version = _positive_environment_integer("ALLIANZ_ROUTER_PROMPT_VERSION", 1)
+    prompt_text = cast(
+        LangfuseTextPrompt,
+        langfuse.get_prompt(prompt_name, version=prompt_version, type="text"),
+    ).prompt
+    classifier = OpenAIRoutingLanguageModel(
+        model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.4"),
+        prompt=RoutingPrompt(name=prompt_name, version=prompt_version, content=prompt_text),
     )
     answer_question = build_answer_question(profile_name)
     analyze_claim = build_analyze_claim(profile_name)

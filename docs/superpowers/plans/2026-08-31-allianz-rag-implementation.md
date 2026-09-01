@@ -477,12 +477,24 @@ Implementar reranker LLM usando el proveedor ya configurado como candidato inici
 
 ## Task 16: Automático sin duplicar los recorridos
 
-**Files:** Crear `backend/src/application/ports/inbound/resolve_query.py`, `ports/outbound/query_workflow.py`, `use_cases/resolve_query_use_case.py`, `services/routing.py`, `backend/src/infrastructure/adapters/outbound/query_workflow/langgraph_workflow.py`, `backend/tests/test_query_routing.py`.
+**Estado de ejecución (1 de septiembre de 2026):** selector cerrado implementado y cableado a la API. El grafo LangGraph
+clasifica la consulta en un enum cerrado (`question` | `claim` |
+`clarification_required`) y despacha exactamente un sub-flujo; los
+counter-tests del servicio y del workflow confirman la exclusividad. El
+endpoint `POST /api/v1/queries/resolve` queda montado por
+`bootstrap.build_api()` cuando el puerto `resolve_query` se compone con
+éxito. La versión del prompt y el modelo del router son configurables
+(`ALLIANZ_ROUTER_PROMPT_NAME`, `ALLIANZ_ROUTER_PROMPT_VERSION`,
+`ALLIANZ_ROUTER_MODEL`) y se exponen como metadatos de runtime.
+Faltan la auditoría prompt/modelo contra Langfuse y la comparación
+emparejada automático/explícito con coste y calidad final.
 
-**Interfaces:** `RouteDecision(mode: Literal["question", "claim", "clarification_required"], clarification: str | None)`; `ResolveQuery.execute(query: QueryInput) -> Awaitable[QueryExecution | ClaimExecution | RouteDecision]`. El router recibe entrada original, sin etiquetas. Los modos explícitos llaman directamente a sus use cases y no a ResolveQuery.
+**Files:** Crear `backend/src/application/ports/inbound/resolve_query.py`, `ports/outbound/query_classifier.py`, `use_cases/resolve_query_use_case.py`, `services/routing.py`, `backend/src/infrastructure/adapters/outbound/query_workflow/langgraph_workflow.py`, `backend/tests/test_query_routing.py`, `backend/tests/test_query_workflow.py`. Modificar `app.py` para aceptar `resolve_query` y `bootstrap.py` con `build_resolve_query`.
 
-- [ ] RED con dobles contadores: `question` ejecuta una vez AnswerQuestion y cero AnalyzeClaim; `claim` hace lo contrario; `clarification_required` no ejecuta ninguno. El texto recibido por el flujo debe ser idéntico al input.
-- [ ] Implementar nodo clasificador con enum cerrado y aristas condicionales nativas de LangGraph. Despacho conceptual:
+**Interfaces:** `RouteDecision = Literal["question", "claim", "clarification_required"]`; `RouteClassification(decision, rationale=None)`; `ClarificationResult(message, missing_fields=())`; `RouteExecution(query, classification, dispatch, trace_id)`; `ResolveQuery.execute(query: QueryInput) -> Awaitable[RouteExecution]`. El router recibe entrada original, sin etiquetas. Los modos explícitos llaman directamente a sus use cases y no a ResolveQuery.
+
+- [x] RED con dobles contadores: `question` ejecuta una vez AnswerQuestion y cero AnalyzeClaim; `claim` hace lo contrario; `clarification_required` no ejecuta ninguno. El texto recibido por el flujo debe ser idéntico al input.
+- [x] Implementar nodo clasificador con enum cerrado y aristas condicionales nativas de LangGraph. Despacho conceptual:
 
 ```python
 match route.mode:
@@ -506,7 +518,9 @@ correspondiente se compone con éxito; el router de claims omite cualquier
 `image_path` local en su respuesta. La ruta explícita de pregunta
 (`POST /api/v1/questions/answer`) traduce únicamente el puerto inbound, conserva
 contexto/citas/trace ID y diferencia un fallo técnico (500) de `insufficient_evidence` (200).
-La rama automática (T16), el DTO común y el streaming siguen pendientes.
+La rama automática (`POST /api/v1/queries/resolve`, T16) está implementada con su
+router y DTO propios pero sigue sin compartir el envelope común con las rutas
+explícitas; el streaming y el OpenAPI export siguen pendientes.
 
 **Files:** Crear `backend/src/infrastructure/adapters/inbound/api/routes/queries.py`, `schemas/query.py`, `streaming.py`, `errors.py`, `backend/tests/test_query_api.py`, `backend/tests/test_streaming_api.py`, `docs/api/openapi.json`. Modificar app y bootstrap.
 

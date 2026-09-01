@@ -1,4 +1,4 @@
-"""Closed-enum LangGraph selector and thin LLM classifier adapter for auto routing."""
+"""Closed-enum LangGraph selector for the auto router."""
 
 from __future__ import annotations
 
@@ -13,11 +13,11 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
 from application.models.claim import ClaimExecution
-from application.models.query import QueryExecution, QueryInput, QuestionAnswer
+from application.models.query import QueryExecution, QueryInput
 from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
-from application.ports.outbound.language_model import LanguageModel
 from application.ports.outbound.query_classifier import QueryClassifier
+from application.services.routing import RouteExecutionError
 from domain.models.claim import ClaimInput
 from domain.models.routing import (
     ClarificationResult,
@@ -48,10 +48,6 @@ class RouteDispatchTimeoutError(TimeoutError):
     """The complete dispatch graph exceeded its local execution budget."""
 
 
-class RouteExecutionErrorLocal(RuntimeError):
-    """Raised by the dispatch graph when a closed-enum guard trips."""
-
-
 type _DispatchResult = QueryExecution | ClaimExecution | ClarificationResult
 
 
@@ -69,33 +65,15 @@ class _RoutingUpdate(TypedDict, total=False):
 def _route_decision(state: _RoutingState) -> RouteDecision:
     classification = state.get("classification")
     if classification is None:
-        raise RuntimeError("routing workflow reached dispatch without a classification")
+        raise RouteExecutionError(
+            "routing workflow reached dispatch without a classification"
+        )
     decision = classification.decision
     if decision not in _CLOSED_DECISIONS:
-        raise RouteExecutionErrorLocal(
+        raise RouteExecutionError(
             f"unsupported routing decision: {decision!r}; expected one of {_CLOSED_DECISIONS}"
         )
     return decision
-
-
-class LLMQueryClassifier:
-    """Adapter that maps the existing ``LanguageModel`` port into ``QueryClassifier``."""
-
-    def __init__(self, language_model: LanguageModel) -> None:
-        self._language_model = language_model
-
-    async def classify(self, query: QueryInput) -> RouteClassification:
-        answer = await self._language_model.generate(query, ())
-        return _classify_from_answer(answer)
-
-
-def _classify_from_answer(answer: QuestionAnswer) -> RouteClassification:
-    status = answer.status
-    if status == "out_of_scope":
-        return RouteClassification("clarification_required", rationale="out_of_scope")
-    if status == "insufficient_evidence":
-        return RouteClassification("clarification_required", rationale="insufficient_evidence")
-    return RouteClassification("question", rationale=status)
 
 
 class LangGraphResolveQuery:
