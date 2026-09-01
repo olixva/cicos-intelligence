@@ -1,0 +1,9 @@
+parser: pypdf
+chunker:
+  strategy: fixed
+  size: 1200
+  overlap: 200
+embedding:
+  model: text-embedding-3-small
+  dimensions: 1536
+lexical_language: spanish

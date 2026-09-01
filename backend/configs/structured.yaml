@@ -1,0 +1,8 @@
+parser: docling
+chunker:
+  strategy: sections
+  max_size: 1200
+embedding:
+  model: text-embedding-3-small
+  dimensions: 1536
+lexical_language: spanish
