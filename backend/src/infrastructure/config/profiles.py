@@ -1,6 +1,9 @@
 """Strict YAML retrieval profiles loaded only from a local catalog."""
 
+import errno
+import os
 import re
+import stat
 from collections.abc import Callable
 from dataclasses import fields
 from pathlib import Path
@@ -150,27 +153,9 @@ def load_profile(name: str, catalog_dir: Path) -> RetrievalProfile:
 
     if _PROFILE_KEY.fullmatch(name) is None:
         raise ProfileCatalogError("profile name must be a safe catalog key")
-    if catalog_dir.is_symlink():
-        raise ProfileCatalogError("profile catalog must not be a symlink")
-    try:
-        catalog = catalog_dir.resolve(strict=True)
-    except OSError as exc:
-        raise ProfileCatalogError("profile catalog is unavailable") from exc
-    if not catalog.is_dir():
-        raise ProfileCatalogError("profile catalog is not a directory")
-
-    candidate = catalog / f"{name}.yaml"
-    if candidate.is_symlink():
-        raise ProfileCatalogError("profile document must not be a symlink")
-    try:
-        resolved = candidate.resolve(strict=True)
-    except OSError as exc:
-        raise ProfileCatalogError(f"unknown profile: {name}") from exc
-    if resolved.parent != catalog or not resolved.is_file():
-        raise ProfileCatalogError("profile document is outside the catalog")
 
     try:
-        raw = yaml.load(resolved.read_text(), Loader=_UniqueKeyLoader)
+        raw = yaml.load(_read_profile_text(name, catalog_dir), Loader=_UniqueKeyLoader)
         if not isinstance(raw, dict):
             raise ProfileCatalogError("profile YAML must be a mapping")
         document = _ProfileDocument.model_validate(cast(dict[object, object], raw))
@@ -179,6 +164,71 @@ def load_profile(name: str, catalog_dir: Path) -> RetrievalProfile:
     except (OSError, yaml.YAMLError, ValidationError, ValueError) as exc:
         raise ProfileCatalogError(f"invalid profile: {name}") from exc
     return document.to_application()
+
+
+def _read_profile_text(name: str, catalog_dir: Path) -> str:
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    nofollow_flag = getattr(os, "O_NOFOLLOW", None)
+    if directory_flag is None or nofollow_flag is None:
+        raise ProfileCatalogError(
+            "secure profile loading requires POSIX O_DIRECTORY and O_NOFOLLOW"
+        )
+    close_on_exec = getattr(os, "O_CLOEXEC", 0)
+    try:
+        catalog_fd = os.open(
+            catalog_dir,
+            os.O_RDONLY | directory_flag | nofollow_flag | close_on_exec,
+        )
+    except (TypeError, NotImplementedError) as exc:
+        raise ProfileCatalogError("secure profile loading is unavailable") from exc
+    except OSError as exc:
+        if exc.errno in (errno.ELOOP, errno.ENOTDIR) and _path_is_symlink(catalog_dir):
+            raise ProfileCatalogError("profile catalog must not be a symlink") from exc
+        raise ProfileCatalogError("profile catalog is unavailable") from exc
+
+    try:
+        return _read_profile_at(name, catalog_fd, nofollow_flag, close_on_exec)
+    finally:
+        os.close(catalog_fd)
+
+
+def _read_profile_at(name: str, catalog_fd: int, nofollow_flag: int, close_on_exec: int) -> str:
+    nonblocking = getattr(os, "O_NONBLOCK", 0)
+    descriptor = -1
+    try:
+        descriptor = os.open(
+            f"{name}.yaml",
+            os.O_RDONLY | nofollow_flag | close_on_exec | nonblocking,
+            dir_fd=catalog_fd,
+        )
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ProfileCatalogError("profile document must be a regular file")
+        stream = os.fdopen(descriptor, encoding="utf-8")
+        descriptor = -1
+        with stream:
+            return stream.read()
+    except ProfileCatalogError:
+        raise
+    except (TypeError, NotImplementedError) as exc:
+        raise ProfileCatalogError("secure profile loading is unavailable") from exc
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise ProfileCatalogError("profile document must not be a symlink") from exc
+        if exc.errno == errno.ENOENT:
+            raise ProfileCatalogError(f"unknown profile: {name}") from exc
+        raise ProfileCatalogError(f"profile cannot be read: {name}") from exc
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
+def _path_is_symlink(path: Path) -> bool:
+    """Classify an open failure without using this check to authorize any read."""
+
+    try:
+        return stat.S_ISLNK(os.stat(path, follow_symlinks=False).st_mode)
+    except OSError:
+        return False
 
 
 def serialize_index_signature(signature: IndexSignature) -> dict[str, str | int]:

@@ -98,7 +98,7 @@ class SectionChunkingConfig:
         return _canonical_json(
             {
                 "max_size": self.max_size,
-                "policy": "ordered-elements-header-table-note-atomic-v1",
+                "policy": "ordered-section-tables-observation-block-atomic-v2",
                 "separator": "\n\n",
                 "strategy": self.strategy,
             }
@@ -132,6 +132,8 @@ class RetrievalProfile:
     def build_index_signature(self, document_hash: str, resolved_parser: str) -> IndexSignature:
         """Bind selectors to the exact source and parser identity used for indexing."""
 
+        if re.fullmatch(rf"{re.escape(self.parser)}-[0-9]\S*", resolved_parser) is None:
+            raise ValueError("resolved_parser does not match the versioned parser selector")
         return IndexSignature(
             document_hash=document_hash,
             parser=resolved_parser,

@@ -6,17 +6,25 @@ from pathlib import Path
 import pytest
 
 from domain.models.evidence import ElementEvidence, PageEvidence
+from infrastructure.adapters.outbound.document_parser.model_artifacts import ModelBundle
 
 DOCUMENT_HASH = "a" * 64
 
 
-def _element(kind: str, text: str, section: str | None = None) -> ElementEvidence:
+def _element(
+    kind: str,
+    text: str,
+    section: str | None = None,
+    *,
+    content_layer: str = "body",
+    element_id: str | None = None,
+) -> ElementEvidence:
     return ElementEvidence(
-        element_id=f"element-{kind}-{text[:8]}",
+        element_id=element_id or f"element-{kind}-{text[:8]}",
         kind=kind,
         text=text,
         section=section,
-        content_layer="body",
+        content_layer=content_layer,
         regions=(),
     )
 
@@ -211,6 +219,143 @@ def test_structured_table_header_and_immediate_note_form_one_oversize_chunk() ->
     )
 
 
+def test_page_101_table_keeps_5475_character_header_table_prefix_and_observations() -> None:
+    """The real page-101 text kinds must keep its observation block with the oversize table."""
+    from application.services.chunking import chunk_sections
+
+    section = "56. Tabla de Culpabilidad Convenio CIDE (continuación)"
+    table_text = "|" + "T" * 5418
+    observations = (
+        "A2 + B4 = Culpable B, salvo que el A abra la puerta.",
+        "B2 + A4 = Culpable A, salvo que el B abra la puerta.",
+        "A16 + B0 = Culpable B, salvo que el A circule por vía sin pavimentar.",
+        "B16 + A0 = Culpable A, salvo que el B circule por vía sin pavimentar.",
+    )
+    page = _page(
+        "page-101",
+        "",
+        page_number=101,
+        elements=(
+            _element("section_header", section, section, element_id="header-101"),
+            _element("table", table_text, section, element_id="table-101"),
+            _element("text", "(*) OBSERVACIONES:", section, element_id="marker-101"),
+            *tuple(
+                _element("text", text, section, element_id=f"observation-{index}")
+                for index, text in enumerate(observations)
+            ),
+            _element(
+                "page_footer",
+                "102",
+                section,
+                content_layer="furniture",
+                element_id="footer-101",
+            ),
+        ),
+    )
+
+    chunks = chunk_sections((page,), max_size=1200)
+
+    table_chunks = tuple(chunk for chunk in chunks if table_text in chunk.text)
+    assert len(table_chunks) == 1
+    table_chunk = table_chunks[0]
+    prefix = f"{section}\n\n{table_text}"
+    assert len(prefix) == 5475
+    assert table_chunk.text.startswith(prefix)
+    assert "(*) OBSERVACIONES:" in table_chunk.text
+    assert all(observation in table_chunk.text for observation in observations)
+    assert table_chunk.evidence_ids == ("page-101",)
+    assert "102" not in "\n".join(chunk.text for chunk in chunks)
+
+
+def test_structured_table_parts_cross_pages_while_footer_does_not_break_context() -> None:
+    """Furniture between same-section table parts must not split their atomic context."""
+    from application.services.chunking import chunk_sections
+
+    section = "Matrix continuation"
+    pages = (
+        _page(
+            "page-1",
+            "",
+            elements=(
+                _element("section_header", "Matrix", section),
+                _element("table", "part one", section),
+                _element("page_footer", "1", section, content_layer="furniture"),
+            ),
+        ),
+        _page(
+            "page-2",
+            "",
+            page_number=2,
+            elements=(
+                _element("table", "part two", section),
+                _element("text", "(*) OBSERVACIÓN:", section),
+                _element("text", "Read both parts", section),
+            ),
+        ),
+    )
+
+    chunks = chunk_sections(pages, max_size=8)
+
+    table_chunk = next(chunk for chunk in chunks if "part one" in chunk.text)
+    assert table_chunk.text == (
+        "Matrix\n\npart one\n\npart two\n\n(*) OBSERVACIÓN:\n\nRead both parts"
+    )
+    assert table_chunk.evidence_ids == ("page-1", "page-2")
+    assert sum("part two" in chunk.text for chunk in chunks) == 1
+    assert "\n\n1\n\n" not in table_chunk.text
+
+
+def test_structured_table_does_not_absorb_observation_block_from_another_section() -> None:
+    """A marker-shaped text in another section is not evidence associated with the table."""
+    from application.services.chunking import chunk_sections
+
+    page = _page(
+        "page-1",
+        "",
+        elements=(
+            _element("section_header", "Section A", "A"),
+            _element("table", "table A", "A"),
+            _element("note", "Explicit note from section B", "B"),
+            _element("text", "OBSERVACIONES:", "B"),
+            _element("text", "Note from section B", "B"),
+        ),
+    )
+
+    chunks = chunk_sections((page,), max_size=100)
+
+    table_chunk = next(chunk for chunk in chunks if "table A" in chunk.text)
+    assert table_chunk.text == "Section A\n\ntable A"
+    assert "Explicit note from section B" not in table_chunk.text
+    assert "Note from section B" not in table_chunk.text
+
+
+def test_structured_sectionless_table_parts_do_not_cross_source_pages() -> None:
+    """Missing section metadata cannot justify associating table parts across pages."""
+    from application.services.chunking import chunk_sections
+
+    pages = (
+        _page(
+            "page-1",
+            "",
+            elements=(
+                _element("section_header", "Unknown matrix", None),
+                _element("table", "part one", None),
+                _element("page_footer", "1", None, content_layer="furniture"),
+            ),
+        ),
+        _page(
+            "page-2",
+            "",
+            page_number=2,
+            elements=(_element("table", "part two", None),),
+        ),
+    )
+
+    chunks = chunk_sections(pages, max_size=100)
+
+    assert not any("part one" in chunk.text and "part two" in chunk.text for chunk in chunks)
+
+
 def test_structured_normal_text_splits_deterministically_and_binds_policy() -> None:
     """Normal oversize text may split, while IDs must bind the configured section policy."""
     from application.services.chunking import chunk_sections
@@ -235,13 +380,17 @@ def test_structured_chunking_rejects_invalid_limit(max_size: int) -> None:
         chunk_sections((_page("page-1", "text"),), max_size=max_size)
 
 
-def test_committed_profiles_load_to_application_values_and_build_full_signatures() -> None:
+def test_committed_profiles_load_to_application_values_and_build_full_signatures(
+    fake_model_bundle: ModelBundle,
+) -> None:
     """Selectors must resolve to source-specific parser identities before index publication."""
     from application.models.retrieval import (
         FixedChunkingConfig,
         RetrievalProfile,
         SectionChunkingConfig,
     )
+    from infrastructure.adapters.outbound.document_parser.docling_parser import DoclingParser
+    from infrastructure.adapters.outbound.document_parser.pypdf_parser import PypdfDocumentParser
     from infrastructure.config.profiles import load_profile
 
     catalog = Path(__file__).parents[1] / "configs"
@@ -252,15 +401,37 @@ def test_committed_profiles_load_to_application_values_and_build_full_signatures
     assert isinstance(baseline.chunker, FixedChunkingConfig)
     assert isinstance(structured.chunker, SectionChunkingConfig)
 
-    baseline_signature = baseline.build_index_signature(DOCUMENT_HASH, "pypdf-6.1.0")
-    structured_parser = "docling-2.124.0-pdfium-5.13.0-bundle-135374b2"
+    baseline_parser = PypdfDocumentParser.parser
+    structured_parser = DoclingParser(model_bundle=fake_model_bundle).parser
+    baseline_signature = baseline.build_index_signature(DOCUMENT_HASH, baseline_parser)
     structured_signature = structured.build_index_signature(DOCUMENT_HASH, structured_parser)
 
-    assert baseline_signature.parser == "pypdf-6.1.0"
+    assert baseline_signature.parser == baseline_parser
     assert structured_signature.parser == structured_parser
     assert '"size"' in baseline_signature.chunker
     assert '"max_size"' in structured_signature.chunker
+    assert "observation-block-atomic-v2" in structured_signature.chunker
     assert structured_signature.document_hash == DOCUMENT_HASH
+    with pytest.raises(ValueError, match="selector"):
+        baseline.build_index_signature(DOCUMENT_HASH, structured_parser)
+    with pytest.raises(ValueError, match="selector"):
+        structured.build_index_signature(DOCUMENT_HASH, baseline_parser)
+
+
+@pytest.mark.parametrize(
+    "resolved_parser",
+    ["pypdf", "pypdfish-6.0", "pypdf-version-unknown", "docling-2.124.0"],
+)
+def test_profile_rejects_unversioned_deceptive_or_wrong_resolved_parser(
+    resolved_parser: str,
+) -> None:
+    """A selector must bind only its exact versioned parser family."""
+    from infrastructure.config.profiles import load_profile
+
+    profile = load_profile("baseline", Path(__file__).parents[1] / "configs")
+
+    with pytest.raises(ValueError, match="selector"):
+        profile.build_index_signature(DOCUMENT_HASH, resolved_parser)
 
 
 @pytest.mark.parametrize("name", ["../baseline", "nested/profile", "baseline.yaml", ".", ""])
@@ -287,6 +458,68 @@ def test_profile_catalog_rejects_symlinks(tmp_path: Path) -> None:
 
     with pytest.raises(ProfileCatalogError, match="symlink"):
         load_profile("linked", catalog)
+
+    linked_catalog = tmp_path / "linked-catalog"
+    linked_catalog.symlink_to(catalog, target_is_directory=True)
+    with pytest.raises(ProfileCatalogError, match="symlink"):
+        load_profile("linked", linked_catalog)
+
+
+def test_profile_catalog_directory_swap_never_loads_replacement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Replacing the catalog path after its fd opens cannot redirect the profile read."""
+    import os
+
+    from infrastructure.config.profiles import ProfileCatalogError, load_profile
+
+    safe_yaml = (
+        "parser: pypdf\nchunker: {strategy: fixed, size: 10, overlap: 2}\n"
+        "embedding: {model: embedding-test, dimensions: 3}\nlexical_language: spanish\n"
+    )
+    replacement_yaml = (
+        "parser: docling\nchunker: {strategy: fixed, size: 10, overlap: 2}\n"
+        "embedding: {model: embedding-test, dimensions: 3}\nlexical_language: spanish\n"
+    )
+    catalog = tmp_path / "catalog"
+    catalog.mkdir()
+    (catalog / "baseline.yaml").write_text(safe_yaml)
+    replacement = tmp_path / "replacement"
+    replacement.mkdir()
+    (replacement / "baseline.yaml").write_text(replacement_yaml)
+    original = tmp_path / "opened-catalog"
+    real_open = os.open
+    opened_catalog = False
+
+    def racing_open(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        nonlocal opened_catalog
+        descriptor = real_open(path, flags, mode, dir_fd=dir_fd)
+        if (
+            not opened_catalog
+            and dir_fd is None
+            and Path(os.fsdecode(path)) == catalog
+            and flags & os.O_DIRECTORY
+        ):
+            opened_catalog = True
+            catalog.rename(original)
+            replacement.rename(catalog)
+        return descriptor
+
+    monkeypatch.setattr(os, "open", racing_open)
+    loaded = None
+    try:
+        loaded = load_profile("baseline", catalog)
+    except ProfileCatalogError:
+        pass
+
+    assert opened_catalog
+    assert loaded is None or loaded.parser == "pypdf"
 
 
 @pytest.mark.parametrize(
