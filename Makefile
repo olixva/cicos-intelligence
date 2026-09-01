@@ -1,4 +1,4 @@
-.PHONY: check-backend local-services-config local-services-up local-services-stop doctor
+.PHONY: check-backend local-services-config local-services-up local-services-stop doctor serve-backend
 
 ALLIANZ_DOCKER_CONTEXT ?= colima-allianz
 LOCAL_COMPOSE = docker --context $(ALLIANZ_DOCKER_CONTEXT) compose --env-file ops/local.env
@@ -20,3 +20,6 @@ local-services-stop:
 
 doctor:
 	ALLIANZ_DOCKER_CONTEXT=$(ALLIANZ_DOCKER_CONTEXT) uv run --project backend allianz doctor
+
+serve-backend:
+	uv run --project backend uvicorn bootstrap:build_api --factory --host 127.0.0.1 --port 8000

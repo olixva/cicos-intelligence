@@ -1,6 +1,9 @@
 """Application composition root."""
 
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from application.ports.inbound.ingest_document import IngestDocument
 from application.ports.inbound.inspect_manual import InspectManual
@@ -13,6 +16,9 @@ from infrastructure.adapters.outbound.evidence_repository.filesystem_repository 
 from infrastructure.adapters.outbound.source_inspector.pypdf_source_inspector import (
     PypdfSourceInspector,
 )
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
 def build_inspect_manual() -> InspectManual:
@@ -34,3 +40,11 @@ def build_ingest_document(output: Path, parser: str = "pypdf") -> IngestDocument
         parser=document_parser,
         repository=FilesystemEvidenceRepository(output, document_parser.parser),
     )
+
+
+def build_api() -> FastAPI:
+    """Build the local HTTP adapter through its dependency-aware factory."""
+
+    from infrastructure.adapters.inbound.api.app import create_app
+
+    return create_app()
