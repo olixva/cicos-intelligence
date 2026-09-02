@@ -71,6 +71,11 @@ def _build_parser() -> argparse.ArgumentParser:
         nargs="+",
         default=[Path("data/extractions")],
     )
+    golden_validate.add_argument(
+        "--allow-technical-fixtures",
+        action="store_true",
+        help="Allow provenance.kind=technical_fixture items (only for CI smoke).",
+    )
     golden_freeze = golden_subcommands.add_parser("freeze")
     golden_freeze.add_argument(
         "--golden-root",
@@ -85,6 +90,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     golden_freeze.add_argument("--dataset", required=True)
     golden_freeze.add_argument("--release", required=True)
+    golden_freeze.add_argument(
+        "--allow-technical-fixtures",
+        action="store_true",
+        help="Allow provenance.kind=technical_fixture items (only for CI smoke).",
+    )
     golden_publish = golden_subcommands.add_parser("publish")
     golden_publish.add_argument(
         "--release",
@@ -106,6 +116,11 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         nargs="+",
         default=[Path("data/extractions")],
+    )
+    rules_validate.add_argument(
+        "--expected-document-hash",
+        default=None,
+        help="Override the default Allianz RAG source SHA-256.",
     )
     rules_compare = rules_subcommands.add_parser("compare-transcriptions")
     rules_compare.add_argument("left", type=Path)
@@ -344,7 +359,10 @@ def _run_rules_validate(arguments: argparse.Namespace) -> int:
         validate_ruleset,
     )
 
-    expected_hash = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+    expected_hash = (
+        arguments.expected_document_hash
+        or "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+    )
     evidence_pool = evidence_pool_from_publications(list(arguments.evidence_roots))
     reports = []
     exit_code = 0
@@ -513,7 +531,11 @@ def _run_golden_freeze(arguments: argparse.Namespace) -> int:
     items = _golden_load_items(golden_root)
     evidence_ids = _golden_evidence_ids(list(arguments.evidence_roots))
     try:
-        validated = validate_release(items, existing_evidence_ids=evidence_ids)
+        validated = validate_release(
+            items,
+            existing_evidence_ids=evidence_ids,
+            allow_technical_fixtures=arguments.allow_technical_fixtures,
+        )
     except ValueError as error:
         print(f"error: cannot freeze: {error}", file=sys.stderr)
         return 2
@@ -527,6 +549,7 @@ def _run_golden_freeze(arguments: argparse.Namespace) -> int:
         items=items,
         schema=schema_bytes,
         existing_evidence_ids=evidence_ids,
+        allow_technical_fixtures=arguments.allow_technical_fixtures,
     )
     release_dir = golden_root / "releases" / arguments.release
     if release_dir.exists():
@@ -534,7 +557,11 @@ def _run_golden_freeze(arguments: argparse.Namespace) -> int:
         return 2
     release_dir.mkdir(parents=True)
     (release_dir / "items.jsonl").write_bytes(
-        canonical_jsonl(items, existing_evidence_ids=evidence_ids)
+        canonical_jsonl(
+            items,
+            existing_evidence_ids=evidence_ids,
+            allow_technical_fixtures=arguments.allow_technical_fixtures,
+        )
     )
     (release_dir / "schema.json").write_bytes(schema_bytes)
     (release_dir / "manifest.json").write_text(

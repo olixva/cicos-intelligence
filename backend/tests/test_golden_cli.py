@@ -70,6 +70,7 @@ def _write_release_artifacts(golden_root: Path) -> Path:
     schema_bytes = canonical_schema_bytes()
     items = [item]
     manifest = build_release_manifest(
+        allow_technical_fixtures=True,
         dataset_name="allianz-rag",
         dataset_version="v0-cli-fixture",
         items=items,
@@ -79,7 +80,11 @@ def _write_release_artifacts(golden_root: Path) -> Path:
     release_dir = golden_root / "releases" / "v0-cli-fixture"
     release_dir.mkdir(parents=True, exist_ok=True)
     (release_dir / "items.jsonl").write_bytes(
-        canonical_jsonl(items, existing_evidence_ids={"fixture-evidence:page:1"})
+        canonical_jsonl(
+            items,
+            existing_evidence_ids={"fixture-evidence:page:1"},
+            allow_technical_fixtures=True,
+        )
     )
     (release_dir / "schema.json").write_bytes(schema_bytes)
     (release_dir / "manifest.json").write_text(
@@ -349,6 +354,7 @@ def test_golden_freeze_persists_release_artifacts(
             "allianz-rag",
             "--release",
             "v0-cli-fixture",
+            "--allow-technical-fixtures",
         ]
     )
 
@@ -418,6 +424,7 @@ def test_golden_freeze_rejects_existing_release(
             "allianz-rag",
             "--release",
             "v0-cli-fixture",
+            "--allow-technical-fixtures",
         ]
     )
     captured = capsys.readouterr()

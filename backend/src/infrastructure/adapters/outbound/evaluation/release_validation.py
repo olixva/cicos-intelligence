@@ -84,9 +84,17 @@ def check_family_splits(assignments: Sequence[tuple[str, str]]) -> None:
 
 
 def validate_release(
-    items: Sequence[dict[str, object]], *, existing_evidence_ids: Collection[str]
+    items: Sequence[dict[str, object]],
+    *,
+    existing_evidence_ids: Collection[str],
+    allow_technical_fixtures: bool = False,
 ) -> tuple[GoldenDatasetItem, ...]:
-    """Validate native item fields, review completion, evidence, and split isolation."""
+    """Validate native item fields, review completion, evidence, and split isolation.
+
+    Technical fixtures (used only to exercise the release machinery) are
+    rejected by default — opt-in with ``allow_technical_fixtures=True``
+    for the local CI smoke path that publishes the fixture catalog.
+    """
 
     if not items:
         raise ValueError("golden release cannot be empty")
@@ -101,6 +109,18 @@ def validate_release(
     duplicates = sorted(case_id for case_id, count in Counter(case_ids).items() if count > 1)
     if duplicates:
         raise ValueError(f"duplicate case identifiers: {', '.join(duplicates)}")
+
+    if not allow_technical_fixtures:
+        technical_fixture_ids = sorted(
+            item.metadata.case_id
+            for item in validated
+            if item.metadata.provenance.kind == "technical_fixture"
+        )
+        if technical_fixture_ids:
+            raise ValueError(
+                "technical_fixture items cannot enter a golden release: "
+                f"{', '.join(technical_fixture_ids)}"
+            )
 
     check_family_splits(
         tuple((item.metadata.family_id, item.metadata.partition) for item in validated)
@@ -135,11 +155,18 @@ def validate_release(
 
 
 def canonical_jsonl(
-    items: Sequence[dict[str, object]], *, existing_evidence_ids: Collection[str]
+    items: Sequence[dict[str, object]],
+    *,
+    existing_evidence_ids: Collection[str],
+    allow_technical_fixtures: bool = False,
 ) -> bytes:
     """Return the validated snapshot bytes whose exact order is part of release identity."""
 
-    validated = validate_release(items, existing_evidence_ids=existing_evidence_ids)
+    validated = validate_release(
+        items,
+        existing_evidence_ids=existing_evidence_ids,
+        allow_technical_fixtures=allow_technical_fixtures,
+    )
     lines = (
         json.dumps(
             item.model_dump(mode="json"),
@@ -159,13 +186,22 @@ def build_release_manifest(
     items: Sequence[dict[str, object]],
     schema: bytes,
     existing_evidence_ids: Collection[str],
+    allow_technical_fixtures: bool = False,
 ) -> ReleaseManifest:
     """Bind canonical item bytes and the external schema document to one release identity."""
 
     if schema != canonical_schema_bytes():
         raise ValueError("golden schema document is not the canonical schema")
-    validated = validate_release(items, existing_evidence_ids=existing_evidence_ids)
-    content = canonical_jsonl(items, existing_evidence_ids=existing_evidence_ids)
+    validated = validate_release(
+        items,
+        existing_evidence_ids=existing_evidence_ids,
+        allow_technical_fixtures=allow_technical_fixtures,
+    )
+    content = canonical_jsonl(
+        items,
+        existing_evidence_ids=existing_evidence_ids,
+        allow_technical_fixtures=allow_technical_fixtures,
+    )
     counts = Counter(item.metadata.partition for item in validated)
     return ReleaseManifest(
         schema_version=SCHEMA_VERSION,

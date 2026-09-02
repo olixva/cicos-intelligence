@@ -84,7 +84,9 @@ def test_unfinished_or_quarantined_case_cannot_be_released(review_status: str) -
     cast(dict[str, object], item["metadata"])["review_status"] = review_status
 
     with pytest.raises(ValueError, match="review"):
-        validate_release([item], existing_evidence_ids=_evidence_ids())
+        validate_release(
+            [item], existing_evidence_ids=_evidence_ids(), allow_technical_fixtures=True
+        )
 
 
 def test_expected_answer_cannot_leak_into_native_input() -> None:
@@ -94,14 +96,20 @@ def test_expected_answer_cannot_leak_into_native_input() -> None:
     cast(dict[str, object], item["input"])["expected_answer"] = "LEAKED_REFERENCE"
 
     with pytest.raises(ValueError, match="schema"):
-        validate_release([item], existing_evidence_ids=_evidence_ids())
+        validate_release(
+            [item], existing_evidence_ids=_evidence_ids(), allow_technical_fixtures=True
+        )
 
 
 def test_unknown_evidence_blocks_release() -> None:
     from infrastructure.adapters.outbound.evaluation.release_validation import validate_release
 
     with pytest.raises(ValueError, match="fixture:page:3"):
-        validate_release([_item()], existing_evidence_ids={"fixture:page:1", "fixture:page:2"})
+        validate_release(
+            [_item()],
+            existing_evidence_ids={"fixture:page:1", "fixture:page:2"},
+            allow_technical_fixtures=True,
+        )
 
 
 def test_empty_and_or_evidence_expression_is_invalid() -> None:
@@ -113,7 +121,9 @@ def test_empty_and_or_evidence_expression_is_invalid() -> None:
     requirements[0]["any_of"] = []
 
     with pytest.raises(ValueError, match="schema"):
-        validate_release([item], existing_evidence_ids=_evidence_ids())
+        validate_release(
+            [item], existing_evidence_ids=_evidence_ids(), allow_technical_fixtures=True
+        )
 
 
 def test_incomplete_review_checks_block_release() -> None:
@@ -124,7 +134,9 @@ def test_incomplete_review_checks_block_release() -> None:
     review["adversarial_checked"] = False
 
     with pytest.raises(ValueError, match="review"):
-        validate_release([item], existing_evidence_ids=_evidence_ids())
+        validate_release(
+            [item], existing_evidence_ids=_evidence_ids(), allow_technical_fixtures=True
+        )
 
 
 @pytest.mark.parametrize("value", ["yes", 1, "on"])
@@ -136,7 +148,9 @@ def test_review_flags_must_be_json_booleans(value: object) -> None:
     review["independent_resolution_checked"] = value
 
     with pytest.raises(ValueError, match="schema"):
-        validate_release([item], existing_evidence_ids=_evidence_ids())
+        validate_release(
+            [item], existing_evidence_ids=_evidence_ids(), allow_technical_fixtures=True
+        )
 
 
 def test_release_manifest_hashes_canonical_jsonl_and_schema() -> None:
@@ -151,8 +165,13 @@ def test_release_manifest_hashes_canonical_jsonl_and_schema() -> None:
     cast(dict[str, object], second["metadata"])["case_id"] = "fixture-case-2"
     schema = canonical_schema_bytes()
 
-    content = canonical_jsonl([first, second], existing_evidence_ids=_evidence_ids())
+    content = canonical_jsonl(
+        [first, second],
+        existing_evidence_ids=_evidence_ids(),
+        allow_technical_fixtures=True,
+    )
     manifest = build_release_manifest(
+        allow_technical_fixtures=True,
         dataset_name="technical-fixture",
         dataset_version="v1",
         items=[first, second],
@@ -175,6 +194,7 @@ def test_release_manifest_rejects_bytes_that_are_not_the_canonical_schema() -> N
 
     with pytest.raises(ValueError, match="schema"):
         build_release_manifest(
+            allow_technical_fixtures=True,
             dataset_name="technical-fixture",
             dataset_version="v1",
             items=[_item()],
@@ -190,6 +210,7 @@ def test_release_manifest_partition_counts_are_immutable() -> None:
     )
 
     manifest = build_release_manifest(
+        allow_technical_fixtures=True,
         dataset_name="technical-fixture",
         dataset_version="v1",
         items=[_item()],

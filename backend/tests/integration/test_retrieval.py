@@ -407,6 +407,13 @@ def test_collection_is_validated_before_atomic_alias_publication(tmp_path: Path)
                     "embedding_model": "fixture-embedding-1",
                     "lexical_language": "spanish",
                     "parser": "fixture-parser-1",
+                    "retrieval_mode": "hybrid",
+                    "fusion": "rrf",
+                    "reranker": "none",
+                    "vision": "none",
+                    "ruleset": "audit-required",
+                    "generator": "openai-responses",
+                    "prompt_versions": {},
                 }
             }
             assert active.collection_name == collection
