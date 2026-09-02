@@ -51,9 +51,7 @@ class _FakeClaim:
         from application.models.claim import ClaimExecution
 
         return ClaimExecution(
-            result=__import__(
-                "domain.models.decision", fromlist=["ClaimAnalysis"]
-            ).ClaimAnalysis(
+            result=__import__("domain.models.decision", fromlist=["ClaimAnalysis"]).ClaimAnalysis(
                 applicability="applicable",
                 convention="CIDE",
                 decision="resolved",
@@ -90,9 +88,7 @@ class _FakeResolve:
         )
 
 
-def _envelope_request(
-    *, mode: str, profile: str | None = None
-) -> Any:
+def _envelope_request(*, mode: str, profile: str | None = None) -> Any:
     from infrastructure.adapters.inbound.api.schemas.envelope import EnvelopeRequest
 
     request = EnvelopeRequest(
@@ -199,9 +195,7 @@ def test_stream_uses_a_single_request_id_across_started_envelope_and_failed() ->
     completed_payload = json.loads(str(happy_events[-1]["data"]))
     shared_id = started_payload["request_id"]
     assert shared_id, "started event must carry a request_id"
-    assert stage_payload["request_id"] == shared_id, (
-        "stage event must reuse started.request_id"
-    )
+    assert stage_payload["request_id"] == shared_id, "stage event must reuse started.request_id"
     assert completed_payload["request_id"] == shared_id, (
         "envelope (completed) request_id must match started.request_id"
     )

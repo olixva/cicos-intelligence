@@ -43,9 +43,7 @@ def test_factual_evaluator_scores_only_serialized_answer_text_and_reference() ->
         )
     )
 
-    assert scorer.received == [
-        ("La respuesta entregada.", "La respuesta de referencia.")
-    ]
+    assert scorer.received == [("La respuesta entregada.", "La respuesta de referencia.")]
     assert evaluation.name == "factual_f1"
     assert evaluation.value == 0.75
 

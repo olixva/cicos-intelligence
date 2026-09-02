@@ -39,7 +39,7 @@ def _qdrant_alias_is_published() -> bool:
     try:
         with urllib.request.urlopen(f"{qdrant_url}/aliases", timeout=2) as response:
             payload = json.loads(response.read())
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+    except urllib.error.URLError, TimeoutError, json.JSONDecodeError:
         return False
 
     aliases = payload.get("result", {}).get("aliases", []) if isinstance(payload, dict) else []
@@ -57,13 +57,11 @@ def _qdrant_alias_is_published() -> bool:
     try:
         with urllib.request.urlopen(f"{qdrant_url}/collections/{target}", timeout=2) as response:
             details = json.loads(response.read())
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+    except urllib.error.URLError, TimeoutError, json.JSONDecodeError:
         return False
 
     points_count = (
-        details.get("result", {}).get("points_count", 0)
-        if isinstance(details, dict)
-        else 0
+        details.get("result", {}).get("points_count", 0) if isinstance(details, dict) else 0
     )
     return isinstance(points_count, int) and points_count > 0
 

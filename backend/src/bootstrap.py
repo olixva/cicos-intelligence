@@ -215,9 +215,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
                 model=os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-4.1-mini")
             ),
             retriever=QdrantRetriever(
-                client=AsyncQdrantClient(
-                    url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")
-                ),
+                client=AsyncQdrantClient(url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")),
                 embedding_provider=OpenAIEmbeddingProvider(
                     model=profile.embedding_model, dimensions=profile.dimensions
                 ),
@@ -294,7 +292,6 @@ def build_api(
     used; local entry points such as ``asgi_local`` pass a probe that
     checks the Qdrant active alias.
     """
-
 
     from infrastructure.adapters.inbound.api.app import create_app
 

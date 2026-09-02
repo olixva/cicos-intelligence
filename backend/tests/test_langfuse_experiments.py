@@ -30,9 +30,7 @@ class _RecordingAnswerQuestion:
     async def execute(self, query: QueryInput) -> QueryExecution:
         self.received.append(query)
         return QueryExecution(
-            result=QuestionAnswer(
-                "answered", (AnswerBlock("Respuesta.", ("sha256:abc:page:5",)),)
-            ),
+            result=QuestionAnswer("answered", (AnswerBlock("Respuesta.", ("sha256:abc:page:5",)),)),
             context=(),
             trace_id="trace-spy",
         )
@@ -89,9 +87,7 @@ def _reset_module_state() -> None:
     mod.langfuse = None
 
 
-def _build_fake_item(
-    *, text: str = "Pregunta", language: str = "es"
-) -> Any:
+def _build_fake_item(*, text: str = "Pregunta", language: str = "es") -> Any:
     """Build a fake ``DatasetItem`` shaped like the Langfuse SDK item."""
 
     item = type(

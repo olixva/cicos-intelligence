@@ -235,9 +235,7 @@ def test_envelope_dispatches_auto_mode_through_the_router() -> None:
 def test_envelope_returns_clarification_result_when_router_classifies_as_such() -> None:
     client, *_ = _client_with_three_ports(
         resolve=_FakeResolve(
-            classification=RouteClassification(
-                "clarification_required", rationale="faltan datos"
-            )
+            classification=RouteClassification("clarification_required", rationale="faltan datos")
         )
     )
 
@@ -269,9 +267,7 @@ def test_envelope_projects_evidence_items_without_asset_paths() -> None:
     )
     client, *_ = _client_with_three_ports(answer=_FakeAnswer(execution=execution))
 
-    response = _post_envelope(
-        client, {"text": "Pregunta", "language": "es", "mode": "question"}
-    )
+    response = _post_envelope(client, {"text": "Pregunta", "language": "es", "mode": "question"})
 
     assert response.status_code == 200
     body = response.json()
@@ -290,9 +286,7 @@ def test_envelope_projects_evidence_items_without_asset_paths() -> None:
 def test_envelope_rejects_blank_text_with_422() -> None:
     client, *_ = _client_with_three_ports()
 
-    response = _post_envelope(
-        client, {"text": "   ", "language": "es", "mode": "question"}
-    )
+    response = _post_envelope(client, {"text": "   ", "language": "es", "mode": "question"})
 
     assert response.status_code == 422
 
@@ -372,9 +366,7 @@ def test_envelope_keeps_provider_failures_as_500_not_clarification() -> None:
     )
     client = TestClient(app, raise_server_exceptions=False)
 
-    response = _post_envelope(
-        client, {"text": "Pregunta", "language": "es", "mode": "question"}
-    )
+    response = _post_envelope(client, {"text": "Pregunta", "language": "es", "mode": "question"})
 
     assert response.status_code == 500
 
@@ -399,9 +391,7 @@ def test_envelope_routes_question_clarifications_in_input() -> None:
 
     client, answer, claim, _ = _client_with_three_ports()
 
-    _post_envelope(
-        client, {"text": "Pregunta", "language": "es", "mode": "question"}
-    )
+    _post_envelope(client, {"text": "Pregunta", "language": "es", "mode": "question"})
 
     # The query port receives the bare QueryInput (text, language); the
     # claim clarifications tuple is only consumed by the claim port.
@@ -413,9 +403,7 @@ def test_envelope_routes_question_clarifications_in_input() -> None:
 def test_envelope_request_id_is_server_generated_uuid4() -> None:
     client, *_ = _client_with_three_ports()
 
-    response = _post_envelope(
-        client, {"text": "Pregunta", "language": "es", "mode": "question"}
-    )
+    response = _post_envelope(client, {"text": "Pregunta", "language": "es", "mode": "question"})
 
     body = response.json()
     request_id = body["request_id"]

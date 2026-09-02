@@ -21,6 +21,7 @@ from application.services.question_answering import validate_grounded_answer
 class QuestionWorkflowTimeoutError(TimeoutError):
     """The complete question graph exceeded its local execution budget."""
 
+
 # Langfuse trace IDs are 32 lowercase hex characters; the SDK raises
 # ``ValueError`` (after only logging a warning) when an invalid ID is
 # passed to ``start_as_current_observation``. Guard the workflow so

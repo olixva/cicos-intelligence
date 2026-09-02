@@ -262,9 +262,7 @@ def test_claim_route_rejects_invalid_request_payloads_with_422() -> None:
 
     empty_text = client.post("/api/v1/claims/analyze", json={"text": "   "})
     missing_text = client.post("/api/v1/claims/analyze", json={})
-    bad_language = client.post(
-        "/api/v1/claims/analyze", json={"text": "relato", "language": "fr"}
-    )
+    bad_language = client.post("/api/v1/claims/analyze", json={"text": "relato", "language": "fr"})
 
     assert empty_text.status_code == 422
     assert missing_text.status_code == 422

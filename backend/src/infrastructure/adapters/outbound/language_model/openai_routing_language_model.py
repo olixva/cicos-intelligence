@@ -161,9 +161,7 @@ class OpenAIRoutingLanguageModel:
         return self._transport
 
 
-def _routing_messages(
-    prompt: RoutingPrompt, query: QueryInput
-) -> ResponseInputParam:
+def _routing_messages(prompt: RoutingPrompt, query: QueryInput) -> ResponseInputParam:
     developer = (
         f"{prompt.content}\n\n"
         f"[prompt={prompt.name} version={prompt.version}]\n"

@@ -47,9 +47,9 @@ async def resolve_query(
 
     try:
         if decision == "question":
-            dispatch: QueryExecution | ClaimExecution | ClarificationResult = (
-                await answer_question.execute(query)
-            )
+            dispatch: (
+                QueryExecution | ClaimExecution | ClarificationResult
+            ) = await answer_question.execute(query)
             trace_id = dispatch.trace_id
         elif decision == "claim":
             dispatch = await analyze_claim.execute(
@@ -63,9 +63,7 @@ async def resolve_query(
     except RouteExecutionError:
         raise
     except Exception as error:
-        raise RouteExecutionError(
-            f"routing flow raised {type(error).__name__}"
-        ) from error
+        raise RouteExecutionError(f"routing flow raised {type(error).__name__}") from error
 
     return RouteExecution(
         query=query,

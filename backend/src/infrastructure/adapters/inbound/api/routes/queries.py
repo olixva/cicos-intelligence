@@ -77,9 +77,7 @@ def _query_input_from_request(request: EnvelopeRequest) -> QueryInput:
 
 def _claim_input_from_request(request: EnvelopeRequest) -> ClaimInput:
     clarifications = request.clarifications or ()
-    return ClaimInput(
-        text=request.text, language=request.language, clarifications=clarifications
-    )
+    return ClaimInput(text=request.text, language=request.language, clarifications=clarifications)
 
 
 async def _execute_envelope(
@@ -190,8 +188,10 @@ def build_envelope_router(
     router = APIRouter(prefix="/api/v1/queries", tags=["queries"])
 
     async def envelope_route(request: EnvelopeRequest) -> EnvelopeResponse:
-        if request.profile is not None and allowed_profiles and (
-            request.profile not in allowed_profiles
+        if (
+            request.profile is not None
+            and allowed_profiles
+            and (request.profile not in allowed_profiles)
         ):
             # Surface contract: validation only in v1. The envelope
             # accepts the profile string but never reroutes at runtime;
@@ -303,8 +303,10 @@ def build_envelope_stream_router(
     router = APIRouter(prefix="/api/v1/queries", tags=["queries"])
 
     async def envelope_stream_route(request: EnvelopeRequest):
-        if request.profile is not None and allowed_profiles and (
-            request.profile not in allowed_profiles
+        if (
+            request.profile is not None
+            and allowed_profiles
+            and (request.profile not in allowed_profiles)
         ):
             from fastapi import HTTPException
 

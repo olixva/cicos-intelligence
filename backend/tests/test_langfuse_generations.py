@@ -192,9 +192,7 @@ def test_question_adapter_transport_unchanged_after_langfuse_import() -> None:
 
     answer = asyncio.run(model.generate(QueryInput("Pregunta", "es"), context))
 
-    assert answer == QuestionAnswer(
-        "answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),)
-    )
+    assert answer == QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
     assert transport.calls[0]["model"] == "fixture-model"
     assert transport.calls[0]["store"] is False
 
@@ -245,9 +243,7 @@ class _RecordingLangfuseClient:
             span.exited = True
 
 
-def _install_recording_langfuse(
-    monkeypatch: Any, target_module: Any
-) -> _RecordingLangfuseClient:
+def _install_recording_langfuse(monkeypatch: Any, target_module: Any) -> _RecordingLangfuseClient:
     """Swap ``get_client`` inside ``target_module`` with the recorder."""
 
     recorder = _RecordingLangfuseClient()
@@ -307,9 +303,7 @@ def test_question_workflow_opens_langfuse_span_around_graph_dispatch(
     execution = asyncio.run(workflow.run(QueryInput("¿Qué indica el manual?", "es")))
 
     assert execution.trace_id == trace_id_hex
-    assert len(recorder.calls) == 1, (
-        "the workflow must open exactly one Langfuse observation"
-    )
+    assert len(recorder.calls) == 1, "the workflow must open exactly one Langfuse observation"
     call = recorder.calls[0]
     assert call["name"] == "question_workflow"
     assert call["trace_context"] == {"trace_id": trace_id_hex}
@@ -359,9 +353,7 @@ def test_question_workflow_skips_span_when_trace_id_is_none(monkeypatch: Any) ->
     execution = asyncio.run(workflow.run(QueryInput("Pregunta", "es")))
 
     assert execution.trace_id is None
-    assert recorder.calls == [], (
-        "no trace_id must mean no span opened (avoids orphan root traces)"
-    )
+    assert recorder.calls == [], "no trace_id must mean no span opened (avoids orphan root traces)"
 
 
 def test_claim_workflow_opens_langfuse_span_around_graph_dispatch(
@@ -423,14 +415,10 @@ def test_claim_workflow_opens_langfuse_span_around_graph_dispatch(
         callback_factory=None,
     )
 
-    execution = asyncio.run(
-        workflow.run(ClaimInput("Hubo un accidente entre A y B."))
-    )
+    execution = asyncio.run(workflow.run(ClaimInput("Hubo un accidente entre A y B.")))
 
     assert execution.trace_id == trace_id_hex
-    assert len(recorder.calls) == 1, (
-        "the claim workflow must open exactly one Langfuse observation"
-    )
+    assert len(recorder.calls) == 1, "the claim workflow must open exactly one Langfuse observation"
     call = recorder.calls[0]
     assert call["name"] == "claim_workflow"
     assert call["trace_context"] == {"trace_id": trace_id_hex}

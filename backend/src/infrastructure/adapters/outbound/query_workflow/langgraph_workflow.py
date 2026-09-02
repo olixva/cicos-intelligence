@@ -65,9 +65,7 @@ class _RoutingUpdate(TypedDict, total=False):
 def _route_decision(state: _RoutingState) -> RouteDecision:
     classification = state.get("classification")
     if classification is None:
-        raise RouteExecutionError(
-            "routing workflow reached dispatch without a classification"
-        )
+        raise RouteExecutionError("routing workflow reached dispatch without a classification")
     decision = classification.decision
     if decision not in _CLOSED_DECISIONS:
         raise RouteExecutionError(
@@ -116,8 +114,11 @@ class LangGraphResolveQuery:
         g.add_conditional_edges(  # pyright: ignore[reportUnknownMemberType]
             "dispatch",
             _route_decision,
-            {"question": "to_question", "claim": "to_claim",
-             "clarification_required": "to_clarification"},
+            {
+                "question": "to_question",
+                "claim": "to_claim",
+                "clarification_required": "to_clarification",
+            },
         )
         for branch in ("to_question", "to_claim", "to_clarification"):
             g.add_edge(branch, "wrap")  # pyright: ignore[reportUnknownMemberType]
@@ -132,7 +133,8 @@ class LangGraphResolveQuery:
         try:
             async with asyncio.timeout(self._timeout_seconds):
                 raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                    _RoutingState(query=query), config=config  # type: ignore[arg-type]
+                    _RoutingState(query=query),
+                    config=config,  # type: ignore[arg-type]
                 )
         except TimeoutError as error:
             raise RouteDispatchTimeoutError("routing workflow timed out") from error
@@ -142,7 +144,10 @@ class LangGraphResolveQuery:
         if dispatch is None or classification is None:
             raise RuntimeError("routing workflow completed without a dispatch")
         return RouteExecution(
-            query=query, classification=classification, dispatch=dispatch, trace_id=trace_id,
+            query=query,
+            classification=classification,
+            dispatch=dispatch,
+            trace_id=trace_id,
         )
 
     async def _classify(self, state: _RoutingState) -> _RoutingUpdate:

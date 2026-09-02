@@ -26,6 +26,7 @@ from domain.rules.applicability import ApplicabilityFacts, assess_applicability
 class ClaimWorkflowTimeoutError(TimeoutError):
     """The claim graph exceeded its local execution budget."""
 
+
 # Langfuse trace IDs are 32 lowercase hex characters; the SDK raises
 # ``ValueError`` (after only logging a warning) when an invalid ID is
 # passed to ``start_as_current_observation``. Guard the workflow so
@@ -114,7 +115,8 @@ class LangGraphClaimWorkflow:
             with span_cm:
                 async with asyncio.timeout(self._timeout_seconds):
                     raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                        _ClaimState(claim=claim), config=config  # type: ignore[arg-type]
+                        _ClaimState(claim=claim),
+                        config=config,  # type: ignore[arg-type]
                     )
         except TimeoutError as error:
             raise ClaimWorkflowTimeoutError("claim workflow timed out") from error
@@ -157,10 +159,15 @@ class LangGraphClaimWorkflow:
         if not evidence_ids:
             return _ClaimUpdate(
                 analysis=ClaimAnalysis(
-                    "undetermined", None, "conditional", extracted.party_ids, extracted.facts,
+                    "undetermined",
+                    None,
+                    "conditional",
+                    extracted.party_ids,
+                    extracted.facts,
                     _contradictions(extracted.facts),
                     ("Recuperar el criterio del manual antes de aplicar el Convenio.",),
-                    ("No se recuperó evidencia documental aplicable.",), (),
+                    ("No se recuperó evidencia documental aplicable.",),
+                    (),
                 )
             )
         assessment = assess_applicability(
@@ -171,9 +178,15 @@ class LangGraphClaimWorkflow:
         )
         return _ClaimUpdate(
             analysis=ClaimAnalysis(
-                analysis.applicability, analysis.convention, analysis.decision, analysis.party_ids,
-                analysis.facts, _contradictions(extracted.facts), analysis.conditions,
-                analysis.missing_information, analysis.blocks,
+                analysis.applicability,
+                analysis.convention,
+                analysis.decision,
+                analysis.party_ids,
+                analysis.facts,
+                _contradictions(extracted.facts),
+                analysis.conditions,
+                analysis.missing_information,
+                analysis.blocks,
             )
         )
 

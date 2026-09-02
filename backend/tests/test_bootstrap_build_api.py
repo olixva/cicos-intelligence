@@ -61,7 +61,5 @@ def test_build_api_raises_runtime_error_when_every_port_fails(
     monkeypatch.setattr(bootstrap, "build_answer_question", _raise_miss)
     monkeypatch.setattr(bootstrap, "build_analyze_claim", _raise_miss)
 
-    with pytest.raises(
-        RuntimeError, match=r"build_api\(\) could not compose any workflow port"
-    ):
+    with pytest.raises(RuntimeError, match=r"build_api\(\) could not compose any workflow port"):
         bootstrap.build_api(question_profile="q", claim_profile="c")

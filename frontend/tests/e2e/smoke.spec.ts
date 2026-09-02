@@ -15,22 +15,34 @@ test.describe('Allianz CICOS — chat agéntico smoke', () => {
   test('carga, muestra header, EmptyState y Composer', async ({ page }) => {
     await page.goto('/');
 
-    // Header
+    // Header — scoped al banner para evitar la ambigüedad con el
+    // heading del EmptyState que reusa el mismo texto accesible.
+    const banner = page.getByRole('banner');
     await expect(
-      page.getByRole('heading', { name: /Claims Intelligence/i }),
+      banner.getByRole('heading', { name: /Claims Intelligence/i }),
     ).toBeVisible();
 
-    // EmptyState con 5 ejemplos
+    // EmptyState con sugerencias: heading propio + ejemplos
     await expect(
-      page.getByRole('heading', { name: /Claims Intelligence/i }),
+      page.getByLabel('Sugerencias').getByRole('heading', {
+        name: /Claims Intelligence/i,
+      }),
     ).toBeVisible();
     await expect(page.getByText(/Pregunta frecuente/i)).toBeVisible();
     await expect(page.getByText(/Siniestro corto/i)).toBeVisible();
 
-    // Composer con radios de modo
-    await expect(page.getByLabel('Automático')).toBeVisible();
-    await expect(page.getByLabel('Pregunta')).toBeVisible();
-    await expect(page.getByLabel('Siniestro')).toBeVisible();
+    // Composer con radios de modo — el fieldset expone su nombre
+    // accesible, evitamos así ambigüedad con textos repetidos.
+    const modeFieldset = page.getByRole('group', { name: 'Modo de consulta' });
+    await expect(
+      modeFieldset.getByRole('radio', { name: /Automático/i }),
+    ).toBeVisible();
+    await expect(
+      modeFieldset.getByRole('radio', { name: /Pregunta/i }),
+    ).toBeVisible();
+    await expect(
+      modeFieldset.getByRole('radio', { name: /Siniestro/i }),
+    ).toBeVisible();
 
     // Textarea con label accesible
     const textarea = page.getByLabel(/texto de la consulta/i);
