@@ -280,9 +280,10 @@ def _validate_stored_assets(
     """Bind every listed byte asset and page reference to its persisted hash metadata."""
     metadata_path = directory / "extraction.json"
     if not metadata_path.exists():
-        if any(page.image_path is not None or page.elements for page in pages) or set(
-            publication_files
-        ) != {"manifest.json", "pages.jsonl"}:
+        if any(page.image_path is not None or page.elements for page in pages) or not (
+            set(publication_files) <= {"manifest.json", "pages.jsonl", "original.pdf"}
+            and {"manifest.json", "pages.jsonl"} <= set(publication_files)
+        ):
             raise EvidenceNotFoundError("Stored evidence is inconsistent")
         return
     try:
