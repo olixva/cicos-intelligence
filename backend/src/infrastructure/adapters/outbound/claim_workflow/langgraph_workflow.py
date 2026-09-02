@@ -55,6 +55,7 @@ class _ClaimUpdate(TypedDict, total=False):
     analysis: ClaimAnalysis
     interview_plan: InterviewPlan
     result: ClaimAnalysis
+    resumed: bool
 
 
 class LangGraphClaimWorkflow:
@@ -104,7 +105,7 @@ class LangGraphClaimWorkflow:
         graph.add_edge("plan_interview", "needs_information")
         graph.add_conditional_edges(
             "needs_information",
-            lambda state: "extract_facts" if state.get("resumed") else "explain",
+            self._route_after_information,
             {"extract_facts": "extract_facts", "explain": "explain"},
         )
         graph.add_edge("explain", "validate")
@@ -259,7 +260,9 @@ class LangGraphClaimWorkflow:
         extracted = state.get("extracted")
         analysis = state.get("analysis")
         if extracted is None or analysis is None:
-            raise RuntimeError("claim workflow reached interview planning without facts and analysis")
+            raise RuntimeError(
+                "claim workflow reached interview planning without facts and analysis"
+            )
         plan = extracted.interview_plan
         if plan.status == "ask":
             prompts = tuple(question.prompt for question in plan.questions)
@@ -280,7 +283,9 @@ class LangGraphClaimWorkflow:
             if reason is None:
                 raise RuntimeError("terminal interview plan has no reason")
             evidence_ids = tuple(
-                dict.fromkeys(item for group in state.get("context", ()) for item in group.evidence_ids)
+                dict.fromkeys(
+                    item for group in state.get("context", ()) for item in group.evidence_ids
+                )
             )
             analysis = ClaimAnalysis(
                 analysis.applicability,
@@ -295,6 +300,12 @@ class LangGraphClaimWorkflow:
                 rules_evaluated=analysis.rules_evaluated,
             )
         return _ClaimUpdate(interview_plan=plan, analysis=analysis, result=analysis)
+
+    @staticmethod
+    def _route_after_information(
+        state: _ClaimState,
+    ) -> Literal["extract_facts", "explain"]:
+        return "extract_facts" if state.get("resumed") else "explain"
 
     def _kind_of(self, rule_id: str) -> str | None:
         rule = self._rules_by_id.get(rule_id)
@@ -322,14 +333,19 @@ class LangGraphClaimWorkflow:
             # conditional edge would restart extraction indefinitely.
             return _ClaimUpdate(result=analysis, resumed=False)
         response = interrupt({"missing_information": analysis.missing_information})
-        clarifications = (
-            tuple(response.get("clarifications", ())) if isinstance(response, dict) else ()
-        )
+        response_dict = cast(dict[str, object], response) if isinstance(response, dict) else {}
+        raw_clarifications = response_dict.get("clarifications", ())
+        clarifications: tuple[str, ...] = ()
+        if isinstance(raw_clarifications, (list, tuple)):
+            clarification_values = cast(list[object] | tuple[object, ...], raw_clarifications)
+            clarifications = tuple(item for item in clarification_values if isinstance(item, str))
         claim = state["claim"]
         # LangGraph re-enters this node on every resume. Keep the answers
         # already supplied in the checkpoint and append the new batch; the
         # frontend intentionally sends only the fields answered in that step.
-        merged_clarifications = tuple(dict.fromkeys((*claim.clarifications, *clarifications)))
+        merged_clarifications: tuple[str, ...] = tuple(
+            dict.fromkeys((*claim.clarifications, *clarifications))
+        )
         resumed_claim = ClaimInput(
             claim.text,
             claim.language,

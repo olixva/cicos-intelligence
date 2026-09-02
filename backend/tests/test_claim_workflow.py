@@ -3,7 +3,12 @@
 import asyncio
 from dataclasses import dataclass
 
-from application.models.claim import ClaimExecution, ExtractedClaimFacts, InterviewPlan, InterviewQuestion
+from application.models.claim import (
+    ClaimExecution,
+    ExtractedClaimFacts,
+    InterviewPlan,
+    InterviewQuestion,
+)
 from application.models.retrieval import Chunk
 from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.evidence_reader import EvidenceReader
@@ -210,7 +215,9 @@ def test_claim_graph_surfaces_a_coverage_gap_without_asking_again() -> None:
                 ),
                 InterviewPlan(
                     "coverage_gap",
-                    terminal_reason="El manual indexado no contiene una regla verificable para estas versiones.",
+                    terminal_reason=(
+                        "El manual indexado no contiene una regla verificable para estas versiones."
+                    ),
                 ),
             )
         ),

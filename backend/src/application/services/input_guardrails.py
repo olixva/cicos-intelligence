@@ -11,7 +11,13 @@ _INSULT = re.compile(
 def guardrail_message(text: str) -> str | None:
     """Return a user-facing refusal for clearly unsupported or abusive input."""
     if _INSULT.search(text):
-        return "No puedo continuar con insultos. Mantengamos una conversación respetuosa sobre CIDE/ASCIDE/CICOS."
+        return (
+            "No puedo continuar con insultos. Mantengamos una conversación respetuosa "
+            "sobre CIDE/ASCIDE/CICOS."
+        )
     if _WEATHER.search(text):
-        return "Sólo puedo responder sobre el manual CIDE/ASCIDE/CICOS y los siniestros que cubre; no puedo informar del tiempo."
+        return (
+            "Sólo puedo responder sobre el manual CIDE/ASCIDE/CICOS y los siniestros que "
+            "cubre; no puedo informar del tiempo."
+        )
     return None

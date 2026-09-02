@@ -7,7 +7,6 @@ from application.models.query import ContextEvidence
 from domain.models.claim import ClaimFact
 from domain.models.decision import ClaimAnalysis
 
-
 InterviewStatus = Literal["ask", "ready", "inconsistent", "coverage_gap"]
 AnswerKind = Literal["text", "choice", "boolean"]
 
