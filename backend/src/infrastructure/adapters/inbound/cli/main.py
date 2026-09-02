@@ -218,12 +218,13 @@ def _run_index_rollback(arguments: argparse.Namespace) -> int:
     """Switch the active alias back to a previously published collection."""
     import asyncio
 
+    from qdrant_client import AsyncQdrantClient
+
     from infrastructure.adapters.outbound.retriever.index_builder import (
         AmbiguousIndexPublicationError,
         IndexPublicationError,
         QdrantIndexBuilder,
     )
-    from qdrant_client import AsyncQdrantClient
 
     async def _run() -> dict[str, object]:
         client = AsyncQdrantClient(url=arguments.qdrant_url)

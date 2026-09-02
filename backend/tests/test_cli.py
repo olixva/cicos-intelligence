@@ -351,7 +351,7 @@ def test_list_index_versions_handles_missing_signature(
             self.config = type("_C", (), {"metadata": metadata})()
 
     class _FakeClient:
-        async def __aenter__(self) -> "_FakeClient":
+        async def __aenter__(self) -> _FakeClient:
             return self
 
         async def __aexit__(self, *_args: object) -> None:
@@ -392,9 +392,7 @@ def test_list_index_versions_handles_missing_signature(
         async def close(self) -> None:
             return None
 
-    monkeypatch.setattr(
-        "qdrant_client.AsyncQdrantClient", lambda **_kwargs: _FakeClient()
-    )
+    monkeypatch.setattr("qdrant_client.AsyncQdrantClient", lambda **_kwargs: _FakeClient())
     result = main(["list-index-versions"])
 
     captured = capsys.readouterr()

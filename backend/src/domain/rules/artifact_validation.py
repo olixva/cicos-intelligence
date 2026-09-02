@@ -158,7 +158,8 @@ def _validate_rules_artifact(
     errors: list[str] = []
     validator = Draft202012Validator(schema)
     for error in sorted(validator.iter_errors(payload), key=lambda e: e.path):
-        errors.append(f"{'/'.join(str(part) for part in error.absolute_path) or '*'}: {error.message}")
+        path = "/".join(str(part) for part in error.absolute_path) or "*"
+        errors.append(f"{path}: {error.message}")
     if payload.get("document_hash") != expected_document_hash:
         errors.append(
             f"document_hash {payload.get('document_hash')} does not match expected "
@@ -167,9 +168,7 @@ def _validate_rules_artifact(
     cells = payload.get("cells", {}) if schema_name == "cide-matrix" else {}
     cell_count = len(cells)
     if expected_cell_count and cell_count != expected_cell_count:
-        errors.append(
-            f"cell count {cell_count} does not match expected {expected_cell_count}"
-        )
+        errors.append(f"cell count {cell_count} does not match expected {expected_cell_count}")
     referenced = _collect_evidence_ids(payload)
     unknown_evidence = tuple(sorted(referenced - set(evidence_pool)))
     if unknown_evidence:
@@ -258,6 +257,6 @@ def evidence_pool_from_publications(evidence_roots: Iterable[Path]) -> set[str]:
                         evidence_id = record.get("evidence_id")
                         if isinstance(evidence_id, str):
                             pool.add(evidence_id)
-            except (OSError, json.JSONDecodeError):
+            except OSError, json.JSONDecodeError:
                 continue
     return pool

@@ -24,10 +24,11 @@ from domain.rules.artifact_validation import (
 
 
 def _evidence_ids(*numbers: int) -> tuple[str, ...]:
-    return tuple(
-        f"sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:{n}"
-        for n in numbers
-    )
+    document_hash = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+    return tuple(f"sha256:{document_hash}:page:{n}" for n in numbers)
+
+
+DOCUMENT_HASH = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
 
 
 def _complete_matrix(document_hash: str) -> dict[str, object]:
@@ -150,9 +151,9 @@ def test_validate_cide_matrix_rejects_short_attestation(tmp_path: Path) -> None:
 
 def test_validate_cide_matrix_rejects_unknown_evidence(tmp_path: Path) -> None:
     """Cells citing evidence not in the publication pool must be flagged."""
-    document_hash = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+    document_hash = DOCUMENT_HASH
     payload = _complete_matrix(document_hash)
-    payload["cells"]["1,1"]["evidence_ids"] = ["sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:1"]
+    payload["cells"]["1,1"]["evidence_ids"] = [f"sha256:{document_hash}:page:1"]
     matrix_path = tmp_path / "cide-matrix.v1.json"
     matrix_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     report = validate_cide_matrix(
@@ -191,8 +192,8 @@ def test_validate_cide_matrix_rejects_document_hash_mismatch(tmp_path: Path) -> 
 
 def test_compare_transcriptions_reports_only_differences(tmp_path: Path) -> None:
     """compare-transcriptions must return divergences without touching the artifact."""
-    left_payload = _complete_matrix("b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344")
-    right_payload = _complete_matrix("b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344")
+    left_payload = _complete_matrix(DOCUMENT_HASH)
+    right_payload = _complete_matrix(DOCUMENT_HASH)
     right_payload["cells"]["1,1"]["outcome"] = "A_full"
     left = tmp_path / "left.json"
     right = tmp_path / "right.json"

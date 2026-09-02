@@ -95,6 +95,13 @@ def test_index_compatibility_compares_every_field_and_serializes_all_fields() ->
         "embedding_model": "embedding-test",
         "dimensions": 3,
         "lexical_language": "spanish",
+        "retrieval_mode": "hybrid",
+        "fusion": "rrf",
+        "reranker": "none",
+        "vision": "none",
+        "ruleset": "audit-required",
+        "generator": "openai-responses",
+        "prompt_versions": None,
     }
 
 
@@ -582,7 +589,6 @@ def _minimal_profile_dict(**overrides: object) -> str:
 
 def test_profile_identity_changes_with_retrieval_mode(tmp_path: Path) -> None:
     """Switching retrieval mode must produce a different canonical identity."""
-    from application.models.retrieval import FixedChunkingConfig, RetrievalProfile
     from infrastructure.config.profiles import load_profile
 
     (tmp_path / "baseline.yaml").write_text(_minimal_profile_dict(retrieval_mode="dense"))
@@ -601,14 +607,10 @@ def test_profile_identity_changes_with_reranker_and_prompt_versions(tmp_path: Pa
     from infrastructure.config.profiles import load_profile
 
     (tmp_path / "v1.yaml").write_text(
-        _minimal_profile_dict(
-            reranker="none", prompt_versions={"document-question": "1"}
-        )
+        _minimal_profile_dict(reranker="none", prompt_versions={"document-question": "1"})
     )
     (tmp_path / "v2.yaml").write_text(
-        _minimal_profile_dict(
-            reranker="openai", prompt_versions={"document-question": "2"}
-        )
+        _minimal_profile_dict(reranker="openai", prompt_versions={"document-question": "2"})
     )
 
     first = load_profile("v1", tmp_path)

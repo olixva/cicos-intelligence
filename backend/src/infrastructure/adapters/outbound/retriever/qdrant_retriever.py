@@ -7,7 +7,17 @@ from typing import Any, Protocol, cast
 from fastembed.sparse.bm25 import Bm25
 from qdrant_client import AsyncQdrantClient, models
 
-from application.models.retrieval import Chunk, IndexSignature, assert_compatible
+from application.models.retrieval import (
+    Chunk,
+    FusionStrategy,
+    GeneratorKind,
+    IndexSignature,
+    RerankerKind,
+    RetrievalMode,
+    RulesetKind,
+    VisionKind,
+    assert_compatible,
+)
 from application.ports.outbound.embedding_provider import EmbeddingProvider
 from application.ports.outbound.retriever import RetrievalRequest
 
@@ -129,12 +139,26 @@ def signature_metadata(signature: IndexSignature) -> dict[str, dict[str, object]
             "embedding_model": signature.embedding_model,
             "lexical_language": signature.lexical_language,
             "parser": signature.parser,
+            "retrieval_mode": signature.retrieval_mode,
+            "fusion": signature.fusion,
+            "reranker": signature.reranker,
+            "vision": signature.vision,
+            "ruleset": signature.ruleset,
+            "generator": signature.generator,
+            "prompt_versions": dict(signature.prompt_versions or {}),
         }
     }
 
 
 def signature_from_metadata(metadata: dict[str, Any] | None) -> IndexSignature:
-    """Read a complete signature, rejecting partial or incorrectly typed metadata."""
+    """Read a complete signature, rejecting partial or incorrectly typed metadata.
+
+    Collections written before the extended signature (T3) only
+    carry the six base fields; for those we recover the legacy
+    defaults so a freshly built ``IndexSignature`` still compares
+    equal to the historical collection metadata via
+    ``assert_compatible``.
+    """
     if not isinstance(metadata, dict):
         raise InvalidIndexDataError("collection has no index signature metadata")
     raw_value = metadata.get("index_signature")
@@ -158,6 +182,26 @@ def signature_from_metadata(metadata: dict[str, Any] | None) -> IndexSignature:
         or type(dimensions) is not int
     ):
         raise InvalidIndexDataError("collection index signature metadata has invalid types")
+
+    def _string_or_default(key: str, default: str) -> str:
+        value = raw.get(key, default)
+        if not isinstance(value, str):
+            raise InvalidIndexDataError(f"collection index signature field {key} is invalid")
+        return value
+
+    retrieval_mode = _string_or_default("retrieval_mode", "hybrid")
+    fusion = _string_or_default("fusion", "rrf")
+    reranker = _string_or_default("reranker", "none")
+    vision = _string_or_default("vision", "none")
+    ruleset = _string_or_default("ruleset", "audit-required")
+    generator = _string_or_default("generator", "openai-responses")
+    if "prompt_versions" in raw:
+        prompt_versions_raw = raw["prompt_versions"]
+        if not isinstance(prompt_versions_raw, dict):
+            raise InvalidIndexDataError("collection index signature prompt_versions is invalid")
+        prompt_versions: dict[str, str] | None = dict(cast(dict[str, str], prompt_versions_raw))
+    else:
+        prompt_versions = None
     return IndexSignature(
         cast(str, document_hash),
         cast(str, parser),
@@ -165,6 +209,13 @@ def signature_from_metadata(metadata: dict[str, Any] | None) -> IndexSignature:
         cast(str, embedding_model),
         dimensions,
         cast(str, lexical_language),
+        retrieval_mode=cast(RetrievalMode, retrieval_mode),
+        fusion=cast(FusionStrategy, fusion),
+        reranker=cast(RerankerKind, reranker),
+        vision=cast(VisionKind, vision),
+        ruleset=cast(RulesetKind, ruleset),
+        generator=cast(GeneratorKind, generator),
+        prompt_versions=prompt_versions,
     )
 
 

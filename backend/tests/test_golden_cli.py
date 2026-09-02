@@ -31,9 +31,7 @@ def _write_release_artifacts(golden_root: Path) -> Path:
         "expected_output": {
             "reference": "Respuesta fixture.",
             "decisions": {"intent": "question", "answer_status": "answered"},
-            "requirements": [
-                {"requirement_id": "req-1", "description": "Cubre el fixture."}
-            ],
+            "requirements": [{"requirement_id": "req-1", "description": "Cubre el fixture."}],
             "acceptable_alternatives": [],
             "forbidden_facts": ["No inventar reglas."],
             "evidence_requirements": [
@@ -217,9 +215,7 @@ def test_golden_validate_rejects_unfinished_review(
             "evidence_requirements": [
                 {
                     "requirement_id": "req-1",
-                    "any_of": [
-                        {"bundle_id": "bundle-and", "all_of": ["fixture-evidence:page:1"]}
-                    ],
+                    "any_of": [{"bundle_id": "bundle-and", "all_of": ["fixture-evidence:page:1"]}],
                 }
             ],
         },
@@ -367,8 +363,7 @@ def test_golden_freeze_persists_release_artifacts(
     manifest = json.loads((release_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["item_count"] == 1
     assert (
-        manifest["content_sha256"]
-        == sha256((release_dir / "items.jsonl").read_bytes()).hexdigest()
+        manifest["content_sha256"] == sha256((release_dir / "items.jsonl").read_bytes()).hexdigest()
     )
 
 

@@ -40,6 +40,13 @@ class IndexSignature:
     embedding_model: str
     dimensions: int
     lexical_language: str
+    retrieval_mode: RetrievalMode = "hybrid"
+    fusion: FusionStrategy = "rrf"
+    reranker: RerankerKind = "none"
+    vision: VisionKind = "none"
+    ruleset: RulesetKind = "audit-required"
+    generator: GeneratorKind = "openai-responses"
+    prompt_versions: Mapping[str, str] | None = None
 
     def __post_init__(self) -> None:
         if _SHA256_PATTERN.fullmatch(self.document_hash) is None:
@@ -49,6 +56,16 @@ class IndexSignature:
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} must be nonempty")
         _require_positive_int("dimensions", self.dimensions)
+        # Normalize empty prompt_versions to None so collections stored
+        # with default and reconstructed with defaults stay equal under
+        # assert_compatible. ``object.__setattr__`` is required because
+        # the dataclass is frozen.
+        if self.prompt_versions is not None and len(self.prompt_versions) == 0:
+            object.__setattr__(self, "prompt_versions", None)
+        if self.prompt_versions is not None:
+            for key, value in self.prompt_versions.items():
+                if not key.strip() or not value.strip():
+                    raise ValueError("prompt_versions keys and values must be nonempty")
 
 
 def assert_compatible(actual: IndexSignature, expected: IndexSignature) -> None:
@@ -167,6 +184,13 @@ class RetrievalProfile:
             embedding_model=self.embedding_model,
             dimensions=self.dimensions,
             lexical_language=self.lexical_language,
+            retrieval_mode=self.retrieval_mode,
+            fusion=self.fusion,
+            reranker=self.reranker,
+            vision=self.vision,
+            ruleset=self.ruleset,
+            generator=self.generator,
+            prompt_versions=self.prompt_versions,
         )
 
     def identity(self) -> str:
@@ -192,6 +216,21 @@ class RetrievalProfile:
 
 def _canonical_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+# Fields that change the behaviour of an active index even if the
+# document, parser, chunker, embedding or lexical language stay the
+# same. They participate in IndexSignature so cached indexes cannot be
+# reused across rerank, vision, rule, generator or prompt changes.
+RETRIEVAL_AFFECTING_FIELDS: tuple[str, ...] = (
+    "retrieval_mode",
+    "fusion",
+    "reranker",
+    "vision",
+    "ruleset",
+    "generator",
+    "prompt_versions",
+)
 
 
 def _require_positive_int(name: str, value: object) -> None:
