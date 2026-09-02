@@ -2,10 +2,19 @@
 
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from typing import Literal
 
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+
+# Literal types kept narrow and version-bounded so profiles are reproducible.
+RetrievalMode = Literal["dense", "bm25", "hybrid"]
+FusionStrategy = Literal["rrf"]
+RerankerKind = Literal["none", "openai"]
+VisionKind = Literal["none", "openai-responses"]
+RulesetKind = Literal["audit-required", "inline-v1"]
+GeneratorKind = Literal["openai-responses"]
 
 
 class IncompatibleIndexError(ValueError):
@@ -110,13 +119,26 @@ type ChunkingConfig = FixedChunkingConfig | SectionChunkingConfig
 
 @dataclass(frozen=True, slots=True)
 class RetrievalProfile:
-    """Validated application value produced from an infrastructure profile document."""
+    """Validated application value produced from an infrastructure profile document.
+
+    The profile identity binds parser, chunking, embedding, retrieval mode,
+    fusion, reranker, vision, ruleset, generator and prompt versions. Any
+    change to one of these fields must produce a different index signature
+    so cached indexes can never be reused across prompt or model changes.
+    """
 
     parser: Literal["pypdf", "docling"]
     chunker: ChunkingConfig
     embedding_model: str
     dimensions: int
     lexical_language: str
+    retrieval_mode: RetrievalMode = "hybrid"
+    fusion: FusionStrategy = "rrf"
+    reranker: RerankerKind = "none"
+    vision: VisionKind = "none"
+    ruleset: RulesetKind = "audit-required"
+    generator: GeneratorKind = "openai-responses"
+    prompt_versions: Mapping[str, str] | None = None
 
     def __post_init__(self) -> None:
         if self.parser not in ("pypdf", "docling"):
@@ -128,6 +150,10 @@ class RetrievalProfile:
         _require_positive_int("dimensions", self.dimensions)
         if not self.lexical_language.strip():
             raise ValueError("lexical_language must be nonempty")
+        if self.prompt_versions is not None:
+            for key, value in self.prompt_versions.items():
+                if not key.strip() or not value.strip():
+                    raise ValueError("prompt_versions keys and values must be nonempty")
 
     def build_index_signature(self, document_hash: str, resolved_parser: str) -> IndexSignature:
         """Bind selectors to the exact source and parser identity used for indexing."""
@@ -141,6 +167,26 @@ class RetrievalProfile:
             embedding_model=self.embedding_model,
             dimensions=self.dimensions,
             lexical_language=self.lexical_language,
+        )
+
+    def identity(self) -> str:
+        """Return a canonical JSON identity covering every retrieval-affecting field."""
+
+        return _canonical_json(
+            {
+                "parser": self.parser,
+                "chunker": self.chunker.identity(),
+                "embedding_model": self.embedding_model,
+                "dimensions": self.dimensions,
+                "lexical_language": self.lexical_language,
+                "retrieval_mode": self.retrieval_mode,
+                "fusion": self.fusion,
+                "reranker": self.reranker,
+                "vision": self.vision,
+                "ruleset": self.ruleset,
+                "generator": self.generator,
+                "prompt_versions": dict(self.prompt_versions or {}),
+            }
         )
 
 

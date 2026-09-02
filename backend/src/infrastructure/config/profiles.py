@@ -119,6 +119,13 @@ class _ProfileDocument(_StrictModel):
     chunker: _ChunkerDocument
     embedding: _EmbeddingDocument
     lexical_language: str
+    retrieval_mode: Literal["dense", "bm25", "hybrid"] = "hybrid"
+    fusion: Literal["rrf"] = "rrf"
+    reranker: Literal["none", "openai"] = "none"
+    vision: Literal["none", "openai-responses"] = "none"
+    ruleset: Literal["audit-required", "inline-v1"] = "audit-required"
+    generator: Literal["openai-responses"] = "openai-responses"
+    prompt_versions: dict[str, str] | None = None
 
     @field_validator("lexical_language")
     @classmethod
@@ -145,6 +152,13 @@ class _ProfileDocument(_StrictModel):
             embedding_model=self.embedding.model,
             dimensions=self.embedding.dimensions,
             lexical_language=self.lexical_language,
+            retrieval_mode=self.retrieval_mode,
+            fusion=self.fusion,
+            reranker=self.reranker,
+            vision=self.vision,
+            ruleset=self.ruleset,
+            generator=self.generator,
+            prompt_versions=self.prompt_versions,
         )
 
 

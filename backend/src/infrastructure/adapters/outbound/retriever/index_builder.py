@@ -268,6 +268,44 @@ class QdrantIndexBuilder:
         )
         return active.collection_name if active is not None else None
 
+    async def rollback_alias(self, collection: str) -> str:
+        """Switch the active alias back to ``collection`` after explicit verification."""
+        if not collection.strip():
+            raise IndexPublicationError("rollback target collection must be nonempty")
+        info = await self.client.get_collection(collection)
+        previous_collection = await self._active_collection()
+        if previous_collection == collection:
+            return collection
+        try:
+            published = await self.client.update_collection_aliases(
+                change_aliases_operations=[
+                    models.CreateAliasOperation(
+                        create_alias=models.CreateAlias(
+                            collection_name=collection,
+                            alias_name=self.active_alias,
+                        )
+                    )
+                ]
+            )
+        except (ConnectionError, TimeoutError, ResponseHandlingException) as error:
+            raise IndexPublicationError(
+                f"could not rollback alias to collection {collection}"
+            ) from error
+        if not published:
+            raise IndexPublicationError(
+                f"Qdrant did not confirm rollback to collection {collection}"
+            )
+        active = await self._active_collection()
+        if active != collection:
+            raise IndexPublicationError(f"rollback did not take effect: alias points to {active!r}")
+        logger.info(
+            "Qdrant alias rollback alias=%s previous=%s collection=%s",
+            self.active_alias,
+            previous_collection,
+            collection,
+        )
+        return collection
+
 
 def _candidate_collection_name(signature: IndexSignature) -> str:
     encoded = json.dumps(

@@ -557,3 +557,85 @@ def test_profile_schema_rejects_non_mapping_unknown_duplicate_or_incompatible_ya
 
     with pytest.raises(ProfileCatalogError):
         load_profile("invalid", tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# T3 — extended profile identity (retrieval mode, fusion, reranker, vision,
+# ruleset, generator, prompt versions). The index identity must change when
+# any of these fields change so cached indexes cannot be reused across
+# experiments that alter the candidate pipeline.
+# ---------------------------------------------------------------------------
+
+
+def _minimal_profile_dict(**overrides: object) -> str:
+    import yaml
+
+    base = {
+        "parser": "pypdf",
+        "chunker": {"strategy": "fixed", "size": 100, "overlap": 20},
+        "embedding": {"model": "text-embedding-3-small", "dimensions": 1536},
+        "lexical_language": "spanish",
+    }
+    base.update(overrides)
+    return yaml.safe_dump(base, sort_keys=False, allow_unicode=True)
+
+
+def test_profile_identity_changes_with_retrieval_mode(tmp_path: Path) -> None:
+    """Switching retrieval mode must produce a different canonical identity."""
+    from application.models.retrieval import FixedChunkingConfig, RetrievalProfile
+    from infrastructure.config.profiles import load_profile
+
+    (tmp_path / "baseline.yaml").write_text(_minimal_profile_dict(retrieval_mode="dense"))
+    (tmp_path / "hybrid.yaml").write_text(_minimal_profile_dict(retrieval_mode="hybrid"))
+
+    dense = load_profile("baseline", tmp_path)
+    hybrid = load_profile("hybrid", tmp_path)
+
+    assert dense.retrieval_mode == "dense"
+    assert hybrid.retrieval_mode == "hybrid"
+    assert dense.identity() != hybrid.identity()
+
+
+def test_profile_identity_changes_with_reranker_and_prompt_versions(tmp_path: Path) -> None:
+    """Prompt version bumps and reranker switches must invalidate the index identity."""
+    from infrastructure.config.profiles import load_profile
+
+    (tmp_path / "v1.yaml").write_text(
+        _minimal_profile_dict(
+            reranker="none", prompt_versions={"document-question": "1"}
+        )
+    )
+    (tmp_path / "v2.yaml").write_text(
+        _minimal_profile_dict(
+            reranker="openai", prompt_versions={"document-question": "2"}
+        )
+    )
+
+    first = load_profile("v1", tmp_path)
+    second = load_profile("v2", tmp_path)
+
+    assert first.identity() != second.identity()
+
+
+def test_profile_rejects_unknown_retrieval_mode(tmp_path: Path) -> None:
+    """The strict loader must refuse retrieval modes outside the enum."""
+    from infrastructure.config.profiles import ProfileCatalogError, load_profile
+
+    (tmp_path / "bad.yaml").write_text(_minimal_profile_dict(retrieval_mode="sparse"))
+    with pytest.raises(ProfileCatalogError):
+        load_profile("bad", tmp_path)
+
+
+def test_profile_defaults_keep_backward_compatibility(tmp_path: Path) -> None:
+    """Profiles without extended fields must keep the previous defaults."""
+    from infrastructure.config.profiles import load_profile
+
+    (tmp_path / "legacy.yaml").write_text(_minimal_profile_dict())
+    profile = load_profile("legacy", tmp_path)
+    assert profile.retrieval_mode == "hybrid"
+    assert profile.fusion == "rrf"
+    assert profile.reranker == "none"
+    assert profile.vision == "none"
+    assert profile.ruleset == "audit-required"
+    assert profile.generator == "openai-responses"
+    assert profile.prompt_versions is None

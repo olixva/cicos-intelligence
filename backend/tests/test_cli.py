@@ -282,3 +282,127 @@ def test_compare_parsers_writes_a_report_with_timings(
     assert body["parsers"] == ["docling-2.124.0-test", "pypdf-6.16.2"]
     parsed_stdout = json.loads(captured.out)
     assert parsed_stdout["report"] == str(report_file)
+
+
+def test_index_rollback_switches_active_alias(
+    monkeypatch: pytest.MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    """The rollback CLI must invoke the builder and print the resulting alias state."""
+    from infrastructure.adapters.inbound.cli.main import main
+    from infrastructure.adapters.outbound.retriever import index_builder
+
+    class _StubBuilder:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        async def rollback_alias(self, collection: str) -> str:
+            return collection
+
+        async def _active_collection(self) -> str:
+            return "allianz-target-collection"
+
+    monkeypatch.setattr(index_builder, "QdrantIndexBuilder", _StubBuilder)
+    result = main(["index-rollback", "--collection", "allianz-target-collection"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    body = json.loads(captured.out)
+    assert body["collection"] == "allianz-target-collection"
+    assert body["active_alias"] == "allianz-target-collection"
+
+
+def test_index_rollback_reports_publication_errors(
+    monkeypatch: pytest.MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    """The rollback CLI must surface Qdrant publication failures as exit code 2."""
+    from infrastructure.adapters.inbound.cli.main import main
+    from infrastructure.adapters.outbound.retriever import index_builder
+    from infrastructure.adapters.outbound.retriever.index_builder import (
+        IndexPublicationError,
+    )
+
+    class _FailingBuilder:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        async def rollback_alias(self, collection: str) -> str:
+            raise IndexPublicationError(f"cannot rollback to {collection}")
+
+    monkeypatch.setattr(index_builder, "QdrantIndexBuilder", _FailingBuilder)
+    result = main(["index-rollback", "--collection", "allianz-broken"])
+
+    captured = capsys.readouterr()
+    assert result == 2
+    assert "cannot rollback to allianz-broken" in captured.err
+
+
+def test_list_index_versions_handles_missing_signature(
+    monkeypatch: pytest.MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    """The list command must not crash when a collection has no index_signature."""
+    from infrastructure.adapters.inbound.cli.main import main
+
+    class _FakeCollections:
+        def __init__(self, names: list[str]) -> None:
+            self.collections = [type("_E", (), {"name": name})() for name in names]
+
+    class _FakeInfo:
+        def __init__(self, metadata: object) -> None:
+            self.config = type("_C", (), {"metadata": metadata})()
+
+    class _FakeClient:
+        async def __aenter__(self) -> "_FakeClient":
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def get_collections(self) -> _FakeCollections:
+            return _FakeCollections(["with", "without"])
+
+        async def get_collection(self, name: str) -> _FakeInfo:
+            if name == "with":
+                return _FakeInfo(
+                    {
+                        "index_signature": {
+                            "document_hash": "a" * 64,
+                            "parser": "pypdf-6.16.2",
+                            "chunker": "{}",
+                            "embedding_model": "text-embedding-3-small",
+                            "dimensions": 1536,
+                            "lexical_language": "spanish",
+                        }
+                    }
+                )
+            return _FakeInfo({"other": "metadata"})
+
+        async def get_aliases(self) -> object:
+            class _Aliases:
+                def __init__(self) -> None:
+                    self.aliases = [
+                        type(
+                            "_A",
+                            (),
+                            {"alias_name": "allianz-manual-active", "collection_name": "with"},
+                        )()
+                    ]
+
+            return _Aliases()
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "qdrant_client.AsyncQdrantClient", lambda **_kwargs: _FakeClient()
+    )
+    result = main(["list-index-versions"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    body = json.loads(captured.out)
+    assert body[0]["active_alias"] == "with"
+    versions = body[0]["versions"]
+    assert {row["collection"] for row in versions} == {"with", "without"}
+    by_collection = {row["collection"]: row for row in versions}
+    assert by_collection["with"]["index_signature"] is not None
+    assert by_collection["without"]["index_signature"] is None
