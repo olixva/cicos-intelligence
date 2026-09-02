@@ -224,11 +224,11 @@ Footer `request_id` siempre coherente con el envelope tras G2 fix-2.
 
 ## Post-Gre: Remediación gaps #1+#2+#3 → `aa81cb0`
 
-Tras el veredicto G4, se abrió lane de remediación para los 3 code findings (PDF catalog queda como gap operacional documentado):
+Tras el veredicto G4, se abrió lane de remediación para los 3 code findings (PDF catalog queda como gap operacional documentado).
 
 | # | Fix | Validación live |
 |---|-----|-----------------|
-| G4 #1 | `from langfuse.openai import AsyncOpenAI` en 3 adaptadores LLM | ⚠️ PARTIAL — cambio aplicado + 6 tests focal + 273 BE tests pasan sin regresión. **Pero**: GENERATION spans siguen ausentes en Langfuse UI pese al import. El wrapper `langfuse.openai` registra wrapt proxies a nivel de módulo, pero la integración end-to-end con el Langfuse context del workflow requiere más ajuste (probablemente `langfuse_context.update_current_observation()` explícito o uso de `from langfuse.openai import openai` como módulo completo en lugar de clases individuales). Documentado como gap residual. |
+| G4 #1 | `from langfuse.openai import AsyncOpenAI` en 3 adaptadores LLM | ✅ **CLOSED por fix-7** (commit `0ff7da0`). El fix-4 aplicó el import + 6 tests focal + 273 BE tests pasaron, pero el orquestador asumió que era problema de orden de import. Fix-7 descubrió la causa raíz real: el `CallbackHandler` de LangChain dispatcha a `run_in_executor` (thread separado), así que el `context.attach()` no propaga el OTEL context al coroutine async. Fix: wrap `self._graph.ainvoke(...)` en ambos workflows con `get_client().start_as_current_observation(name="...", as_type="span", trace_context={"trace_id": trace_id})`. Validado live: Question trace ahora tiene 7 observations (CHAIN:4, GENERATION:1, EMBEDDING:1, SPAN:1) con GENERATION nested bajo `question_workflow` SPAN; Claim trace tiene 9 observations con la misma estructura. |
 | G4 #2 | `callback_factory` cableado en `LangGraphClaimWorkflow` + `build_resolve_query` | ✅ Validado vía 4 tests focal. Estructuralmente correcto; verificación end-to-end contra claim traces requiere test E2E live con Langfuse accesible. |
 | G4 #3 | `langfuse_url` añadido al envelope metadata (6 sitios) | ✅ **VALIDADO LIVE**: `metadata.langfuse_url=http://127.0.0.1:3000/trace/c25fad47...` presente en envelopes Pregunta. |
 
