@@ -66,11 +66,10 @@ Deuda registrada: `pyright --strict` reporta ~79 errores, excluidos del gate rá
 
 ### Git
 
-Rama `main`. `origin/main` está en `88d93cb`: **13 commits locales sin pushear**.
+Rama `main`. En el corte anterior a este catálogo, `HEAD` y `origin/main` estaban en `ac6efe8`.
+Esta actualización se versiona y publica como parte de la misma sesión.
 
-Sesión única a partir de `ccefd4f`: no hay otros agentes trabajando en el repositorio. Los commits
-`95800a2`, `df71fbe` y `bb6c1a5` proceden de la sesión anterior y ya están incorporados a este
-estado.
+Sesión única: no hay otros agentes trabajando en el repositorio.
 
 ### Servicios
 
@@ -83,6 +82,7 @@ Compose `allianz-rag` sobre contexto `colima-allianz`: langfuse, langfuse-worker
 - **Recuperación**: densa + BM25 español + RRF nativo de Qdrant, intercambiables por configuración.
 - **Workflows**: grafo documental (`retrieve → generate → validate`) y grafo de siniestros (`extract_facts → retrieve_criteria → apply_rules → explain → validate`). La extracción del LLM no puede sobrescribir el resultado determinista.
 - **Reglas de aplicabilidad**: `domain/rules/applicability.py` implementa la puerta de dos vehículos, colisión directa, tercero identificado y colisión en cadena, con evidencia obligatoria. Verificado.
+- **Catálogo D.A.A.**: `data/rules/daa-circumstances.v1.json` fija y versiona las etiquetas `A0`–`A17`. El responsable del proyecto validó la correspondencia el 2026-09-02. Es una fuente externa al manual: `A0` significa ausencia de circunstancia declarada y `A1`–`A17` son las 17 casillas del apartado 12 del parte amistoso.
 - **API**: nueve de las diez capacidades de la spec, con sobre común tipado, JSON y SSE. Los eventos llevan `event_id` y `timestamp`, y `dispatch` sólo se emite en modo `auto` (`73516e1`).
 - **Frameworks de calidad**: CLI `golden validate/freeze/publish`, CLI `rules validate/compare-transcriptions`, schemas de matriz y ruleset con attestation obligatoria, validación de releases que rechaza `technical_fixture` por defecto.
 - **Frontend**: React 19 + Vite, chat con tool calls, visor PDF, 60 tests unitarios, build limpio.
@@ -98,7 +98,7 @@ Compose `allianz-rag` sobre contexto `colima-allianz`: langfuse, langfuse-worker
 Ordenados por impacto sobre la entrega.
 
 1. **Los dos entregables documentales del enunciado no existen**: la presentación y el documento de arquitectura. El enunciado los exige explícitamente. → Tasks 11 y 12 del plan.
-2. ~~`data/rules/` sólo tiene los schemas.~~ **HECHO.** La matriz 18×18 y el ruleset de 14 reglas están transcritos por doble vía, adjudicados, firmados y cableados al flujo. El siniestro decide con `rules_evaluated` reales. Queda **una sola pieza**: mapear un relato a una celda de la matriz exige el catálogo de las 18 casillas de la D.A.A., pendiente de tu validación.
+2. ~~`data/rules/` sólo tiene los schemas.~~ **HECHO.** La matriz 18×18, el ruleset de 14 reglas y el catálogo D.A.A. `A0`–`A17` están versionados. La matriz permanece protegida: sólo puede aplicarse cuando haya casillas A y B declaradas de forma inequívoca; una narración ambigua no autoriza a inferirlas.
 3. **`data/evaluation/golden/` está vacío** (sólo `releases/`). Sin golden no hay comparativa de recuperación, ni métricas de router, ni holdout. → Tasks 4, 5.
 4. **`data/extractions/` sólo contiene `pypdf-6.16.2`.** Sin la publicación Docling no hay bounding boxes y el visor no puede resaltar región. → Task 10.
 5. **`session_id` existe en el frontend pero no en el backend.** `thread-store.ts` ya asigna uno estable por hilo (`df71fbe`), pero `backend/src` **no tiene ninguna ocurrencia** de `session_id`: no lo recibe ni lo propaga a Langfuse, así que las conversaciones siguen sin agruparse. Es media integración. → Task 8.
@@ -126,6 +126,6 @@ Ordenados por impacto sobre la entrega.
 
 Están marcadas como PARADAS bloqueantes en el plan vigente:
 
-1. Adjudicar las divergencias entre las dos transcripciones de la matriz y firmar la attestation. (Task 1, Step 9)
-2. Validar el catálogo de las 18 circunstancias de la D.A.A. (Task 2, Step 7)
+1. ~~Adjudicar las divergencias entre las dos transcripciones de la matriz y firmar la attestation.~~ **HECHO.**
+2. ~~Validar el catálogo de las 18 circunstancias de la D.A.A. (Task 2, Step 7)~~ **HECHO el 2026-09-02.**
 3. Revisar la anotación de los cinco siniestros antes de marcarlos `adjudicated`. (Task 4, Step 3)

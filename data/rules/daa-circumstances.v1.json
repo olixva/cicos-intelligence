@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "provenance": "external-daa-form",
+  "in_manual_scope": false,
+  "source": {
+    "title": "Parte amistoso de accidente — apartado 12",
+    "url": "https://www.allianzdirect.es/dam/documents/EuropeanAccidentForm.pdf",
+    "accessed_at": "2026-09-02"
+  },
+  "note": "El manual CIDE/ASCIDE/CICOS no define estas etiquetas. Proceden del apartado 12 del parte amistoso europeo de accidentes (D.A.A.). No citar el manual como fuente de esta taxonomía.",
+  "circumstances": [
+    {
+      "code": "A0",
+      "label": "Sin circunstancia declarada",
+      "is_daa_checkbox": false,
+      "note": "A0 no existe como casilla del apartado 12 de la D.A.A.; es la convención interna de la matriz para ausencia de circunstancia declarada."
+    },
+    { "code": "A1", "label": "Estaba estacionado o parado", "is_daa_checkbox": true },
+    { "code": "A2", "label": "Salía de un estacionamiento o abría una puerta", "is_daa_checkbox": true },
+    { "code": "A3", "label": "Iba a estacionar", "is_daa_checkbox": true },
+    { "code": "A4", "label": "Salía de un aparcamiento, lugar privado o camino de tierra", "is_daa_checkbox": true },
+    { "code": "A5", "label": "Entraba a un aparcamiento, lugar privado o camino de tierra", "is_daa_checkbox": true },
+    { "code": "A6", "label": "Entraba en una rotonda", "is_daa_checkbox": true },
+    { "code": "A7", "label": "Circulaba por una rotonda", "is_daa_checkbox": true },
+    { "code": "A8", "label": "Golpeó por detrás a otro vehículo en el mismo sentido y carril", "is_daa_checkbox": true },
+    { "code": "A9", "label": "Circulaba en el mismo sentido, pero en carril distinto", "is_daa_checkbox": true },
+    { "code": "A10", "label": "Cambiaba de carril", "is_daa_checkbox": true },
+    { "code": "A11", "label": "Adelantaba", "is_daa_checkbox": true },
+    { "code": "A12", "label": "Giraba a la derecha", "is_daa_checkbox": true },
+    { "code": "A13", "label": "Giraba a la izquierda", "is_daa_checkbox": true },
+    { "code": "A14", "label": "Daba marcha atrás", "is_daa_checkbox": true },
+    { "code": "A15", "label": "Invadía el carril del sentido contrario", "is_daa_checkbox": true },
+    { "code": "A16", "label": "Venía de la derecha en un cruce", "is_daa_checkbox": true },
+    { "code": "A17", "label": "No respetó una señal de preferencia o un semáforo en rojo", "is_daa_checkbox": true }
+  ],
+  "attestation": {
+    "validated_by": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+    "validated_at": "2026-09-02",
+    "validation": "Catálogo A0-A17 validado explícitamente por el responsable del proyecto."
+  }
+}

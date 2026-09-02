@@ -606,9 +606,9 @@ Crear `data/rules/daa-circumstances.v1.json` con las 18 casillas del apartado 12
 }
 ```
 
-- [ ] **Step 7: PARADA — validación humana del catálogo**
+- [x] **Step 7: PARADA — validación humana del catálogo**
 
-Presentar al usuario las 18 etiquetas propuestas y pedirle confirmación. Son la bisagra entre el relato y la celda de la matriz: una etiqueta mal asignada produce decisiones incorrectas con apariencia de rigor. No continuar sin su visto bueno.
+Presentar al usuario las 18 etiquetas propuestas y pedirle confirmación. Son la bisagra entre el relato y la celda de la matriz: una etiqueta mal asignada produce decisiones incorrectas con apariencia de rigor. **Cerrado el 2026-09-02:** Antonio Oliva Carceles validó `A0` como «Sin circunstancia declarada» (convención interna, no casilla) y `A1`–`A17` como el apartado 12 estándar de la D.A.A.; el artefacto resultante es `data/rules/daa-circumstances.v1.json`.
 
 - [ ] **Step 8: Implementar el evaluador**
 
