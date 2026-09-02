@@ -36,7 +36,7 @@ export function ThreadSidebar({
         initial={false}
         animate={{ width: collapsed ? 56 : 240 }}
         transition={{ duration: 0.22, ease: 'easeOut' }}
-        className="flex h-full shrink-0 flex-col border-r bg-card"
+        className="flex shrink-0 flex-col self-stretch border-r bg-card"
         aria-label="Hilos"
       >
         <div className="flex items-center gap-1 border-b px-3 py-3">

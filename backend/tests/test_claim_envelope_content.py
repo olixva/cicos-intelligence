@@ -74,3 +74,61 @@ def test_claim_envelope_never_leaks_local_asset_paths() -> None:
     payload = _envelope().model_dump_json()
     assert "image_path" not in payload
     assert "data/extractions" not in payload
+
+
+# ---------------------------------------------------------------------------
+# Auto mode must not degrade the answer. It is the default mode, so a claim
+# routed through the classifier has to carry exactly what the explicit claim
+# endpoint carries.
+# ---------------------------------------------------------------------------
+
+from application.models.query import QueryInput  # noqa: E402
+from domain.models.routing import RouteClassification, RouteExecution  # noqa: E402
+
+
+def _auto_envelope() -> EnvelopeResponse:
+    return EnvelopeResponse.from_route_execution(
+        request_id="req-2",
+        execution=RouteExecution(
+            query=QueryInput("relato", "es"),
+            classification=RouteClassification("claim"),
+            dispatch=ClaimExecution(result=_analysis(), context=(), trace_id="t-1"),
+            trace_id="t-route",
+        ),
+    )
+
+
+def test_auto_routed_claim_carries_the_same_content_as_the_explicit_one() -> None:
+    explicit = _envelope().result
+    auto = _auto_envelope().result
+    assert auto.kind == "claim"
+    assert explicit.kind == "claim"
+    for field in (
+        "applicability",
+        "convention",
+        "decision",
+        "party_ids",
+        "facts",
+        "contradictions",
+        "conditions",
+        "missing_information",
+        "blocks",
+    ):
+        assert getattr(auto, field) == getattr(explicit, field), field
+
+
+def test_auto_routed_claim_keeps_the_workflow_trace_url() -> None:
+    """The route wrapper must not drop the URL the workflow resolved."""
+    execution = ClaimExecution(
+        result=_analysis(), context=(), trace_id="t-1", trace_url="https://lf/x/traces/t-1"
+    )
+    envelope = EnvelopeResponse.from_route_execution(
+        request_id="req-3",
+        execution=RouteExecution(
+            query=QueryInput("relato", "es"),
+            classification=RouteClassification("claim"),
+            dispatch=execution,
+            trace_id="t-route",
+        ),
+    )
+    assert envelope.result.trace_url == "https://lf/x/traces/t-1"

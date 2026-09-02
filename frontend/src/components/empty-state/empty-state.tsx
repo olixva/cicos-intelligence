@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react';
-import { PulsatingButton } from '@/components/ui/pulsating-button';
+import { cn } from '@/lib/cn';
 
 export interface EmptyStateProps {
   onSelect: (prompt: string) => void;
@@ -30,10 +30,13 @@ const EXAMPLES: ReadonlyArray<{ label: string; prompt: string }> = [
 ];
 
 /**
- * EmptyState — mensaje de bienvenida con 5 ejemplos clickables.
+ * EmptyState — bienvenida con ejemplos clickables. Click → inyecta el prompt.
  *
- * Spec UX v2: pulsating-button de Magic UI como affordance para
- * descubrir los ejemplos. Click → inyecta el prompt al composer.
+ * Las tarjetas eran `PulsatingButton`, que anima un `box-shadow` expandiéndose
+ * 12 px hacia fuera en bucle infinito. Con una separación de 8 px los halos de
+ * tarjetas contiguas se solapaban, y la animación permanente competía con el
+ * propio texto. Ahora son tarjetas sobrias que sólo reaccionan al hover y al
+ * foco, con altura uniforme para que la rejilla quede cuadrada.
  */
 export function EmptyState({ onSelect }: EmptyStateProps) {
   return (
@@ -53,23 +56,36 @@ export function EmptyState({ onSelect }: EmptyStateProps) {
           Selecciona un ejemplo para empezar.
         </p>
       </header>
-      <ul className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
-        {EXAMPLES.map((ex) => (
-          <li key={ex.label}>
-            <PulsatingButton
+      <ul className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
+        {EXAMPLES.map((ex, index) => (
+          <li
+            key={ex.label}
+            className={
+              // Con cinco ejemplos en dos columnas el último dejaba un hueco.
+              // Ocupando el ancho completo la rejilla cierra bien.
+              index === EXAMPLES.length - 1 && EXAMPLES.length % 2 === 1
+                ? 'sm:col-span-2'
+                : undefined
+            }
+          >
+            <button
               type="button"
-              variant="outline"
-              className="h-auto w-full justify-start whitespace-normal bg-background px-3 py-2 text-left text-sm font-normal text-foreground hover:bg-accent"
               onClick={() => onSelect(ex.prompt)}
               aria-label={`Probar ejemplo: ${ex.label}`}
+              className={cn(
+                'flex h-full w-full flex-col gap-1 rounded-lg border border-border bg-background',
+                'px-3.5 py-3 text-left transition-colors',
+                'hover:border-primary/60 hover:bg-accent',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              )}
             >
-              <span className="flex w-full flex-col gap-0.5 text-left">
-                <span className="text-xs font-medium uppercase tracking-wide text-primary">
-                  {ex.label}
-                </span>
-                <span className="text-pretty text-sm text-foreground/90">{ex.prompt}</span>
+              <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
+                {ex.label}
               </span>
-            </PulsatingButton>
+              <span className="text-pretty text-sm leading-snug text-foreground/90">
+                {ex.prompt}
+              </span>
+            </button>
           </li>
         ))}
       </ul>

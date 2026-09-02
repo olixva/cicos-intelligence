@@ -73,6 +73,41 @@ def _langfuse_trace_url(trace_id: str) -> str | None:
     return f"{base}/project/{project_id}/traces/{trace_id}"
 
 
+def _claim_result(analysis: ClaimAnalysis, execution: ClaimExecution) -> ClaimResult:
+    """Project a claim analysis into the wire result.
+
+    Both the explicit claim endpoint and the auto-router branch go through
+    here. They used to build ``ClaimResult`` separately, and the router copy
+    was never extended, so auto - the default mode - silently returned an
+    answer stripped of its facts, conditions and explanation blocks.
+    """
+
+    return ClaimResult(
+        kind="claim",
+        applicability=analysis.applicability,
+        convention=analysis.convention,
+        decision=analysis.decision,
+        party_ids=analysis.party_ids,
+        facts=tuple(_claim_fact(fact) for fact in analysis.facts),
+        contradictions=tuple(
+            {
+                "fact_name": contradiction.fact_name,
+                "statements": tuple(
+                    _claim_fact(statement) for statement in contradiction.statements
+                ),
+            }
+            for contradiction in analysis.contradictions
+        ),
+        conditions=analysis.conditions,
+        missing_information=analysis.missing_information,
+        blocks=tuple(
+            {"text": block.text, "evidence_ids": block.evidence_ids} for block in analysis.blocks
+        ),
+        trace_id=execution.trace_id,
+        trace_url=execution.trace_url or _langfuse_trace_url(execution.trace_id or ""),
+    )
+
+
 def _claim_fact(fact: ClaimFact) -> dict[str, object]:
     """Serialize one extracted fact, keeping who asserted it and its literal origin.
 
@@ -236,31 +271,7 @@ class EnvelopeResponse(_ResponseModel):
             request_id=request_id,
             requested_mode="claim",
             resolved_mode="claim",
-            result=ClaimResult(
-                kind="claim",
-                applicability=analysis.applicability,
-                convention=analysis.convention,
-                decision=analysis.decision,
-                party_ids=analysis.party_ids,
-                facts=tuple(_claim_fact(fact) for fact in analysis.facts),
-                contradictions=tuple(
-                    {
-                        "fact_name": contradiction.fact_name,
-                        "statements": tuple(
-                            _claim_fact(statement) for statement in contradiction.statements
-                        ),
-                    }
-                    for contradiction in analysis.contradictions
-                ),
-                conditions=analysis.conditions,
-                missing_information=analysis.missing_information,
-                blocks=tuple(
-                    {"text": block.text, "evidence_ids": block.evidence_ids}
-                    for block in analysis.blocks
-                ),
-                trace_id=execution.trace_id,
-                trace_url=trace_url,
-            ),
+            result=_claim_result(analysis, execution),
             evidence=evidence,
             metadata={
                 "trace_id": trace_id,
@@ -328,6 +339,7 @@ class EnvelopeResponse(_ResponseModel):
                         for block in dispatch.result.blocks
                     ),
                     trace_id=dispatch.trace_id,
+                    trace_url=dispatch.trace_url or _langfuse_trace_url(dispatch.trace_id or ""),
                 ),
                 evidence=evidence,
                 metadata={
@@ -343,13 +355,7 @@ class EnvelopeResponse(_ResponseModel):
                 request_id=request_id,
                 requested_mode="auto",
                 resolved_mode="claim",
-                result=ClaimResult(
-                    kind="claim",
-                    applicability=analysis.applicability,
-                    convention=analysis.convention,
-                    decision=analysis.decision,
-                    trace_id=dispatch.trace_id,
-                ),
+                result=_claim_result(analysis, dispatch),
                 evidence=evidence,
                 metadata={
                     "trace_id": trace_id,
