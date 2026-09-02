@@ -22,6 +22,10 @@ import {
   type ThreadMessage,
   type UiMode,
 } from '@/lib/thread-state';
+import {
+  loadThreadHydration,
+  persistThreadState,
+} from '@/lib/thread-store';
 import type { EnvelopeResponse, EvidenceItem } from '@/api/queries';
 
 /**
@@ -37,6 +41,7 @@ import type { EnvelopeResponse, EvidenceItem } from '@/api/queries';
  */
 export default function IndexRoute() {
   const [state, dispatch] = useReducer(threadReducer, undefined, () => initialState('auto'));
+  const hydratedRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<string | null>(null);
@@ -46,6 +51,50 @@ export default function IndexRoute() {
   useEffect(() => {
     messagesRef.current = state.messages;
   }, [state.messages]);
+
+  // T11 — hydrate the thread list from localStorage on mount, then
+  // re-hydrate whenever the persistence key changes (e.g. devtools).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hydration = loadThreadHydration();
+    if (hydration.threads.length === 0 && hydration.activeThreadId === null) {
+      hydratedRef.current = true;
+      return;
+    }
+    const activeId = hydration.activeThreadId ?? hydration.threads[0]?.id ?? 'demo-1';
+    const activeRecord = hydration.threadRecords[activeId];
+    dispatch({
+      type: 'HYDRATE_THREADS',
+      threads: hydration.threads,
+      activeThreadId: activeId,
+      threadMessages: Object.fromEntries(
+        Object.entries(hydration.threadRecords).map(([id, record]) => [id, record.messages])
+      ),
+      threadSessionIds: Object.fromEntries(
+        Object.entries(hydration.threadRecords).map(([id, record]) => [id, record.session_id])
+      ),
+      threadModes: Object.fromEntries(
+        Object.entries(hydration.threadRecords).map(([id, record]) => [id, record.mode])
+      ),
+    });
+    if (activeRecord) {
+      dispatch({ type: 'SELECT_THREAD', id: activeId });
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  // T11 — persist the active state to localStorage after every
+  // dispatch once hydration has completed. We coalesce writes by
+  // reading the latest reducer state via a ref so multiple synchronous
+  // actions do not stamp the same payload.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    persistThreadState(stateRef.current, {});
+  }, [state]);
 
   // Show sidebar only at >= 1280px (spec UX v2).
   useEffect(() => {

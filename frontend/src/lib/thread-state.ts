@@ -109,8 +109,14 @@ export interface OpenPdfTarget {
 }
 
 export interface ThreadState {
-  /** Mensajes del thread en orden cronológico. */
+  /** Mensajes del thread activo (vista operativa). */
   messages: ThreadMessage[];
+  /** Mensajes por hilo — fuente de verdad cuando el usuario cambia de hilo. */
+  threadMessages: Record<string, ThreadMessage[]>;
+  /** Id de sesión Langfuse por hilo. */
+  threadSessionIds: Record<string, string>;
+  /** Modo vigente por hilo. */
+  threadModes: Record<string, UiMode>;
   /** Mensaje asistente en curso (referencia para el reducer). */
   activeAssistantId: string | null;
   /** ¿Hay un stream activo? */
@@ -123,7 +129,7 @@ export interface ThreadState {
   pendingRequestId?: string;
   /** Modo vigente (persistido). */
   mode: UiMode;
-  /** Lista de hilos mock — vacía en MVP, populate desde el sidebar. */
+  /** Lista de hilos persistidos. */
   threads: ThreadSummary[];
   /** Hilo activo en el sidebar. */
   activeThreadId: string;
@@ -141,6 +147,14 @@ export interface ThreadSummary {
 
 export type ThreadAction =
   | { type: 'HYDRATE_MODE'; mode: UiMode }
+  | {
+      type: 'HYDRATE_THREADS';
+      threads: ThreadSummary[];
+      activeThreadId: string;
+      threadMessages: Record<string, ThreadMessage[]>;
+      threadSessionIds: Record<string, string>;
+      threadModes: Record<string, UiMode>;
+    }
   | { type: 'NEW_THREAD'; id: string; title?: string }
   | { type: 'SELECT_THREAD'; id: string }
   | { type: 'SUBMIT'; messageId: string; assistantId: string; text: string; mode: UiMode; createdAt: number }
@@ -185,18 +199,18 @@ function freshActiveAssistant(): MessageAssistant {
 }
 
 function defaultThreadSummary(): ThreadSummary[] {
-  return [
-    { id: 'demo-1', title: 'Siniestro CIDE — vehículo A', updatedAt: now() },
-    { id: 'demo-2', title: 'Pregunta sobre ASCIDE art. 12', updatedAt: now() - 3600_000 },
-    { id: 'demo-3', title: 'Daños materiales — baremo 2025', updatedAt: now() - 7200_000 },
-    { id: 'demo-4', title: 'Convenio aplicable (auto)', updatedAt: now() - 86_400_000 },
-    { id: 'demo-5', title: 'Lesiones — clarificación', updatedAt: now() - 172_800_000 },
-  ];
+  // Audit fix (T11): el sidebar ya no carga hilos mock. El historial se
+  // hidrata desde localStorage en el mount y queda vacío si no hay
+  // nada persistido. Cada hilo se crea bajo demanda con ``NEW_THREAD``.
+  return [];
 }
 
 export function initialState(mode: UiMode = DEFAULT_MODE): ThreadState {
   return {
     messages: [],
+    threadMessages: {},
+    threadSessionIds: {},
+    threadModes: {},
     activeAssistantId: null,
     isStreaming: false,
     pendingToolCalls: [],
@@ -212,9 +226,45 @@ export function initialState(mode: UiMode = DEFAULT_MODE): ThreadState {
 // =====================================================================
 
 export function threadReducer(state: ThreadState, action: ThreadAction): ThreadState {
+  // T11 — capture the next state in a variable so we can mirror the
+  // active thread's message list into ``threadMessages`` before
+  // returning. Without this the sidebar would still show the old
+  // mock list and selecting another thread would clear the chat.
+  const next = threadReducerInner(state, action);
+  if (!next.activeThreadId) return next;
+  if (next.threadMessages[next.activeThreadId] === next.messages) return next;
+  return {
+    ...next,
+    threadMessages: { ...next.threadMessages, [next.activeThreadId]: next.messages },
+  };
+}
+
+function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadState {
   switch (action.type) {
     case 'HYDRATE_MODE':
       return { ...state, mode: action.mode };
+
+    case 'HYDRATE_THREADS': {
+      // T11 — restore the persisted thread list and the per-thread
+      // message streams. The active thread's messages become the live
+      // ``messages`` field so the chat view re-hydrates instantly.
+      const targetId = action.activeThreadId;
+      const targetMessages = action.threadMessages[targetId] ?? [];
+      const targetMode = action.threadModes[targetId] ?? state.mode;
+      // Preserve any in-flight streaming session by not clearing the
+      // active assistant; the hydration is best-effort and must not
+      // clobber a live call mid-stream.
+      return {
+        ...state,
+        threads: action.threads,
+        activeThreadId: targetId,
+        threadMessages: action.threadMessages,
+        threadSessionIds: action.threadSessionIds,
+        threadModes: action.threadModes,
+        messages: targetMessages,
+        mode: targetMode,
+      };
+    }
 
     case 'NEW_THREAD': {
       const id = action.id;
@@ -226,6 +276,12 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
       return {
         ...state,
         messages: [],
+        threadMessages: { ...state.threadMessages, [id]: [] },
+        threadSessionIds: {
+          ...state.threadSessionIds,
+          [id]: state.threadSessionIds[id] ?? uuid(),
+        },
+        threadModes: { ...state.threadModes, [id]: state.mode },
         activeAssistantId: null,
         isStreaming: false,
         pendingToolCalls: [],
@@ -235,17 +291,23 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
       };
     }
 
-    case 'SELECT_THREAD':
-      // MVP: seleccionar solo cambia el id activo y resetea los mensajes.
+    case 'SELECT_THREAD': {
+      // T11 fix: seleccionar restaura los mensajes del hilo elegido en
+      // lugar de vaciarlos, para que el sidebar abra conversaciones reales.
+      const targetId = action.id;
+      const targetMessages = state.threadMessages[targetId] ?? [];
+      const targetMode = state.threadModes[targetId] ?? state.mode;
       return {
         ...state,
-        activeThreadId: action.id,
-        messages: [],
+        activeThreadId: targetId,
+        messages: targetMessages,
+        mode: targetMode,
         activeAssistantId: null,
         isStreaming: false,
         pendingToolCalls: [],
         openPdf: null,
       };
+    };
 
     case 'SUBMIT': {
       const userMsg: MessageUser = {
