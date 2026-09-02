@@ -656,7 +656,7 @@ function mergeStreamedText(streamed: string, envelope: EnvelopeResponse): string
     const answer = blocks.map((b) => b.text ?? '').filter(Boolean).join('\n\n');
     if (answer) return answer;
     if (result.status === 'out_of_scope') {
-      return 'Esta consulta queda fuera del alcance del manual suministrado. El baremo de 2025 no está incluido en la fuente documental, así que no puedo calcular una indemnización con fiabilidad.';
+      return 'Esta consulta queda fuera del alcance de la fuente documental suministrada. No puedo responderla con fiabilidad usando este manual.';
     }
     if (result.status === 'insufficient_evidence') {
       return 'No hay evidencia suficiente en el manual suministrado para responder esta consulta.';
