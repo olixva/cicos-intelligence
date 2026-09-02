@@ -21,8 +21,10 @@ skips when the dependency is unavailable.
 
 from __future__ import annotations
 
+import json
 import uuid
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 
@@ -229,10 +231,21 @@ async def _streaming_event_loop(
     """Yield the bounded SSE events for the envelope.
 
     Events follow the plan: ``started`` (request metadata), ``stage``
-    (intermediate progress), ``completed`` (terminal success body),
-    ``failed`` (terminal failure body). The generator NEVER performs
-    an automatic retry; client cancellation simply stops the
-    generator.
+    (only for ``auto`` mode classification), ``completed`` (terminal
+    success body), ``failed`` (terminal failure body). The generator
+    NEVER performs an automatic retry; client cancellation simply
+    stops the generator.
+
+    Every event carries a fresh ``event_id`` and an ISO-8601
+    ``timestamp`` so the client can compute real per-stage durations
+    and deduplicate replays. The ``request_id`` is shared by every
+    event belonging to the same request so the client can stitch the
+    timeline.
+
+    Explicit modes (``question``, ``claim``) NEVER emit a ``stage``
+    event; only ``auto`` does, and the event carries the resolved mode
+    so the UI never shows ``clasificando`` while the explicit port is
+    already running.
 
     ``sse-starlette.EventSourceResponse`` expects each ``data`` field
     to be a JSON-serialised string; the test driver reads it back
@@ -242,14 +255,16 @@ async def _streaming_event_loop(
     request_id = str(uuid.uuid4())
     yield {
         "event": "started",
-        "data": _json_dumps({"request_id": request_id, "mode": request.mode}),
+        "data": _json_dumps(
+            _event_envelope(
+                "started",
+                request_id,
+                {"mode": request.mode},
+            )
+        ),
     }
 
     try:
-        yield {
-            "event": "stage",
-            "data": _json_dumps({"stage": "dispatch", "request_id": request_id}),
-        }
         response = await _execute_envelope(
             request,
             answer_question=answer_question,
@@ -257,19 +272,73 @@ async def _streaming_event_loop(
             resolve_query=resolve_query,
             request_id=request_id,
         )
-        yield {"event": "completed", "data": response.model_dump_json()}
+        if request.mode == "auto" and response.resolved_mode in ("question", "claim"):
+            yield _dispatch_event(request_id, response.resolved_mode)
+        yield {
+            "event": "completed",
+            "data": _json_dumps(
+                _event_envelope(
+                    "completed",
+                    request_id,
+                    {"response": json.loads(response.model_dump_json())},
+                )
+            ),
+        }
     except Exception as error:  # noqa: BLE001 — surface contract translates everything
         yield {
             "event": "failed",
             "data": _json_dumps(
-                {
-                    "code": "internal_error",
-                    "message": str(error)[:200],
-                    "request_id": request_id,
-                    "retryable": True,
-                }
+                _event_envelope(
+                    "failed",
+                    request_id,
+                    {
+                        "code": "internal_error",
+                        "message": str(error)[:200],
+                        "retryable": True,
+                    },
+                )
             ),
         }
+
+
+def _event_envelope(name: str, request_id: str, payload: dict[str, object]) -> dict[str, object]:
+    """Wrap every SSE event payload with ``event_id`` and ``timestamp``.
+
+    ``event_id`` is a fresh UUID4 so the client can deduplicate replays
+    across reconnections. ``timestamp`` is an ISO-8601 UTC stamp so
+    real durations are computed from the timeline, not invented by a
+    client-side timer.
+    """
+    return {
+        "event": name,
+        "request_id": request_id,
+        "event_id": str(uuid.uuid4()),
+        "timestamp": datetime.now(UTC).isoformat(),
+        "payload": payload,
+    }
+
+
+def _dispatch_event(request_id: str, resolved_mode: str) -> dict[str, str]:
+    """Build the SSE event that reports the auto-router classification.
+
+    Surfaced only when the request used ``auto`` mode and the router
+    actually resolved it to ``question`` or ``claim``. The
+    ``clarification`` outcome emits no ``stage`` because there is no
+    downstream port to dispatch to.
+    """
+    return {
+        "event": "stage",
+        "data": _json_dumps(
+            _event_envelope(
+                "stage",
+                request_id,
+                {
+                    "stage": "dispatch",
+                    "resolved_mode": resolved_mode,
+                },
+            )
+        ),
+    }
 
 
 def _json_dumps(payload: object) -> str:

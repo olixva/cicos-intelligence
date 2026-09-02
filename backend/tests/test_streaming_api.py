@@ -20,7 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from application.models.query import (
     AnswerBlock,
@@ -88,6 +88,26 @@ class _FakeResolve:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class _FakeResolveQuestion:
+    """Routes ``auto`` requests to the question port with a concrete execution."""
+
+    async def execute(self, query: QueryInput) -> RouteExecution:
+        return RouteExecution(
+            query=query,
+            classification=RouteClassification("question", rationale="pregunta"),
+            dispatch=QueryExecution(
+                result=QuestionAnswer(
+                    "answered",
+                    (AnswerBlock("ok", ("sha256:x:page:1",)),),
+                ),
+                context=(),
+                trace_id="trace-r-q",
+            ),
+            trace_id="trace-r",
+        )
+
+
 def _envelope_request(*, mode: str, profile: str | None = None) -> Any:
     from infrastructure.adapters.inbound.api.schemas.envelope import EnvelopeRequest
 
@@ -113,7 +133,31 @@ async def _consume(generator: Any) -> list[dict[str, Any]]:
     return events
 
 
-def test_stream_emits_started_stage_and_completed_for_question_mode() -> None:
+def _envelope_payload(event: dict[str, Any]) -> dict[str, Any]:
+    """Decode the SSE ``data`` field into the documented envelope shape.
+
+    Every event carries ``request_id``, ``event_id``, ``timestamp`` and a
+    nested ``payload`` block. Tests should read from ``payload`` for
+    event-specific fields and from the top level for shared identifiers.
+    """
+    decoded = json.loads(str(event["data"]))
+    assert "event_id" in decoded, "every event must carry event_id"
+    assert "timestamp" in decoded, "every event must carry timestamp"
+    assert "request_id" in decoded, "every event must carry request_id"
+    assert "payload" in decoded, "every event must carry payload"
+    assert decoded["event"] == event["event"]
+    return cast(dict[str, Any], decoded)
+
+
+def test_stream_emits_started_and_completed_for_question_mode_without_stage() -> None:
+    """Explicit ``question`` mode must NEVER emit a ``stage`` event.
+
+    Audit finding: the SSE previously emitted ``stage: dispatch`` for
+    every mode including explicit ones, which made the frontend show
+    ``clasificando`` even when no classification was happening. The
+    contract now is: explicit modes go straight from ``started`` to
+    ``completed`` (or ``failed``).
+    """
     from infrastructure.adapters.inbound.api.routes.queries import (
         _streaming_event_loop,
     )
@@ -131,15 +175,16 @@ def test_stream_emits_started_stage_and_completed_for_question_mode() -> None:
 
     names = [event["event"] for event in events]
     assert names[0] == "started"
-    assert "stage" in names
     assert names[-1] == "completed"
-    started_payload = json.loads(str(events[0]["data"]))
-    assert started_payload["mode"] == "question"
-    assert started_payload["request_id"]
-    completed_payload = json.loads(str(events[-1]["data"]))
-    assert completed_payload["requested_mode"] == "question"
-    assert completed_payload["resolved_mode"] == "question"
-    assert completed_payload["result"]["kind"] == "question"
+    assert "stage" not in names, f"explicit question mode must not emit a stage event, got {names}"
+    started = _envelope_payload(events[0])
+    assert started["payload"] == {"mode": "question"}
+    assert started["request_id"]
+    completed = _envelope_payload(events[-1])
+    response = cast(dict[str, Any], completed["payload"])["response"]
+    assert response["requested_mode"] == "question"
+    assert response["resolved_mode"] == "question"
+    assert response["result"]["kind"] == "question"
 
 
 def test_stream_emits_failed_event_when_provider_raises() -> None:
@@ -159,27 +204,26 @@ def test_stream_emits_failed_event_when_provider_raises() -> None:
     )
 
     assert events[-1]["event"] == "failed"
-    failed_payload = json.loads(str(events[-1]["data"]))
-    assert failed_payload["code"] == "internal_error"
-    assert failed_payload["retryable"] is True
-    assert failed_payload["request_id"]
+    failed = _envelope_payload(events[-1])
+    assert failed["payload"]["code"] == "internal_error"
+    assert failed["payload"]["retryable"] is True
+    assert failed["request_id"]
 
 
-def test_stream_uses_a_single_request_id_across_started_envelope_and_failed() -> None:
-    """Finding G2 #2 — ``started``, ``envelope`` and ``failed`` must share the same uuid.
+def test_stream_uses_a_single_request_id_across_started_and_terminal_events() -> None:
+    """Finding G2 #2 — ``started`` and the terminal event share one uuid.
 
-    Before the fix the SSE generator emitted its own uuid4 in the
-    ``started`` event while ``_execute_envelope`` generated a second
-    independent one for the envelope body, breaking the 1:1 correlation
-    the client expects. After the fix the same uuid travels through all
-    three events.
+    The same uuid travels through the SSE timeline so the client can
+    stitch events from a single request even when the connection is
+    retried. Explicit modes no longer emit an intermediate ``stage``
+    event so the timeline is ``started`` → ``completed`` or ``failed``.
     """
 
     from infrastructure.adapters.inbound.api.routes.queries import (
         _streaming_event_loop,
     )
 
-    # Happy path: started → stage → completed all share one uuid.
+    # Happy path: started → completed share one uuid.
     happy_events = asyncio.run(
         _consume(
             _streaming_event_loop(
@@ -190,17 +234,14 @@ def test_stream_uses_a_single_request_id_across_started_envelope_and_failed() ->
             )
         )
     )
-    started_payload = json.loads(str(happy_events[0]["data"]))
-    stage_payload = json.loads(str(happy_events[1]["data"]))
-    completed_payload = json.loads(str(happy_events[-1]["data"]))
-    shared_id = started_payload["request_id"]
-    assert shared_id, "started event must carry a request_id"
-    assert stage_payload["request_id"] == shared_id, "stage event must reuse started.request_id"
-    assert completed_payload["request_id"] == shared_id, (
+    started = _envelope_payload(happy_events[0])
+    completed = _envelope_payload(happy_events[-1])
+    assert started["request_id"], "started event must carry a request_id"
+    assert completed["request_id"] == started["request_id"], (
         "envelope (completed) request_id must match started.request_id"
     )
 
-    # Error path: started → stage → failed all share one uuid.
+    # Error path: started → failed share one uuid (no stage either).
     error_events = asyncio.run(
         _consume(
             _streaming_event_loop(
@@ -211,15 +252,72 @@ def test_stream_uses_a_single_request_id_across_started_envelope_and_failed() ->
             )
         )
     )
-    err_started_payload = json.loads(str(error_events[0]["data"]))
-    err_stage_payload = json.loads(str(error_events[1]["data"]))
-    err_failed_payload = json.loads(str(error_events[-1]["data"]))
-    err_shared_id = err_started_payload["request_id"]
-    assert err_stage_payload["request_id"] == err_shared_id, (
-        "stage event on error path must reuse started.request_id"
-    )
-    assert err_failed_payload["request_id"] == err_shared_id, (
+    err_started = _envelope_payload(error_events[0])
+    err_failed = _envelope_payload(error_events[-1])
+    assert err_failed["request_id"] == err_started["request_id"], (
         "failed event must reuse started.request_id"
+    )
+
+
+def test_stream_emits_dispatch_stage_only_for_auto_mode_with_real_resolved_mode() -> None:
+    """``auto`` mode must surface a ``stage: dispatch`` event with the
+    router's resolved mode. ``clarification`` outcomes emit no stage
+    because there is no port to dispatch to.
+    """
+    from infrastructure.adapters.inbound.api.routes.queries import (
+        _streaming_event_loop,
+    )
+
+    events = asyncio.run(
+        _consume(
+            _streaming_event_loop(
+                _envelope_request(mode="auto"),
+                answer_question=_FakeAnswer(),
+                analyze_claim=_FakeClaim(),
+                resolve_query=_FakeResolveQuestion(),
+            )
+        )
+    )
+    names = [event["event"] for event in events]
+    assert "stage" in names, "auto mode must emit a stage event when it resolves to a port"
+    stage_events = [_envelope_payload(e) for e in events if e["event"] == "stage"]
+    assert len(stage_events) == 1, "auto mode emits exactly one stage event"
+    stage = stage_events[0]
+    assert stage["payload"]["stage"] == "dispatch"
+    assert stage["payload"]["resolved_mode"] in ("question", "claim")
+    started = _envelope_payload(events[0])
+    assert stage["request_id"] == started["request_id"], "stage event must reuse started.request_id"
+
+
+def test_stream_event_envelope_carries_event_id_and_iso_timestamp() -> None:
+    """Every event must carry a fresh UUID4 event_id and an ISO-8601
+    timestamp so the client can compute real durations and dedupe
+    replays without trusting a local timer.
+    """
+    from infrastructure.adapters.inbound.api.routes.queries import (
+        _streaming_event_loop,
+    )
+
+    events = asyncio.run(
+        _consume(
+            _streaming_event_loop(
+                _envelope_request(mode="question"),
+                answer_question=_FakeAnswer(),
+                analyze_claim=_FakeClaim(),
+                resolve_query=_FakeResolve(),
+            )
+        )
+    )
+
+    event_ids = set()
+    timestamps: list[str] = []
+    for event in events:
+        decoded = _envelope_payload(event)
+        event_ids.add(decoded["event_id"])
+        timestamps.append(decoded["timestamp"])
+    assert len(event_ids) == len(events), "event_id must be unique per event"
+    assert all(t.endswith("+00:00") or "Z" in t for t in timestamps), (
+        f"timestamps must be ISO-8601 UTC, got {timestamps}"
     )
 
 
@@ -261,10 +359,15 @@ def test_stream_routes_clarification_through_auto_router() -> None:
         )
     )
 
-    completed = json.loads(str(events[-1]["data"]))
-    assert completed["requested_mode"] == "auto"
-    assert completed["resolved_mode"] == "clarification"
-    assert completed["result"]["kind"] == "clarification"
+    completed = _envelope_payload(events[-1])
+    response = cast(dict[str, Any], completed["payload"])["response"]
+    assert response["requested_mode"] == "auto"
+    assert response["resolved_mode"] == "clarification"
+    assert response["result"]["kind"] == "clarification"
+    # When the router resolves to clarification no port runs and no
+    # dispatch event must be emitted.
+    stage_events = [e for e in events if e["event"] == "stage"]
+    assert stage_events == [], "clarification outcome must not emit a stage:dispatch event"
 
 
 def test_stream_returns_422_for_unsupported_profile() -> None:

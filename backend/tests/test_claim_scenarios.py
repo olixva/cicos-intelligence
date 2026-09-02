@@ -166,9 +166,7 @@ def test_outside_convention_scope_is_marked_not_applicable() -> None:
     without resolving a decision, and the explanation must reach the
     caller via the result blocks.
     """
-    facts = (
-        ClaimFact("vehicle_count", "0", None, "no intervienen vehículos"),
-    )
+    facts = (ClaimFact("vehicle_count", "0", None, "no intervienen vehículos"),)
     execution: ClaimExecution = asyncio.run(
         _build_workflow(facts).run(ClaimInput("Un peatón fue atropellado por un turismo solo."))
     )
@@ -202,5 +200,9 @@ def test_decision_undetermined_does_not_invoke_unevaluated_rules() -> None:
 
     assert execution.result.decision in ("undetermined", "conditional")
     block_texts = " ".join((block.text or "") for block in execution.result.blocks).lower()
-    assert "matriz" not in block_texts or "no evaluada" in block_texts or "indeterminada" in block_texts
+    assert (
+        "matriz" not in block_texts
+        or "no evaluada" in block_texts
+        or "indeterminada" in block_texts
+    )
     assert execution.context, "context must carry the evidence actually delivered to the LLM"
