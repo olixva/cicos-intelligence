@@ -100,6 +100,50 @@ def test_claim_graph_preserves_conflicting_attributions_and_gates_inapplicable_c
     assert execution.context[0].evidence_ids == ("manual:page:56",)
 
 
+def test_claim_graph_ignores_the_interview_plan_once_rules_exclude_the_convention() -> None:
+    """Regresión real: un siniestro de cinco turismos en cadena preguntaba por
+    el orden de los impactos aunque `assess_applicability` ya había descartado
+    el Convenio determinísticamente. El LLM decide su plan de entrevista en la
+    misma llamada que extrae los hechos, antes de que las reglas se apliquen,
+    así que no puede saber que el caso ya está cerrado — el grafo tiene que
+    descartar ese plan cuando `apply_rules` ya dijo `not_applicable`."""
+    from application.models.claim import InterviewPlan, InterviewQuestion
+    from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
+        LangGraphClaimWorkflow,
+    )
+
+    facts = (
+        ClaimFact("vehicle_count", "5", None, "intervienen cinco turismos"),
+        ClaimFact("chain_collision", "true", None, "colisión en cadena"),
+    )
+    plan = InterviewPlan(
+        "ask",
+        (
+            InterviewQuestion(
+                id="impact_order",
+                prompt="¿Cuál fue el primer impacto?",
+                reason="Necesario para reconstruir la secuencia.",
+                answer_kind="text",
+            ),
+        ),
+    )
+    workflow = LangGraphClaimWorkflow(
+        fact_extractor=_Extractor(ExtractedClaimFacts(("A", "B", "C", "D", "E"), facts, plan)),
+        retriever=_Retriever(),
+        evidence_repository=_Evidence(
+            PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())
+        ),
+    )
+
+    execution: ClaimExecution = asyncio.run(
+        workflow.run(ClaimInput("Colisión en cadena de cinco turismos."))
+    )
+
+    assert execution.needs_input is False
+    assert execution.result.applicability == "not_applicable"
+    assert execution.result.decision == "not_assessed"
+
+
 def test_claim_graph_requests_missing_prerequisites_without_inventing_a_conclusion() -> None:
     from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
         LangGraphClaimWorkflow,

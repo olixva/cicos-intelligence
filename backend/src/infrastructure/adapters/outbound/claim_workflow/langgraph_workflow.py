@@ -283,12 +283,27 @@ class LangGraphClaimWorkflow:
         return _ClaimUpdate(analysis=analysis, result=analysis)
 
     def _plan_interview(self, state: _ClaimState) -> _ClaimUpdate:
-        """Apply the LLM interview plan as an explicit LangGraph transition."""
+        """Apply the LLM interview plan as an explicit LangGraph transition.
+
+        The extractor decides the plan in the same call that reads the facts,
+        before ``apply_rules`` has run: it cannot know that the deterministic
+        gate already excluded the Convenio (vehicle count, chain collision, an
+        identified third vehicle). Once ``analysis.applicability`` is
+        ``"not_applicable"`` there is nothing left to ask — planning a
+        follow-up question here produced exactly the invariant violation this
+        guard exists to prevent.
+        """
         extracted = state.get("extracted")
         analysis = state.get("analysis")
         if extracted is None or analysis is None:
             raise RuntimeError(
                 "claim workflow reached interview planning without facts and analysis"
+            )
+        if analysis.applicability == "not_applicable":
+            return _ClaimUpdate(
+                interview_plan=InterviewPlan("coverage_gap", terminal_reason="not_applicable"),
+                analysis=analysis,
+                result=analysis,
             )
         plan = extracted.interview_plan
         if plan.status == "ask":

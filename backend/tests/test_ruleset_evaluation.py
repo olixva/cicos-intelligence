@@ -153,6 +153,26 @@ def test_a_resolved_decision_requires_a_matched_rule() -> None:
         )
 
 
+def test_an_inapplicable_convention_cannot_stay_conditional_either() -> None:
+    """`resolved` ya estaba bloqueado; `conditional` sobre un Convenio ya
+    descartado es el mismo error: no hay nada que condicionar, sólo declarar
+    que no procede."""
+    from domain.models.decision import ClaimAnalysis, InvalidDecisionError
+
+    with pytest.raises(InvalidDecisionError, match="not_assessed"):
+        ClaimAnalysis(
+            applicability="not_applicable",
+            convention=None,
+            decision="conditional",
+            party_ids=("A", "B"),
+            facts=(),
+            contradictions=(),
+            conditions=("¿Cuál fue el primer impacto?",),
+            missing_information=("¿Cuál fue el primer impacto?",),
+            blocks=(),
+        )
+
+
 def test_a_resolved_decision_is_allowed_when_a_rule_matched() -> None:
     from domain.models.decision import ClaimAnalysis
 

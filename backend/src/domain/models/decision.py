@@ -50,8 +50,15 @@ class ClaimAnalysis:
             raise InvalidDecisionError("claim party identifiers must be nonempty and unique")
         if self.decision == "conditional" and not self.conditions:
             raise InvalidDecisionError("a conditional decision must name its conditions")
-        if self.applicability == "not_applicable" and self.decision == "resolved":
-            raise InvalidDecisionError("an inapplicable convention cannot resolve a claim")
+        if self.applicability == "not_applicable" and self.decision != "not_assessed":
+            # A Convenio a rule already ruled out has nothing left to resolve
+            # or condition — including an interview plan proposing follow-up
+            # questions the manual can never use once vehicle count, chain
+            # collision or an identified third vehicle excluded it.
+            raise InvalidDecisionError(
+                "an inapplicable convention must stay not_assessed, not "
+                f"{self.decision!r}"
+            )
         if self.decision == "resolved" and not any(
             evaluation.result == "matched" for evaluation in self.rules_evaluated
         ):
