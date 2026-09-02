@@ -124,12 +124,25 @@
       "description": "Norma subsidiaria b.5, vehículos aparcados: cuando existe un vehículo mal aparcado y se le pretende imputar la responsabilidad por ese motivo, es siempre culpable el vehículo que colisiona con el aparcado.",
       "prerequisites": [
         "one_vehicle_parked",
-        "collision_with_parked_vehicle"
+        "collision_with_parked_vehicle",
+        "colliding_vehicle"
       ],
       "outcome": "Culpable el vehículo que colisiona con el aparcado.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
       "notes": [],
-      "convention": "ASCIDE"
+      "convention": "ASCIDE",
+      "applies_when": {
+        "all": [
+          {
+            "field": "one_vehicle_parked",
+            "op": "is_true"
+          },
+          {
+            "field": "collision_with_parked_vehicle",
+            "op": "is_true"
+          }
+        ]
+      }
     },
     {
       "rule_id": "ascide-b6-exit-from-parking",
@@ -139,14 +152,29 @@
       ],
       "description": "Norma subsidiaria b.6, salida de estacionamientos, callejones, vías cortadas, garajes, zonas de aparcamiento y recintos cerrados: culpable el vehículo que realice la maniobra de salida, incluso aunque indique que no ha iniciado todavía dicha maniobra.",
       "prerequisites": [
-        "exit_manoeuvre_by"
+        "exit_manoeuvre_by",
+        "exit_disputed_as_incorporation"
       ],
       "outcome": "Culpable el vehículo que sale.",
       "notes": [
-        "Excepción: ver «Incorporación a la circulación» (pág. 46)."
+        "Excepción: ver «Incorporación a la circulación» (pág. 46).",
+        "El manual remite la excepción de esta norma al apartado «Incorporación a la circulación», no verificado en este corte. Mientras exit_disputed_as_incorporation no conste como false, la regla no decide."
       ],
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "convention": "ASCIDE"
+      "convention": "ASCIDE",
+      "applies_when": {
+        "all": [
+          {
+            "field": "exit_manoeuvre_by",
+            "op": "ne",
+            "value": ""
+          },
+          {
+            "field": "exit_disputed_as_incorporation",
+            "op": "is_false"
+          }
+        ]
+      }
     },
     {
       "rule_id": "ascide-b9-reverse-vs-rear-impact",
@@ -157,12 +185,25 @@
       "description": "Norma subsidiaria b.9, marcha atrás/alcance trasero: ante disparidad de versiones, si uno alega alcance por la parte trasera y el otro declara colisión en su parte delantera por marcha atrás del adverso, incluso para estacionar, se considera responsable el conductor del vehículo que presente los daños en la parte delantera.",
       "prerequisites": [
         "contradictory_versions",
-        "damage_location"
+        "front_damage_vehicle"
       ],
       "outcome": "Responsable quien presenta daños en la parte delantera.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
       "notes": [],
-      "convention": "ASCIDE"
+      "convention": "ASCIDE",
+      "applies_when": {
+        "all": [
+          {
+            "field": "contradictory_versions",
+            "op": "is_true"
+          },
+          {
+            "field": "front_damage_vehicle",
+            "op": "ne",
+            "value": ""
+          }
+        ]
+      }
     },
     {
       "rule_id": "ascide-b10-lane-change",
@@ -247,12 +288,31 @@
       ],
       "description": "Puertas: cuando del anverso de la D.A.A. se desprenda que se trata de un tema de puertas y no se especifique si se efectúa la acción de abrir o si ya estaba abierta, se considerará Entidad Deudora la aseguradora del vehículo que pudiera estar ejercitando la acción de abrir la puerta.",
       "prerequisites": [
-        "door_involved"
+        "door_involved",
+        "door_opening_specified",
+        "door_vehicle"
       ],
       "outcome": "Deudora la aseguradora del vehículo que pudiera estar abriendo la puerta.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
       "notes": [],
-      "convention": "CIDE"
+      "convention": "CIDE",
+      "applies_when": {
+        "all": [
+          {
+            "field": "door_involved",
+            "op": "is_true"
+          },
+          {
+            "field": "door_opening_specified",
+            "op": "is_false"
+          },
+          {
+            "field": "door_vehicle",
+            "op": "ne",
+            "value": ""
+          }
+        ]
+      }
     },
     {
       "rule_id": "cide-matrix-lookup",

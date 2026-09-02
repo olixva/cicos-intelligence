@@ -257,3 +257,94 @@ def test_shipped_amber_rule_matches_when_one_driver_admits_amber() -> None:
     ]
 
     assert evaluation.result == "matched"
+
+
+def _shipped_evaluation(rule_id: str, facts: dict[str, str]):
+    from infrastructure.config.rules_artifacts import load_rules_artifacts
+
+    artifacts = load_rules_artifacts(
+        _REPO / "data" / "rules",
+        expected_document_hash=_DOCUMENT_HASH,
+        evidence_roots=(_REPO / "data" / "extractions",),
+    )
+    (evaluation,) = [
+        result for result in evaluate_ruleset(artifacts.rules, facts) if result.rule_id == rule_id
+    ]
+    return evaluation
+
+
+def test_shipped_parked_vehicle_rule_matches_when_declared() -> None:
+    evaluation = _shipped_evaluation(
+        "ascide-b5-parked-vehicle",
+        {"one_vehicle_parked": "true", "collision_with_parked_vehicle": "true"},
+    )
+    assert evaluation.result == "matched"
+
+
+def test_shipped_parked_vehicle_rule_does_not_match_a_moving_dispute() -> None:
+    """Un vehículo detenido ante un semáforo no es un vehículo aparcado."""
+    evaluation = _shipped_evaluation(
+        "ascide-b5-parked-vehicle",
+        {"one_vehicle_parked": "false", "collision_with_parked_vehicle": "true"},
+    )
+    assert evaluation.result == "not_matched"
+
+
+def test_shipped_exit_from_parking_rule_matches_the_exiting_vehicle() -> None:
+    evaluation = _shipped_evaluation(
+        "ascide-b6-exit-from-parking",
+        {"exit_manoeuvre_by": "A", "exit_disputed_as_incorporation": "false"},
+    )
+    assert evaluation.result == "matched"
+
+
+def test_shipped_exit_from_parking_rule_defers_to_the_incorporation_exception() -> None:
+    """El manual remite esta excepción a otro apartado no verificado: la regla
+    debe abstenerse, no decidir igualmente."""
+    evaluation = _shipped_evaluation(
+        "ascide-b6-exit-from-parking",
+        {"exit_manoeuvre_by": "A", "exit_disputed_as_incorporation": "true"},
+    )
+    assert evaluation.result == "not_matched"
+
+
+def test_shipped_reverse_vs_rear_impact_rule_matches_the_front_damage_vehicle() -> None:
+    evaluation = _shipped_evaluation(
+        "ascide-b9-reverse-vs-rear-impact",
+        {"contradictory_versions": "true", "front_damage_vehicle": "B"},
+    )
+    assert evaluation.result == "matched"
+
+
+def test_shipped_reverse_vs_rear_impact_rule_needs_a_real_disparity() -> None:
+    evaluation = _shipped_evaluation(
+        "ascide-b9-reverse-vs-rear-impact",
+        {"contradictory_versions": "false", "front_damage_vehicle": "B"},
+    )
+    assert evaluation.result == "not_matched"
+
+
+def test_shipped_door_opening_rule_matches_only_when_the_action_is_unspecified() -> None:
+    evaluation = _shipped_evaluation(
+        "cide-door-opening",
+        {
+            "door_involved": "true",
+            "door_opening_specified": "false",
+            "door_vehicle": "A",
+        },
+    )
+    assert evaluation.result == "matched"
+
+
+def test_shipped_door_opening_rule_defers_when_the_action_is_specified() -> None:
+    """Si el anverso de la D.A.A. precisa la acción, se resuelve por el Código
+    de Circulación — algo que esta regla no cubre y no debe fingir cubrir."""
+    evaluation = _shipped_evaluation(
+        "cide-door-opening",
+        {
+            "door_involved": "true",
+            "door_opening_specified": "true",
+            "door_vehicle": "A",
+        },
+    )
+    assert evaluation.result == "not_matched"

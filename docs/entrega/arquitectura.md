@@ -102,11 +102,24 @@ De las 14 reglas:
   anotada simplemente no decide. La regla del proyecto se mantiene intacta: las casillas
   A0–A17 sólo entran si el relato las declara explícitamente; nunca se infieren de una
   narración de la maniobra.
-- **6 reglas siguen documentadas pero no verificables automáticamente**: `convention-scope`
-  (ámbito de aplicación), `ascide-b5`, `ascide-b6`, `ascide-b9`, `ascide-b11`,
-  `ascide-traffic-light-amber` y `cide-door-opening`. Siguen devolviendo
-  `insufficient_data` — la respuesta honesta, no un valor inventado — hasta que se les añada
-  una condición verificable siguiendo el mismo patrón.
+- **`ascide-b5`, `ascide-b6`, `ascide-b9` y `cide-door-opening` también están conectadas.**
+  Mismo patrón que `ascide-b10`: predicado sobre hechos declarados explícitamente, convenio
+  leído del artefacto. `ascide-b6` respeta la excepción que el manual remite a otro apartado
+  («Incorporación a la circulación», no verificado en este corte): mientras esa remisión no
+  se descarte explícitamente, la regla se abstiene en vez de decidir igual.
+- **Sólo `ascide-b11-roundabout` sigue sin condición verificable** (más `convention-scope`,
+  que no es una regla de decisión sino el ámbito geográfico). A diferencia de las demás, su
+  excepción no retira una atribución: la sustituye por otra («culpable quien accede a la
+  rotonda, salvo que ambos tengan daños laterales no angulares, en cuyo caso culpable el de
+  daños en el lateral derecho»), lo que exige una segunda regla en el artefacto con su propio
+  `applies_when` mutuamente excluyente — un cambio más sustancial que rellenar un predicado
+  existente, pendiente.
+- **El planificador de entrevista del LLM tenía dos confusiones sistemáticas**, corregidas en
+  el prompt: trataba «el relato declara que un dato no consta» como un vacío por preguntar
+  (rompía `cide-door-opening`, cuya condición de activación es esa ausencia declarada), y
+  trataba «disparidad de versiones» como caso irresoluble (rompía las tres normas subsidiarias
+  que existen justamente para resolverla). El planificador decide en la misma llamada que
+  extrae los hechos, antes de que `apply_rules` sepa si una norma determinista cubre el caso.
 
 Esta separación es deliberada: **una celda o regla no verificada no produce una decisión
 determinista.** El generador no puede convertir un resultado indeterminado en definitivo.
@@ -160,5 +173,5 @@ sólo la página que se está mirando, no el manual entero. 96 tests unitarios, 
 - Manual de 2004: no es normativa vigente.
 - Sin autenticación multiusuario, sin operación con siniestros reales, sin alta disponibilidad.
 - El índice estructurado (Docling) existe pero no es el activo en demo.
-- 6 de 14 reglas siguen sin condición verificable.
+- 1 de 14 reglas (`ascide-b11-roundabout`) sigue sin condición verificable.
 - El golden set no tiene revisión de un experto humano del dominio.
