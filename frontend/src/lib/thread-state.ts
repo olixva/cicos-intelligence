@@ -5,6 +5,7 @@ import type {
   EvidenceItem,
   UiMode,
 } from '@/api/queries';
+import { derivePayloadForKind, type ToolCallKind } from '@/lib/tool-call-payload';
 
 /** Re-export del tipo UiMode para que callers no necesiten importar queries.ts. */
 export type { UiMode };
@@ -33,8 +34,9 @@ export type { UiMode };
 // =====================================================================
 
 /** Tipos de tool calls que el chat agéntico puede mostrar.
- *  Mantener `satisfies never` en el switch para detectar kind nuevos. */
-export type ToolCallKind = 'classify' | 'retrieve' | 'check_rules' | 'apply_decision';
+ *  La definición vive junto al constructor de payloads compartido para que
+ *  ambos caminos (modo explícito y Automático) no puedan divergir. */
+export type { ToolCallKind };
 
 /** Estado de un tool call: pending → done | error. */
 export type ToolCallStatus = 'pending' | 'done' | 'error';
@@ -612,48 +614,6 @@ export const labels: Record<ToolCallKind, { pending: string; done: string }> = {
  * `RESOLVE_TOOL_PLAN`. Réplica de `derivePayload` en `routes/_index.tsx`
  * para mantener el reducer puro (no cruza con código del route).
  */
-function derivePayloadForKind(kind: ToolCallKind, envelope: EnvelopeResponse): unknown {
-  switch (kind) {
-    case 'classify':
-      return { mode: envelope.resolved_mode };
-    case 'retrieve':
-      return {
-        chunks: (envelope.evidence ?? []).map((e) => ({
-          evidenceId: e.evidence_id,
-          pdfPage: e.pdf_page,
-          preview: '',
-          score: undefined,
-        })),
-      };
-    case 'check_rules':
-      if (envelope.result && envelope.result.kind === 'claim') {
-        return { convention: envelope.result.convention, rules: [] };
-      }
-      return { convention: null, rules: [] };
-    case 'apply_decision':
-      if (envelope.result && envelope.result.kind === 'claim') {
-        return {
-          convention: envelope.result.convention,
-          applicability: envelope.result.applicability,
-          decision: envelope.result.decision,
-        };
-      }
-      if (envelope.result && envelope.result.kind === 'clarification') {
-        return {
-          convention: null,
-          applicability: 'undetermined',
-          decision: 'undetermined',
-        };
-      }
-      return { convention: null, applicability: null, decision: null };
-    default: {
-      const exhaustive: never = kind;
-      void exhaustive;
-      return null;
-    }
-  }
-}
-
 function extractCitations(envelope: EnvelopeResponse): CitationRef[] {
   const result = envelope.result;
   if (!result || result.kind !== 'question') return [];

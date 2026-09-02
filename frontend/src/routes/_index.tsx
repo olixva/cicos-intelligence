@@ -35,6 +35,7 @@ import {
   persistThreadState,
 } from '@/lib/thread-store';
 import type { EnvelopeResponse, EvidenceItem } from '@/api/queries';
+import { derivePayloadForKind } from '@/lib/tool-call-payload';
 
 /**
  * IndexRoute — layout del chat agéntico.
@@ -517,69 +518,8 @@ function dispatchToolCallsFromEnvelope(
     dispatch({
       type: 'TOOL_CALL_DONE',
       id: tc.id,
-      payload: derivePayload(tc.kind, envelope),
+      payload: derivePayloadForKind(tc.kind, envelope),
     });
   }
 }
 
-function derivePayload(
-  kind: 'classify' | 'retrieve' | 'check_rules' | 'apply_decision',
-  envelope: EnvelopeResponse,
-): unknown {
-  switch (kind) {
-    case 'classify':
-      return { mode: envelope.resolved_mode };
-    case 'retrieve':
-      return {
-        chunks: (envelope.evidence ?? []).map((e) => ({
-          evidenceId: e.evidence_id,
-          pdfPage: e.pdf_page,
-          preview: '',
-          score: undefined,
-        })),
-      };
-    case 'check_rules':
-      if (envelope.result && envelope.result.kind === 'claim') {
-        // Antes esta tarjeta recibía siempre `rules: []`, así que sólo
-        // enseñaba "Convenio: —" y no explicaba nada. Ahora lleva lo que el
-        // backend evaluó de verdad: hechos atribuidos y qué falta.
-        return {
-          convention: envelope.result.convention,
-          applicability: envelope.result.applicability,
-          facts: envelope.result.facts ?? [],
-          contradictions: envelope.result.contradictions ?? [],
-          missing_information: envelope.result.missing_information ?? [],
-          rules_evaluated: envelope.result.rules_evaluated ?? [],
-        };
-      }
-      return {
-        convention: null,
-        facts: [],
-        contradictions: [],
-        missing_information: [],
-        rules_evaluated: [],
-      };
-    case 'apply_decision':
-      if (envelope.result && envelope.result.kind === 'claim') {
-        return {
-          convention: envelope.result.convention,
-          applicability: envelope.result.applicability,
-          decision: envelope.result.decision,
-          conditions: envelope.result.conditions ?? [],
-        };
-      }
-      if (envelope.result && envelope.result.kind === 'clarification') {
-        return {
-          convention: null,
-          applicability: 'undetermined',
-          decision: 'undetermined',
-        };
-      }
-      return { convention: null, applicability: null, decision: null };
-    default: {
-      const exhaustive: never = kind;
-      void exhaustive;
-      return null;
-    }
-  }
-}

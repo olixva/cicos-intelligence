@@ -59,6 +59,34 @@ export function isConclusive(decision: Decision): boolean {
 }
 
 /**
+ * Titular del resultado cuando el backend no ha citado ningún bloque.
+ *
+ * Separa los dos planos que el manual distingue: si el Convenio se aplica
+ * (ámbito) y si puede atribuirse la responsabilidad (culpabilidad). Que el
+ * Convenio sea aplicable y la culpa quede sin determinar no es contradictorio;
+ * es el resultado correcto cuando faltan las circunstancias de la D.A.A.
+ */
+function headline(
+  applicability: Applicability,
+  decision: Decision,
+  convention: string,
+): string {
+  if (applicability === 'applicable' && decision === 'undetermined') {
+    return `El Convenio es aplicable${convention}, pero la culpabilidad no puede determinarse con los datos aportados.`;
+  }
+  if (applicability === 'applicable' && decision === 'conditional') {
+    return `El Convenio es aplicable${convention}, con una conclusión condicionada a la información que falta.`;
+  }
+  if (applicability === 'not_applicable') {
+    return `${APPLICABILITY.not_applicable}: no procede tramitar el siniestro por esta vía.`;
+  }
+  if (applicability === 'undetermined') {
+    return `${APPLICABILITY.undetermined}: faltan datos para saber si el Convenio entra en juego.`;
+  }
+  return `${APPLICABILITY[applicability]}${convention}. **${DECISION[decision]}.**`;
+}
+
+/**
  * Redacta el resultado en prosa. Prioriza los bloques explicativos que el
  * backend ya cita contra el manual; sólo si no hay ninguno recurre a la
  * etiqueta de aplicabilidad.
@@ -69,13 +97,15 @@ export function claimSummaryText(result: ClaimResultView): string {
   const blocks = (result.blocks ?? []).map((b) => b.text?.trim()).filter(Boolean) as string[];
   if (blocks.length > 0) {
     parts.push(blocks.join('\n\n'));
+    if (!isConclusive(result.decision)) {
+      parts.push(`**${DECISION[result.decision]}.**`);
+    }
   } else {
+    // Una frase, no dos fragmentos sueltos: «El Convenio es aplicable.» seguido
+    // de «Sin determinar.» se leía como una contradicción. Aplicabilidad y
+    // culpabilidad son dos planos distintos y el texto tiene que decirlo.
     const convention = result.convention ? ` (${result.convention})` : '';
-    parts.push(`${APPLICABILITY[result.applicability]}${convention}.`);
-  }
-
-  if (!isConclusive(result.decision)) {
-    parts.push(`**${DECISION[result.decision]}.**`);
+    parts.push(headline(result.applicability, result.decision, convention));
   }
 
   const conditions = result.conditions ?? [];

@@ -46,6 +46,17 @@ export interface PdfOverlayProps {
   }>;
 }
 
+/** Lo que este visor usa de un documento pdfjs, sin acoplarse a todo su tipo. */
+interface PdfDocument {
+  numPages: number;
+  getPage(pageNumber: number): Promise<{
+    getViewport(options: { scale: number }): { width: number; height: number };
+    render(options: { canvasContext: CanvasRenderingContext2D; viewport: unknown }): {
+      promise: Promise<void>;
+    };
+  }>;
+}
+
 interface RenderedPage {
   pageIndex: number;
   width: number;
@@ -64,15 +75,22 @@ export function PdfOverlay({
   snippet,
   regions = [],
 }: PdfOverlayProps) {
-  const [pages, setPages] = useState<RenderedPage[]>([]);
+  const [currentPage, setCurrentPage] = useState<RenderedPage | null>(null);
+  const [pageCount, setPageCount] = useState(0);
   const [activePage, setActivePage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1.2);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const docRef = useRef<PdfDocument | null>(null);
 
   // Lazy import de pdfjs-dist: solo entra en el bundle cuando se abre el modal.
+  //
+  // Se abre el documento y se lee su número de páginas, pero NO se rasteriza
+  // nada aquí. La versión anterior recorría las 111 páginas del manual
+  // rasterizándolas a canvas antes de pintar la primera: abrir una cita dejaba
+  // el visor en un skeleton durante minutos y mantenía 111 canvas en memoria.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -88,31 +106,52 @@ export function PdfOverlay({
         if (!cancelled) {
           pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrcMod.default;
         }
-        const task = pdfjsLib.getDocument(src);
-        const doc = await task.promise;
+        const doc = (await pdfjsLib.getDocument(src).promise) as unknown as PdfDocument;
         if (cancelled) return;
-        const rendered: RenderedPage[] = [];
-        for (let i = 1; i <= doc.numPages; i++) {
-          const page = await doc.getPage(i);
-          const viewport = page.getViewport({ scale: 1.4 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) throw new Error('Canvas 2D context no disponible');
-          await page.render({ canvasContext: ctx, viewport }).promise;
-          rendered.push({
-            pageIndex: i - 1,
-            width: viewport.width,
-            height: viewport.height,
-            canvas,
-          });
-        }
-        if (!cancelled) setPages(rendered);
+        docRef.current = doc;
+        setPageCount(doc.numPages);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : String(err));
+          setLoading(false);
         }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      docRef.current = null;
+    };
+  }, [open, src]);
+
+  // Rasteriza únicamente la página visible, y sólo cuando cambia.
+  useEffect(() => {
+    if (!open || pageCount === 0) return;
+    const doc = docRef.current;
+    if (!doc) return;
+    let cancelled = false;
+    setLoading(true);
+
+    void (async () => {
+      try {
+        const pageNumber = Math.min(Math.max(activePage + 1, 1), doc.numPages);
+        const page = await doc.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 1.4 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas 2D context no disponible');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        if (cancelled) return;
+        setCurrentPage({
+          pageIndex: pageNumber - 1,
+          width: viewport.width,
+          height: viewport.height,
+          canvas,
+        });
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -121,7 +160,7 @@ export function PdfOverlay({
     return () => {
       cancelled = true;
     };
-  }, [open, src]);
+  }, [open, pageCount, activePage]);
 
   // Cuando cambia la evidencia (o se abre), saltar a su página.
   useEffect(() => {
@@ -130,9 +169,7 @@ export function PdfOverlay({
     }
   }, [evidence]);
 
-  const currentPage = pages[activePage];
-
-  // Decisión D4: regions del envelope cuando llegan; si no, fallback
+    // Decisión D4: regions del envelope cuando llegan; si no, fallback
   // EXPLÍCITO a página completa con aviso visible al usuario (no
   // console.warn silencioso). Audit T12: nunca inventar coordenadas.
   const pageRegions = useMemo(
@@ -193,13 +230,13 @@ export function PdfOverlay({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-xs tabular-nums text-muted-foreground">
-                {activePage + 1} / {pages.length || '—'}
+                {activePage + 1} / {pageCount || '—'}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setActivePage((p) => Math.min(pages.length - 1, p + 1))}
-                disabled={activePage >= pages.length - 1}
+                onClick={() => setActivePage((p) => Math.min(pageCount - 1, p + 1))}
+                disabled={activePage >= pageCount - 1}
                 aria-label="Página siguiente"
               >
                 <ChevronRight className="h-4 w-4" />
