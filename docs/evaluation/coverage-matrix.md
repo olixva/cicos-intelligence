@@ -1,8 +1,9 @@
 # Matriz de cobertura del golden set
 
-Estado: cobertura efectiva del golden actual (`development.jsonl`, 100 casos en español,
-congelado como release `synthetic-expansion-2026-09-02`). No contiene casos admitidos ni
-resultados de evaluación.
+Estado: cobertura efectiva del golden actual (`development.jsonl`, **110 casos** =
+5 siniestros del enunciado + 5 variantes ES heredadas + 100 sintéticos, todos en español,
+congelado como release `synthetic-expansion-110-2026-09-03`). No contiene resultados de
+evaluación.
 
 | Eje | Desarrollo | Reserva | Control de admisión |
 | --- | --- | --- | --- |
@@ -16,7 +17,8 @@ resultados de evaluación.
 | Solo español (la reserva, cuando se abra, podría añadir otras lenguas) | n/a en `development` | Sí | Mismo significado; familia no dividida. |
 | Robustez y citas adversariales | Sí | Sí | No se admite evidencia o hecho inventado. |
 
-Los cinco siniestros del enunciado están incluidos dentro del golden actual (como family_ids
-`accident-0X-…`) junto con sus variantes y muchos otros casos sintéticos que amplían la
-cobertura (50 siniestros + 50 consultas, balance exacto). La reserva se congela antes de
-utilizar resultados para ajustar prompts, reglas, recuperación o enrutamiento.
+Los cinco siniestros del enunciado están incluidos dentro del golden actual (case_ids
+`accident-01-rear-end` … `accident-05-alcohol-injury`, evidencia de aceptación de la
+entrevista) junto con sus 5 variantes ES y los 100 sintéticos (50 siniestros + 50
+consultas, balance exacto). La reserva se congela antes de utilizar resultados para
+ajustar prompts, reglas, recuperación o enrutamiento.

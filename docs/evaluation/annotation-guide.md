@@ -22,7 +22,7 @@ una de estas familias:
 | `documental-factual` | `question` | Pregunta directa sobre un dato del manual con respuesta cerrada. |
 | `documental-conceptual` | `question` | Pregunta sobre criterio o procedimiento descrito en el manual. |
 | `documental-cruzada` | `question` | Pregunta que exige referencias cruzadas (más de una página). |
-| `siniestro-caso-real` | `claim` | Siniestro de la prueba original (los cinco casos siguen presentes dentro del golden actual como family_ids `accident-0X-…` con sus variantes ES). |
+| `siniestro-caso-real` | `claim` | Siniestro de la prueba original (los cinco casos están presentes como case_ids `accident-01-rear-end` … `accident-05-alcohol-injury`, evidencia de aceptación de la entrevista, sección 9 de la spec). |
 | `siniestro-contraste` | `claim` | Pares de versiones contradictorias para validar atribución. |
 | `siniestro-maniobra` | `claim` | Maniobra, cruce, estacionamiento o peatón. |
 | `siniestro-excepcion` | `claim` | Caso donde una excepción documentada cambia la decisión. |
@@ -91,7 +91,7 @@ Cada caso es un objeto JSON con tres campos nativos de Langfuse
   * `adjudicated`: revisado por al menos dos personas y resuelto.
   * `quarantined`: descartado o pendiente de re-anotación.
 * `provenance.kind`:
-  * `interview_example`: los cinco casos originales de la prueba (siguen presentes dentro del golden actual como family_ids `accident-0X-…` con sus variantes ES).
+  * `interview_example`: los cinco casos originales de la prueba (están presentes como case_ids `accident-01-rear-end` … `accident-05-alcohol-injury`, evidencia de aceptación de la entrevista).
   * `manual_derived`: derivado de una página concreta del manual.
   * `adversarial`: construido para cazar errores.
   * `synthetic`: generado por `TestsetGenerator` y revisado.
