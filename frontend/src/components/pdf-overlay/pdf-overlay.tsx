@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink, FileWarning, X, Copy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, FileWarning, Copy } from 'lucide-react';
+// `X` lo trae el DialogContent de shadcn; no lo duplicamos aquí (T12).
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,19 @@ export interface PdfOverlayProps {
   evidence: EvidenceItem | null;
   /** Snippet del bloque que pidió la apertura. */
   snippet?: string | null;
+  /**
+   * Regiones verificadas (bounding boxes) en coordenadas de página visible
+   * (origin top-left, unidades CSS del visor). Cuando están vacías o no
+   * coinciden con la página activa el overlay cae al fallback explícito
+   * de página completa en lugar de inventar coordenadas.
+   */
+  regions?: ReadonlyArray<{
+    page: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
 }
 
 interface RenderedPage {
@@ -42,7 +56,14 @@ interface RenderedPage {
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 2.4;
 
-export function PdfOverlay({ open, onOpenChange, src, evidence, snippet }: PdfOverlayProps) {
+export function PdfOverlay({
+  open,
+  onOpenChange,
+  src,
+  evidence,
+  snippet,
+  regions = [],
+}: PdfOverlayProps) {
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const [activePage, setActivePage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -111,25 +132,28 @@ export function PdfOverlay({ open, onOpenChange, src, evidence, snippet }: PdfOv
 
   const currentPage = pages[activePage];
 
-  // Decisión D4: regions del envelope cuando llegan; si no, fallback.
-  // Como el envelope actual todavía no expone `regions` por evidence_id,
-  // siempre caemos al fallback (console.warn explícito).
+  // Decisión D4: regions del envelope cuando llegan; si no, fallback
+  // EXPLÍCITO a página completa con aviso visible al usuario (no
+  // console.warn silencioso). Audit T12: nunca inventar coordenadas.
+  const pageRegions = useMemo(
+    () =>
+      regions.filter(
+        (region) => currentPage && region.page === evidence?.pdf_page,
+      ),
+    [regions, currentPage, evidence?.pdf_page],
+  );
+  const hasRegions = pageRegions.length > 0;
   const highlights = useMemo(() => {
     if (!currentPage || !evidence) return [];
-    const regions: Array<{ page: number; x: number; y: number; width: number; height: number }> = [];
-    if (regions.length === 0) {
-      console.warn(
-        '[pdf-overlay] evidence sin regiones, resaltando página completa',
-        evidence.evidence_id,
-      );
+    if (pageRegions.length === 0) {
       return [fullPageFallback(currentPage.width, currentPage.height)];
     }
     return normalizeRegions(
-      regions,
+      pageRegions,
       currentPage.width,
       currentPage.height,
     );
-  }, [currentPage, evidence]);
+  }, [currentPage, evidence, pageRegions]);
 
   const handleCopyId = () => {
     if (!evidence) return;
@@ -197,14 +221,9 @@ export function PdfOverlay({ open, onOpenChange, src, evidence, snippet }: PdfOv
               >
                 <span className="text-xs">+</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onOpenChange(false)}
-                aria-label="Cerrar visor"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              {/* El botón de cierre vive en el DialogContent de shadcn (X
+                  arriba a la derecha con focus return automático).
+                  Añadir otro aquí duplicaba el control — eliminado en T12. */}
             </div>
           </div>
         </DialogHeader>
@@ -253,6 +272,16 @@ export function PdfOverlay({ open, onOpenChange, src, evidence, snippet }: PdfOv
                 />
               ))}
             </div>
+          )}
+          {currentPage && !loading && !error && !hasRegions && (
+            <p
+              role="status"
+              data-testid="pdf-overlay-fallback"
+              className="mt-3 text-center text-xs text-muted-foreground"
+            >
+              Sin coordenadas verificadas: se muestra la página completa
+              como referencia visual.
+            </p>
           )}
         </div>
 
