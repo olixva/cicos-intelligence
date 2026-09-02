@@ -274,10 +274,14 @@ class LangGraphClaimWorkflow:
             tuple(response.get("clarifications", ())) if isinstance(response, dict) else ()
         )
         claim = state["claim"]
+        # LangGraph re-enters this node on every resume. Keep the answers
+        # already supplied in the checkpoint and append the new batch; the
+        # frontend intentionally sends only the fields answered in that step.
+        merged_clarifications = tuple(dict.fromkeys((*claim.clarifications, *clarifications)))
         resumed_claim = ClaimInput(
             claim.text,
             claim.language,
-            clarifications,
+            merged_clarifications,
             session_id=claim.session_id,
             thread_id=claim.thread_id,
             resume=True,
