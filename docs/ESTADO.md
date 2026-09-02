@@ -67,11 +67,9 @@ Deuda registrada: `pyright --strict` reporta ~79 errores, excluidos del gate rá
 
 Rama `main`. `origin/main` está en `88d93cb`: **13 commits locales sin pushear**.
 
-> [!IMPORTANT]
-> **Hay otra sesión de agente commiteando en este mismo repositorio.** Durante la redacción de este
-> documento entraron `95800a2`, `df71fbe` y `bb6c1a5` sin previo aviso. Antes de editar código,
-> ejecutar `git log --oneline -5` y comprobar que el HEAD es el esperado. Este documento se
-> verificó por última vez contra `bb6c1a5`.
+Sesión única a partir de `ccefd4f`: no hay otros agentes trabajando en el repositorio. Los commits
+`95800a2`, `df71fbe` y `bb6c1a5` proceden de la sesión anterior y ya están incorporados a este
+estado.
 
 ### Servicios
 

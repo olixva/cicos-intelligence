@@ -28,14 +28,8 @@ No repetir esta verificación a ciegas; son cifras ejecutadas, no citadas de han
 | `make check-openapi` | **FALLA**: drift en `components` |
 | `origin/main` | `88d93cb` — **10 commits locales sin pushear** |
 
-> [!IMPORTANT]
-> **Otra sesión de agente está commiteando en este repositorio.** Durante la redacción de este plan
-> entraron tres commits: `95800a2` (trace_url), `df71fbe` (historial real, T11) y `bb6c1a5` (visor
-> PDF, T12 parcial). **Antes de empezar cualquier tarea, ejecutar `git log --oneline -5`** y
-> comprobar el HEAD; este plan se verificó contra `bb6c1a5`. Coordinar con el usuario antes de
-> tocar frontend, que es donde está trabajando la otra sesión.
-
-Efecto de esos commits sobre este plan: **Task 9 (historial real) queda hecha**; Task 0 se reduce a
+La sesión anterior dejó tres commits que este plan ya incorpora: `95800a2` (trace_url),
+`df71fbe` (historial real, T11) y `bb6c1a5` (visor PDF, T12 parcial). Efecto sobre el plan: **Task 9 (historial real) queda hecha**; Task 0 se reduce a
 regenerar el snapshot de OpenAPI, que `95800a2` dejó desincronizado; Task 10 pierde sus pasos 1 y 3.
 
 Artefactos ausentes verificados: `data/rules/` contiene sólo los dos `*.schema.json`; `data/evaluation/golden/` contiene sólo `releases/` vacío; `data/extractions/` contiene sólo la publicación `pypdf-6.16.2`.
