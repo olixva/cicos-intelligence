@@ -35,3 +35,6 @@ frontend/playwright-report/
 frontend/test-results/
 frontend/*.tsbuildinfo
 frontend/src/types/api.gen.ts
+
+# Ficheros de bloqueo de LibreOffice
+.~lock.*#
