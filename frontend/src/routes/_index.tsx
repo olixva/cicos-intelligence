@@ -18,6 +18,7 @@ import {
   subscribeToIngestion,
   type IngestionSnapshot,
 } from '@/api/ingestion';
+import { getDemoCases, type DemoCase } from '@/api/queries';
 import { streamQuery, type StreamingEvent } from '@/lib/streaming-client';
 import {
   buildRequest,
@@ -55,6 +56,7 @@ export default function IndexRoute() {
   const sidebarCollapsed = false;
   const [showSidebar, setShowSidebar] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<string | null>(null);
+  const [demoCases, setDemoCases] = useState<DemoCase[]>([]);
   const [adminMode, setAdminMode] = useState(false);
   const [ingestionSnapshot, setIngestionSnapshot] = useState<IngestionSnapshot>({
     active_job: null,
@@ -100,6 +102,10 @@ export default function IndexRoute() {
       dispatch({ type: 'SELECT_THREAD', id: activeId });
     }
     hydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    void getDemoCases().then(setDemoCases).catch(() => setDemoCases([]));
   }, []);
 
   // T11 — persist the active state to localStorage after every
@@ -193,12 +199,12 @@ export default function IndexRoute() {
         }
       };
 
-      controllerRef.current = streamQuery(buildRequest(text, state.mode), {
+      controllerRef.current = streamQuery(buildRequest(text, state.mode, 'es', state.threadSessionIds[state.activeThreadId] ?? null), {
         signal: new AbortController().signal,
         onEvent: handleEvent,
       }).controller;
     },
-    [state.mode, state.isStreaming],
+    [state.mode, state.isStreaming, state.activeThreadId, state.threadSessionIds],
   );
 
   const handleCancel = useCallback(() => {
@@ -376,7 +382,7 @@ export default function IndexRoute() {
               <>
                 <div className="flex-1 overflow-hidden">
                   {state.messages.length === 0 ? (
-                    <EmptyState onSelect={handleSelectExample} />
+                    <EmptyState cases={demoCases} onSelect={handleSelectExample} />
                   ) : (
                     <Thread messages={state.messages} onOpenCitation={handleOpenCitation} />
                   )}

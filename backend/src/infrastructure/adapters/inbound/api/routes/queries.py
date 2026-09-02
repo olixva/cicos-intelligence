@@ -60,7 +60,11 @@ def build_query_router(resolve_query: ResolveQuery) -> APIRouter:
 
     async def resolve_query_route(request: QueryResolveRequest) -> QueryResolveResponse:
         execution = await resolve_query.execute(
-            QueryInput(text=request.text, language=request.language)
+            QueryInput(
+                text=request.text,
+                language=request.language,
+                session_id=request.session_id,
+            )
         )
         return QueryResolveResponse.from_domain(execution)
 
@@ -74,12 +78,17 @@ def build_query_router(resolve_query: ResolveQuery) -> APIRouter:
 
 
 def _query_input_from_request(request: EnvelopeRequest) -> QueryInput:
-    return QueryInput(text=request.text, language=request.language)
+    return QueryInput(text=request.text, language=request.language, session_id=request.session_id)
 
 
 def _claim_input_from_request(request: EnvelopeRequest) -> ClaimInput:
     clarifications = request.clarifications or ()
-    return ClaimInput(text=request.text, language=request.language, clarifications=clarifications)
+    return ClaimInput(
+        text=request.text,
+        language=request.language,
+        clarifications=clarifications,
+        session_id=request.session_id,
+    )
 
 
 async def _execute_envelope(

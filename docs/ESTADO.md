@@ -74,9 +74,9 @@ Compose `allianz-rag` usa el contexto Docker activo, verificado como `desktop-li
 - **Workflows**: grafo documental (`retrieve → generate → validate`) y grafo de siniestros (`extract_facts → retrieve_criteria → apply_rules → explain → validate`). La extracción del LLM no puede sobrescribir el resultado determinista.
 - **Reglas de aplicabilidad**: `domain/rules/applicability.py` implementa la puerta de dos vehículos, colisión directa, tercero identificado y colisión en cadena, con evidencia obligatoria. Verificado.
 - **Catálogo D.A.A.**: `data/rules/daa-circumstances.v1.json` fija y versiona las etiquetas `A0`–`A17`. El responsable del proyecto validó la correspondencia el 2026-09-02. Es una fuente externa al manual: `A0` significa ausencia de circunstancia declarada y `A1`–`A17` son las 17 casillas del apartado 12 del parte amistoso.
-- **API**: sobre común tipado, JSON y SSE para consultas, más el modo administrador de ingesta por API (`GET/POST /api/v1/admin/ingestion`, eventos y extracciones paginadas). La ingesta sólo acepta el manual verificado y publica el índice de forma atómica; el CLI técnico queda para mantenimiento, evaluación, validación y CI. Los eventos llevan `event_id` y `timestamp`, y `dispatch` sólo se emite en modo `auto` (`73516e1`).
+- **API**: sobre común tipado, JSON y SSE para consultas, `session_id` por hilo hasta los metadatos de Langfuse, casos de demo (`GET /api/v1/demo/cases`) y modo administrador de ingesta por API (`GET/POST /api/v1/admin/ingestion`, eventos y extracciones paginadas). La ingesta sólo acepta el manual verificado y publica el índice de forma atómica; el CLI técnico queda para mantenimiento, evaluación, validación y CI. Los eventos llevan `event_id` y `timestamp`, y `dispatch` sólo se emite en modo `auto` (`73516e1`).
 - **Frameworks de calidad**: CLI `golden validate/freeze/publish`, CLI `rules validate/compare-transcriptions`, schemas de matriz y ruleset con attestation obligatoria, validación de releases que rechaza `technical_fixture` por defecto.
-- **Frontend**: React 19 + Vite, chat con tool calls, visor PDF, 92 tests unitarios, build limpio. El botón superior alterna entre modo administrador y volver al chat; en administración se oculta la columna de hilos y el estado publicado no mantiene animación de carga.
+- **Frontend**: React 19 + Vite, chat con tool calls, visor PDF, sugerencias cargadas desde la API de demo, 92 tests unitarios, build limpio. El botón superior alterna entre modo administrador y volver al chat; en administración se oculta la columna de hilos y el estado publicado no mantiene animación de carga.
 - **Historial real** (`df71fbe`): `lib/thread-store.ts` persiste hilos versionados en localStorage
   (`cicos.threads.v1`) con tolerancia a datos corruptos, cuota y sandbox. Cada hilo lleva un
   `session_id` estable. Sustituye a los hilos falsos. *(El docstring de `thread-sidebar.tsx:18`
@@ -88,13 +88,13 @@ Compose `allianz-rag` usa el contexto Docker activo, verificado como `desktop-li
 
 Ordenados por impacto sobre la entrega.
 
-1. **Los tres entregables de demo del plan no existen**: documento de arquitectura, presentación y guion reproducible. El enunciado exige explícitamente los dos primeros. → Task 5 del plan.
+1. **Falta la presentación PowerPoint de la entrevista** (`docs/entrega/presentacion.pptx`). Arquitectura y guion ya existen; el enunciado exige los dos primeros. → Task 5 del plan.
 2. ~~`data/rules/` sólo tiene los schemas.~~ **HECHO.** La matriz 18×18, el ruleset de 14 reglas y el catálogo D.A.A. `A0`–`A17` están versionados. La matriz permanece protegida: sólo puede aplicarse cuando haya casillas A y B declaradas de forma inequívoca; una narración ambigua no autoriza a inferirlas.
-3. **`data/evaluation/golden/` está vacío** (sólo `releases/`). Sin golden no hay comparativa de recuperación, ni métricas de router, ni holdout. → Tasks 4, 5.
+3. **El golden de desarrollo contiene los cinco candidatos del enunciado, pero ninguno tiene revisión humana adjudicada.** No hay comparativa de recuperación, métricas de router ni holdout publicables. → Task 4.
 4. **`data/extractions/` sólo contiene `pypdf-6.16.2`.** Sin la publicación Docling no hay bounding boxes y el visor no puede resaltar región. → Pendiente de ingesta estructurada; no es una tarea separada del plan vigente.
-5. **`session_id` existe en el frontend pero no en el backend.** `thread-store.ts` ya asigna uno estable por hilo (`df71fbe`), pero `backend/src` **no tiene ninguna ocurrencia** de `session_id`: no lo recibe ni lo propaga a Langfuse, así que las conversaciones siguen sin agruparse. Es media integración. → Task 2.
+5. ~~`session_id` sólo existía en el frontend.~~ **HECHO:** el sobre HTTP lo recibe y los workflows lo propagan a metadatos de Langfuse; queda pendiente una comprobación manual en la UI de Langfuse si se necesita demostrar agrupación visual.
 6. **El frontend fabrica duraciones.** El backend ya envía `timestamp` por evento; `frontend/src/lib/thread-state.ts` lo ignora y escribe `durationMs: 0` a mano en las líneas 505 y 516. → Pendiente fuera del desglose actual del plan.
-7. **Falta `GET /api/v1/demo/cases`**, la única capacidad HTTP de la spec sin implementar. → Task 3.
+7. ~~Falta `GET /api/v1/demo/cases`.~~ **HECHO:** devuelve únicamente `case_id`, `text`, `language` y `expected_intent`; las sugerencias ya no contienen el ejemplo del baremo 2025.
 8. **OpenAPI está sincronizado**: `make check-openapi` pasó en el corte actual.
 
 9. **Modo administrador e ingesta por API**: implementado y probado. La interfaz sustituye “Nueva consulta” por “Modo administrador”, muestra estado, etapas y previsualizaciones de extracciones en un desplegable con paginación. La ejecución real del 2026-09-02 completó las cuatro etapas, verificó el hash `b9c70c…c8344`, registró 111 páginas y publicó 118 fragmentos en Qdrant; `/health/ready` quedó `ready`. Estos datos son de esta ejecución operativa, no métricas de evaluación.

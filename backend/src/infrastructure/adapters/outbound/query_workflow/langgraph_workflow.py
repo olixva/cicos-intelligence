@@ -205,7 +205,12 @@ class LangGraphResolveQuery:
         query = state["query"]
         return _RoutingUpdate(
             dispatch=await self._analyze_claim.execute(
-                ClaimInput(text=query.text, language=query.language, clarifications=())
+                ClaimInput(
+                    text=query.text,
+                    language=query.language,
+                    clarifications=(),
+                    session_id=query.session_id,
+                )
             )
         )
 

@@ -25,6 +25,7 @@ class QueryResolveRequest(_ResponseModel):
 
     text: str = Field(min_length=1)
     language: Literal["es", "en"] = "es"
+    session_id: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def _require_nonempty_text(self) -> QueryResolveRequest:

@@ -151,6 +151,7 @@ class EnvelopeRequest(_ResponseModel):
     profile: str | None = None
     clarifications: tuple[str, ...] | None = None
     stream: bool = False
+    session_id: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def _require_nonblank_text(self) -> EnvelopeRequest:

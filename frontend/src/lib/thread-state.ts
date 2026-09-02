@@ -709,6 +709,7 @@ export function buildRequest(
   text: string,
   mode: UiMode,
   language: 'es' | 'en' = 'es',
+  sessionId: string | null = null,
 ): EnvelopeRequest {
-  return { text: text.trim(), mode, language, stream: true };
+  return { text: text.trim(), mode, language, stream: true, session_id: sessionId };
 }

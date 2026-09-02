@@ -1,33 +1,11 @@
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import type { DemoCase } from '@/api/queries';
 
 export interface EmptyStateProps {
   onSelect: (prompt: string) => void;
+  cases: DemoCase[];
 }
-
-const EXAMPLES: ReadonlyArray<{ label: string; prompt: string }> = [
-  {
-    label: 'Pregunta frecuente',
-    prompt: '¿Qué dice el manual CIDE sobre los daños materiales en colisiones frontales?',
-  },
-  {
-    label: 'Siniestro corto',
-    prompt:
-      'Vehículo A gira a la izquierda en un cruce con semáforo en ámbar y es embestido por el vehículo B que circulaba en sentido contrario. ¿Convenio aplicable?',
-  },
-  {
-    label: 'Consulta ASCIDE',
-    prompt: '¿Cuál es el plazo de prescripción de las acciones recogidas en el convenio ASCIDE?',
-  },
-  {
-    label: 'Baremo y cuantías',
-    prompt: '¿Cómo se calcula la indemnización por lesiones temporales según el baremo 2025?',
-  },
-  {
-    label: 'Clarificación',
-    prompt: 'Necesito analizar un caso de atropello con responsabilidad cruzada.',
-  },
-];
 
 /**
  * EmptyState — bienvenida con ejemplos clickables. Click → inyecta el prompt.
@@ -38,7 +16,7 @@ const EXAMPLES: ReadonlyArray<{ label: string; prompt: string }> = [
  * propio texto. Ahora son tarjetas sobrias que sólo reaccionan al hover y al
  * foco, con altura uniforme para que la rejilla quede cuadrada.
  */
-export function EmptyState({ onSelect }: EmptyStateProps) {
+export function EmptyState({ onSelect, cases }: EmptyStateProps) {
   return (
     <section
       aria-label="Sugerencias"
@@ -57,21 +35,21 @@ export function EmptyState({ onSelect }: EmptyStateProps) {
         </p>
       </header>
       <ul className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
-        {EXAMPLES.map((ex, index) => (
+        {cases.map((ex, index) => (
           <li
-            key={ex.label}
+            key={ex.case_id}
             className={
               // Con cinco ejemplos en dos columnas el último dejaba un hueco.
               // Ocupando el ancho completo la rejilla cierra bien.
-              index === EXAMPLES.length - 1 && EXAMPLES.length % 2 === 1
+              index === cases.length - 1 && cases.length % 2 === 1
                 ? 'sm:col-span-2'
                 : undefined
             }
           >
             <button
               type="button"
-              onClick={() => onSelect(ex.prompt)}
-              aria-label={`Probar ejemplo: ${ex.label}`}
+              onClick={() => onSelect(ex.text)}
+              aria-label={`Probar ejemplo: ${ex.case_id}`}
               className={cn(
                 'flex h-full w-full flex-col gap-1 rounded-lg border border-border bg-background',
                 'px-3.5 py-3 text-left transition-colors',
@@ -80,10 +58,10 @@ export function EmptyState({ onSelect }: EmptyStateProps) {
               )}
             >
               <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-                {ex.label}
+                {ex.expected_intent === 'claim' ? 'Siniestro de demo' : 'Pregunta de demo'}
               </span>
               <span className="text-pretty text-sm leading-snug text-foreground/90">
-                {ex.prompt}
+                {ex.text}
               </span>
             </button>
           </li>

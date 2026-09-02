@@ -42,13 +42,6 @@ describe('IndexRoute header (Finding G1 #3)', () => {
   it('abre el panel de administración al pulsar el modo administrador', async () => {
     const user = userEvent.setup();
     renderRoute();
-    // Antes: el EmptyState muestra 5 ejemplos (5 buttons con aria-label "Probar ejemplo: …").
-    expect(
-      screen.getAllByRole('button', { name: /Probar ejemplo:/i }).length,
-    ).toBeGreaterThanOrEqual(1);
-    // Tras pulsar "Nueva consulta", el reducer NEW_THREAD debe dejar los
-    // mensajes a []. Como ya estaban vacíos, el empty state sigue visible,
-    // pero el thread debe seguir siendo funcional (no debe explotar).
     await user.click(screen.getByRole('button', { name: 'Modo administrador' }));
     expect(screen.getByRole('heading', { name: 'Ingesta del manual' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Volver al chat' })).toBeInTheDocument();

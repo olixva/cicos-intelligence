@@ -11,6 +11,7 @@ class ClaimInput:
     text: str
     language: Literal["es", "en"] = "es"
     clarifications: tuple[str, ...] = ()
+    session_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.text.strip():
@@ -19,6 +20,8 @@ class ClaimInput:
             raise ValueError("claim language must be es or en")
         if any(not item.strip() for item in self.clarifications):
             raise ValueError("claim clarifications must be nonempty")
+        if self.session_id is not None and not self.session_id.strip():
+            raise ValueError("claim session_id must be nonempty")
 
 
 @dataclass(frozen=True, slots=True)

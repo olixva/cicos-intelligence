@@ -551,6 +551,43 @@
         "title": "DeliveredContextResponse",
         "type": "object"
       },
+      "DemoCase": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "expected_intent": {
+            "enum": [
+              "question",
+              "claim"
+            ],
+            "title": "Expected Intent",
+            "type": "string"
+          },
+          "language": {
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_id",
+          "text",
+          "language",
+          "expected_intent"
+        ],
+        "title": "DemoCase",
+        "type": "object"
+      },
       "EnvelopeRequest": {
         "additionalProperties": false,
         "description": "One unified request across the three modes.\n\n``mode`` selects the explicit flow; ``profile`` optionally\noverrides the composition-root default. The route validates that\n``clarifications`` is only supplied for ``claim`` mode.",
@@ -597,6 +634,18 @@
               }
             ],
             "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
           },
           "stream": {
             "default": false,
@@ -839,6 +888,18 @@
             ],
             "title": "Language",
             "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
           },
           "text": {
             "minLength": 1,
@@ -1304,6 +1365,31 @@
         "summary": "Analyze Claim Route",
         "tags": [
           "claims"
+        ]
+      }
+    },
+    "/api/v1/demo/cases": {
+      "get": {
+        "operationId": "get_cases_api_v1_demo_cases_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemoCase"
+                  },
+                  "title": "Response Get Cases Api V1 Demo Cases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Cases",
+        "tags": [
+          "demo"
         ]
       }
     },

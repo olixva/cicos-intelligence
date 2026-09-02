@@ -28,8 +28,8 @@ test.describe('Allianz CICOS — chat agéntico smoke', () => {
         name: /Claims Intelligence/i,
       }),
     ).toBeVisible();
-    await expect(page.getByText(/Pregunta frecuente/i)).toBeVisible();
-    await expect(page.getByText(/Siniestro corto/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /accident-01-rear-end/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /accident-02-pile-up/i })).toBeVisible();
 
     // Composer con radios de modo — el fieldset expone su nombre
     // accesible, evitamos así ambigüedad con textos repetidos.

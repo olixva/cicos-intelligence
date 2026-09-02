@@ -17,6 +17,7 @@ from infrastructure.adapters.inbound.api.routes.admin_ingestion import (
     build_admin_ingestion_router,
 )
 from infrastructure.adapters.inbound.api.routes.claims import build_claim_router
+from infrastructure.adapters.inbound.api.routes.demo import build_demo_router
 from infrastructure.adapters.inbound.api.routes.manual import (
     RegisteredSource,
     build_manual_router,
@@ -104,6 +105,7 @@ def create_app(
             document_hash=admin_ingestion_document_hash or active_version,
         )
     )
+    app.include_router(build_demo_router())
     if answer_question is not None:
         app.include_router(build_question_router(answer_question))
     if analyze_claim is not None:

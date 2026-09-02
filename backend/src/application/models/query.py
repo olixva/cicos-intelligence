@@ -15,6 +15,7 @@ class QueryInput:
 
     text: str
     language: Literal["es", "en"] = "es"
+    session_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.text.strip():

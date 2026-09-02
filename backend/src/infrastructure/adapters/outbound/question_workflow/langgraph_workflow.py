@@ -85,6 +85,11 @@ class LangGraphQuestionWorkflow:
     async def run(self, query: QueryInput) -> QueryExecution:
         trace_id = self._trace_id_factory()
         config = RunnableConfig(recursion_limit=5)
+        if query.session_id:
+            config["metadata"] = {
+                "langfuse_session_id": query.session_id,
+                "session_id": query.session_id,
+            }
         if trace_id is not None and self._callback_factory is not None:
             config["callbacks"] = [self._callback_factory(trace_id)]
         # Wrap the graph dispatch in a Langfuse span so the OpenTelemetry
@@ -99,6 +104,7 @@ class LangGraphQuestionWorkflow:
                 name="question_workflow",
                 as_type="span",
                 trace_context={"trace_id": trace_id},
+                metadata={"session_id": query.session_id} if query.session_id else None,
             )
             if trace_id is not None and _LANGFUSE_TRACE_ID_RE.match(trace_id)
             else contextlib.nullcontext()
