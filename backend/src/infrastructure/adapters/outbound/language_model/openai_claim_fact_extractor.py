@@ -208,6 +208,10 @@ def _messages(claim: ClaimInput, fact_names: tuple[str, ...] = ()) -> ResponseIn
         "material para evaluar; `inconsistent` sólo para versiones incompatibles; y "
         "`coverage_gap` si los hechos están completos pero el manual no aporta una "
         "regla para resolver. No repitas preguntas ya contestadas en clarifications."
+        " No preguntes por país del accidente, matriculación, adhesión de las "
+        "aseguradoras ni requisitos administrativos salvo que el relato aporte un "
+        "hecho que los ponga en duda: para esta entrevista son supuestos administrativos, "
+        "no hechos que deban bloquear una conclusión sobre el manual."
     )
     payload = json.dumps(
         {"claim": claim.text, "clarifications": claim.clarifications, "language": claim.language},

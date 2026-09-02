@@ -15,7 +15,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
-from application.models.claim import ClaimExecution, ExtractedClaimFacts
+from application.models.claim import ClaimExecution, ExtractedClaimFacts, InterviewPlan
 from application.models.query import ContextEvidence
 from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.evidence_reader import EvidenceReader
@@ -44,6 +44,7 @@ class _ClaimState(TypedDict, total=False):
     extracted: NotRequired[ExtractedClaimFacts]
     context: NotRequired[tuple[ContextEvidence, ...]]
     analysis: NotRequired[ClaimAnalysis]
+    interview_plan: NotRequired[InterviewPlan]
     result: NotRequired[ClaimAnalysis]
     resumed: NotRequired[bool]
 
@@ -52,6 +53,7 @@ class _ClaimUpdate(TypedDict, total=False):
     extracted: ExtractedClaimFacts
     context: tuple[ContextEvidence, ...]
     analysis: ClaimAnalysis
+    interview_plan: InterviewPlan
     result: ClaimAnalysis
 
 
@@ -91,13 +93,15 @@ class LangGraphClaimWorkflow:
         graph.add_node("extract_facts", self._extract_facts)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("retrieve_criteria", self._retrieve_criteria)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("apply_rules", self._apply_rules)  # pyright: ignore[reportUnknownMemberType]
+        graph.add_node("plan_interview", self._plan_interview)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("needs_information", self._needs_information)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("explain", self._explain)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("validate", self._validate)  # pyright: ignore[reportUnknownMemberType]
         graph.add_edge(START, "extract_facts")
         graph.add_edge("extract_facts", "retrieve_criteria")
         graph.add_edge("retrieve_criteria", "apply_rules")
-        graph.add_edge("apply_rules", "needs_information")
+        graph.add_edge("apply_rules", "plan_interview")
+        graph.add_edge("plan_interview", "needs_information")
         graph.add_conditional_edges(
             "needs_information",
             lambda state: "extract_facts" if state.get("resumed") else "explain",
@@ -248,11 +252,17 @@ class LangGraphClaimWorkflow:
             blocks,
             rules_evaluated=evaluations,
         )
-        # The LLM owns the interview decision and wording. Deterministic rules
-        # still own the eventual liability result, but must not emit a premature
-        # indeterminate conclusion while the plan says a material fact is missing.
-        if extracted.interview_plan.status == "ask":
-            prompts = tuple(question.prompt for question in extracted.interview_plan.questions)
+        return _ClaimUpdate(analysis=analysis, result=analysis)
+
+    def _plan_interview(self, state: _ClaimState) -> _ClaimUpdate:
+        """Apply the LLM interview plan as an explicit LangGraph transition."""
+        extracted = state.get("extracted")
+        analysis = state.get("analysis")
+        if extracted is None or analysis is None:
+            raise RuntimeError("claim workflow reached interview planning without facts and analysis")
+        plan = extracted.interview_plan
+        if plan.status == "ask":
+            prompts = tuple(question.prompt for question in plan.questions)
             analysis = ClaimAnalysis(
                 analysis.applicability,
                 analysis.convention,
@@ -265,10 +275,13 @@ class LangGraphClaimWorkflow:
                 analysis.blocks,
                 rules_evaluated=analysis.rules_evaluated,
             )
-        elif extracted.interview_plan.status in ("inconsistent", "coverage_gap"):
-            reason = extracted.interview_plan.terminal_reason
-            if reason is None:  # Guaranteed by InterviewPlan; keep the graph defensive.
+        elif plan.status in ("inconsistent", "coverage_gap"):
+            reason = plan.terminal_reason
+            if reason is None:
                 raise RuntimeError("terminal interview plan has no reason")
+            evidence_ids = tuple(
+                dict.fromkeys(item for group in state.get("context", ()) for item in group.evidence_ids)
+            )
             analysis = ClaimAnalysis(
                 analysis.applicability,
                 analysis.convention,
@@ -281,7 +294,7 @@ class LangGraphClaimWorkflow:
                 (ClaimEvidenceBlock(reason, evidence_ids),),
                 rules_evaluated=analysis.rules_evaluated,
             )
-        return _ClaimUpdate(analysis=analysis, result=analysis)
+        return _ClaimUpdate(interview_plan=plan, analysis=analysis, result=analysis)
 
     def _kind_of(self, rule_id: str) -> str | None:
         rule = self._rules_by_id.get(rule_id)

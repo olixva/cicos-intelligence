@@ -65,3 +65,4 @@ def test_claim_extractor_instructs_the_model_to_return_a_bounded_interview_plan(
 
     assert "plan de entrevista" in rendered.lower()
     assert "no repitas" in rendered.lower()
+    assert "matriculación" in rendered.lower()

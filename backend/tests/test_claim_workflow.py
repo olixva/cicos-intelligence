@@ -150,6 +150,22 @@ def test_claim_graph_uses_the_llm_interview_question_before_emitting_a_result() 
     assert execution.missing_information == (question.prompt,)
 
 
+def test_claim_graph_exposes_a_dedicated_interview_planning_node() -> None:
+    from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
+        LangGraphClaimWorkflow,
+    )
+
+    workflow = LangGraphClaimWorkflow(
+        fact_extractor=_Extractor(ExtractedClaimFacts(("A", "B"), ())),
+        retriever=_Retriever(),
+        evidence_repository=_Evidence(
+            PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())
+        ),
+    )
+
+    assert "plan_interview" in workflow._graph.get_graph().nodes  # pyright: ignore[reportPrivateUsage]
+
+
 def test_claim_graph_resumes_after_an_answer_without_repeating_the_question() -> None:
     from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
         LangGraphClaimWorkflow,
