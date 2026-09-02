@@ -205,6 +205,24 @@ def test_envelope_dispatches_question_mode_directly_without_invoking_router() ->
     assert "image_path" not in response.text
 
 
+def test_envelope_guardrail_blocks_unrelated_question_before_any_workflow() -> None:
+    client, answer, claim, resolve = _client_with_three_ports()
+
+    response = _post_envelope(
+        client, {"text": "¿Qué tiempo hace hoy?", "language": "es", "mode": "question"}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["resolved_mode"] == "clarification"
+    assert body["result"]["kind"] == "clarification"
+    assert "tiempo" in body["result"]["message"]
+    assert body["metadata"]["guardrail"] == "blocked"
+    assert not answer.last
+    assert not claim.last_text
+    assert not resolve.last
+
+
 def test_envelope_dispatches_claim_mode_with_clarifications() -> None:
     client, answer, claim, resolve = _client_with_three_ports()
 

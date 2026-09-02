@@ -103,6 +103,38 @@ describe('threadReducer', () => {
     }
   });
 
+  it('STREAM_COMPLETED muestra el motivo cuando una pregunta no tiene bloques', () => {
+    let state = initialState();
+    state = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-empty-question',
+      assistantId: 'a-empty-question',
+      text: '¿Cuánto corresponde según el baremo de 2025?',
+      mode: 'question',
+      createdAt: Date.now(),
+    });
+    const next = threadReducer(state, {
+      type: 'STREAM_COMPLETED',
+      response: {
+        request_id: 'r-empty-question',
+        requested_mode: 'question',
+        resolved_mode: 'question',
+        evidence: [],
+        metadata: {},
+        result: {
+          kind: 'question',
+          status: 'out_of_scope',
+          blocks: [],
+          trace_id: null,
+        },
+      },
+      requestId: 'r-empty-question',
+    });
+    const assistant = next.messages[1];
+    if (!assistant || assistant.role !== 'assistant') throw new Error('assistant missing');
+    expect(assistant.streamedText).toContain('fuera del alcance');
+  });
+
   it('STREAM_FAILED marca el assistant como error', () => {
     let state = initialState();
     state = threadReducer(state, {

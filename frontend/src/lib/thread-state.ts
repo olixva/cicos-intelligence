@@ -653,7 +653,18 @@ function mergeStreamedText(streamed: string, envelope: EnvelopeResponse): string
   if (!result) return '';
   if (result.kind === 'question') {
     const blocks = (result.blocks ?? []) as Array<{ text?: string }>;
-    return blocks.map((b) => b.text ?? '').join('\n\n');
+    const answer = blocks.map((b) => b.text ?? '').filter(Boolean).join('\n\n');
+    if (answer) return answer;
+    if (result.status === 'out_of_scope') {
+      return 'Esta consulta queda fuera del alcance del manual suministrado. El baremo de 2025 no está incluido en la fuente documental, así que no puedo calcular una indemnización con fiabilidad.';
+    }
+    if (result.status === 'insufficient_evidence') {
+      return 'No hay evidencia suficiente en el manual suministrado para responder esta consulta.';
+    }
+    if (result.status === 'partial') {
+      return 'La respuesta sólo puede determinarse parcialmente con la evidencia recuperada.';
+    }
+    return 'No se ha generado una respuesta textual para esta consulta.';
   }
   if (result.kind === 'clarification') return result.message;
   if (result.kind === 'claim') {
@@ -670,6 +681,16 @@ export function buildRequest(
   mode: UiMode,
   language: 'es' | 'en' = 'es',
   sessionId: string | null = null,
+  clarifications: string[] = [],
 ): EnvelopeRequest {
-  return { text: text.trim(), mode, language, stream: true, session_id: sessionId };
+  return {
+    text: text.trim(),
+    mode,
+    language,
+    stream: true,
+    session_id: sessionId,
+    ...(clarifications.length > 0
+      ? { clarifications: clarifications as EnvelopeRequest['clarifications'] }
+      : {}),
+  };
 }

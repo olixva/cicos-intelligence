@@ -35,6 +35,7 @@ from application.models.query import (
 from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.resolve_query import ResolveQuery
+from application.services.input_guardrails import guardrail_message
 from domain.models.claim import ClaimInput
 from infrastructure.adapters.inbound.api.schemas.envelope import (
     EnvelopeRequest,
@@ -111,6 +112,21 @@ async def _execute_envelope(
     """
 
     rid = request_id or str(uuid.uuid4())
+
+    refusal = guardrail_message(request.text)
+    if refusal is not None:
+        # Guardrail responses are terminal and deliberately carry no evidence.
+        # They apply even when a caller selected an explicit mode: unsafe or
+        # unrelated text must not reach retrieval, the classifier, or the LLM.
+        from infrastructure.adapters.inbound.api.schemas.envelope import ClarificationResultBody
+
+        return EnvelopeResponse(
+            request_id=rid,
+            requested_mode=request.mode,
+            resolved_mode="clarification",
+            result=ClarificationResultBody(kind="clarification", message=refusal),
+            metadata={"guardrail": "blocked"},
+        )
 
     if request.mode == "question":
         execution = await answer_question.execute(_query_input_from_request(request))

@@ -133,7 +133,7 @@ export default function IndexRoute() {
   }, []);
 
   const handleSubmit = useCallback(
-    (text: string) => {
+    (text: string, clarifications: string[] = []) => {
       if (state.isStreaming) return;
       const messageId = crypto.randomUUID?.() ?? `${Date.now()}-u`;
       const assistantId = crypto.randomUUID?.() ?? `${Date.now()}-a`;
@@ -200,7 +200,7 @@ export default function IndexRoute() {
         }
       };
 
-      controllerRef.current = streamQuery(buildRequest(text, state.mode, 'es', state.threadSessionIds[state.activeThreadId] ?? null), {
+      controllerRef.current = streamQuery(buildRequest(text, state.mode, 'es', state.threadSessionIds[state.activeThreadId] ?? null, clarifications), {
         signal: new AbortController().signal,
         onEvent: handleEvent,
       }).controller;
@@ -385,7 +385,14 @@ export default function IndexRoute() {
                   {state.messages.length === 0 ? (
                     <EmptyState cases={demoCases} onSelect={handleSelectExample} />
                   ) : (
-                    <Thread messages={state.messages} onOpenCitation={handleOpenCitation} />
+                    <Thread
+                      messages={state.messages}
+                      onOpenCitation={handleOpenCitation}
+                      onSubmitClarification={(clarifications) => {
+                        const lastUser = [...state.messages].reverse().find((message) => message.role === 'user');
+                        if (lastUser?.role === 'user') handleSubmit(lastUser.text, clarifications);
+                      }}
+                    />
                   )}
                 </div>
                 <div className="border-t bg-background/80 p-3 backdrop-blur">
@@ -522,4 +529,3 @@ function dispatchToolCallsFromEnvelope(
     });
   }
 }
-

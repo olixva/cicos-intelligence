@@ -8,6 +8,7 @@ export interface ThreadProps {
   messages: ThreadMessage[];
   onOpenCitation?: (citation: CitationRef) => void;
   onRetryToolCall?: (toolCallId: string) => void;
+  onSubmitClarification?: (clarifications: string[]) => void;
   ariaLabel?: string;
 }
 
@@ -24,6 +25,7 @@ export function Thread({
   messages,
   onOpenCitation,
   onRetryToolCall,
+  onSubmitClarification,
   ariaLabel = 'Hilo de conversación',
 }: ThreadProps) {
   const lastRef = useRef<HTMLDivElement | null>(null);
@@ -60,6 +62,7 @@ export function Thread({
                   isLatest={isLast}
                   onOpenCitation={onOpenCitation}
                   onRetryToolCall={onRetryToolCall}
+                  onSubmitClarification={onSubmitClarification}
                 />
               )}
             </div>

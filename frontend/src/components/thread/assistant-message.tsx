@@ -8,6 +8,7 @@ import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 import { ToolCallCard } from '@/components/tool-call/tool-call-card';
 import { CitationChip } from '@/components/citation/citation-chip';
 import { cn } from '@/lib/cn';
+import { ClarificationPanel } from '@/components/thread/clarification-panel';
 import type {
   CitationRef,
   MessageAssistant,
@@ -21,6 +22,7 @@ export interface AssistantMessageProps {
   onOpenCitation?: (citation: CitationRef) => void;
   /** Reintentar un tool call individual. */
   onRetryToolCall?: (toolCallId: string) => void;
+  onSubmitClarification?: (clarifications: string[]) => void;
 }
 
 const MODE_LABEL: Record<string, string> = {
@@ -39,6 +41,7 @@ export function AssistantMessage({
   message,
   onOpenCitation,
   onRetryToolCall,
+  onSubmitClarification,
 }: AssistantMessageProps) {
   const [metaOpen, setMetaOpen] = useState(false);
   const isStreaming = message.status === 'streaming';
@@ -50,6 +53,8 @@ export function AssistantMessage({
       ? envelope.result.trace_id
       : null;
   const langfuseUrl = envelope?.metadata?.langfuse_url ?? envelope?.metadata?.trace_url ?? null;
+  const missingInformation =
+    envelope?.result?.kind === 'claim' ? envelope.result.missing_information : [];
 
   return (
     <article
@@ -114,6 +119,13 @@ export function AssistantMessage({
             <TextGenerateEffect text={message.streamedText} streaming={isStreaming} />
           )}
         </div>
+
+        {onSubmitClarification && missingInformation.length > 0 && message.status === 'done' && (
+          <ClarificationPanel
+            missingInformation={missingInformation}
+            onSubmit={onSubmitClarification}
+          />
+        )}
 
         {message.citations.length > 0 && (
           <div
