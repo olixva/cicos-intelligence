@@ -238,6 +238,8 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
             ),
             evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
             rules=_rules.rules,
+            matrix_cells=_rules.matrix_cells,
+            matrix_exceptions=_rules.matrix_exceptions,
             trace_id_factory=Langfuse().create_trace_id,
             callback_factory=callback_factory,
             trace_url_factory=lambda trace_id: Langfuse().get_trace_url(trace_id=trace_id),

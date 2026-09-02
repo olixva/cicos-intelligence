@@ -26,6 +26,28 @@ def test_loads_the_shipped_artifacts() -> None:
     assert len(artifacts.matrix_cells) == 324
 
 
+def test_loads_the_four_printed_matrix_observations() -> None:
+    """Las cuatro observaciones bajo la tabla (pág. 101) sólo deciden lo que
+    el manual dice: no un patrón genérico deducido del asterisco."""
+    artifacts = load_rules_artifacts(_REPO / "data" / "rules")
+    by_id = {exception.note_id: exception for exception in artifacts.matrix_exceptions}
+
+    assert set(by_id) == {"obs-a2-b4", "obs-b2-a4", "obs-a16-b0", "obs-b16-a0"}
+    a2_b4 = by_id["obs-a2-b4"]
+    assert a2_b4.fact == "door_opened_by"
+    assert a2_b4.actor == "A"
+    assert a2_b4.liable_unless_exception == "B"
+    a2_position = (
+        artifacts.row_labels.index("A2") + 1,
+        artifacts.column_labels.index("B4") + 1,
+    )
+    assert a2_position in a2_b4.positions
+    # La celda que gobierna cada observación debe llevar de verdad el asterisco.
+    for exception in artifacts.matrix_exceptions:
+        for position in exception.positions:
+            assert "*" in artifacts.matrix_cells[position].outcome, exception.note_id
+
+
 def test_rules_keep_the_order_of_the_artifact() -> None:
     artifacts = load_rules_artifacts(_REPO / "data" / "rules")
     raw = json.loads((_REPO / "data" / "rules" / "ruleset.v1.json").read_text(encoding="utf-8"))

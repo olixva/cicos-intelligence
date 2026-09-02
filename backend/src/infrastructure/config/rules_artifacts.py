@@ -25,6 +25,7 @@ from domain.rules.artifact_validation import (
     validate_cide_matrix,
     validate_ruleset,
 )
+from domain.rules.cide_matrix import MatrixException
 from domain.rules.ruleset import LoadedRule
 
 DEFAULT_DOCUMENT_HASH = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
@@ -44,6 +45,10 @@ class RulesArtifacts:
     matrix_cells: dict[tuple[int, int], MatrixCell]
     row_labels: tuple[str, ...]
     column_labels: tuple[str, ...]
+    #: Las cuatro observaciones impresas bajo la tabla, ya resueltas a las
+    #: posiciones que gobiernan. Una celda asteriscada sin observación no
+    #: decide: se queda esperando el hecho que la resuelve.
+    matrix_exceptions: tuple[MatrixException, ...] = ()
 
 
 def load_rules_artifacts(
@@ -92,14 +97,69 @@ def load_rules_artifacts(
         )
         for position, cell in load_matrix_cells(matrix_path).items()
     }
+    row_labels = _string_values(matrix_payload.get("row_labels"))
+    column_labels = _string_values(matrix_payload.get("column_labels"))
     return RulesArtifacts(
         rules=tuple(
             _rule(raw) for raw in _object_list(load_json_object(ruleset_path).get("rules"))
         ),
         matrix_cells=cells,
-        row_labels=_string_values(matrix_payload.get("row_labels")),
-        column_labels=_string_values(matrix_payload.get("column_labels")),
+        row_labels=row_labels,
+        column_labels=column_labels,
+        matrix_exceptions=_matrix_exceptions(matrix_payload, row_labels, column_labels),
     )
+
+
+def _matrix_exceptions(
+    payload: JsonObject, row_labels: tuple[str, ...], column_labels: tuple[str, ...]
+) -> tuple[MatrixException, ...]:
+    """Decode only the observations a reviewer made machine-checkable.
+
+    A note without ``applies_to``/``exception_fact`` stays documentation: it is
+    skipped rather than guessed at, so an unannotated asterisk never resolves.
+    """
+    exceptions: list[MatrixException] = []
+    for note in _object_list(payload.get("notes")):
+        positions = _positions(note.get("applies_to"), row_labels, column_labels)
+        fact = note.get("exception_fact")
+        actor = note.get("exception_actor")
+        liable = note.get("liable_unless_exception")
+        if not positions or not isinstance(fact, str) or not isinstance(actor, str):
+            continue
+        if not isinstance(liable, str):
+            continue
+        exceptions.append(
+            MatrixException(
+                note_id=str(note["note_id"]),
+                text=str(note["text"]),
+                positions=positions,
+                fact=fact,
+                actor=actor,
+                liable_unless_exception=liable,
+                evidence_ids=_string_values(note.get("evidence_ids")),
+            )
+        )
+    return tuple(exceptions)
+
+
+def _positions(
+    value: object, row_labels: tuple[str, ...], column_labels: tuple[str, ...]
+) -> tuple[tuple[int, int], ...]:
+    """Translate printed labels (``A2``/``B4``) into 1-based table positions."""
+    if not isinstance(value, list):
+        return ()
+    positions: list[tuple[int, int]] = []
+    for raw in cast(list[object], value):
+        if not isinstance(raw, dict):
+            continue
+        item = cast(dict[str, object], raw)
+        a, b = item.get("a"), item.get("b")
+        if not isinstance(a, str) or not isinstance(b, str):
+            continue
+        if a not in row_labels or b not in column_labels:
+            raise RulesArtifactsUnavailable(f"matrix observation references unknown cell: {a}+{b}")
+        positions.append((row_labels.index(a) + 1, column_labels.index(b) + 1))
+    return tuple(positions)
 
 
 def _rule(raw: JsonObject) -> LoadedRule:

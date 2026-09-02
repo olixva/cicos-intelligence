@@ -3292,7 +3292,16 @@
       "evidence_ids": [
         "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "applies_to": [
+        {
+          "a": "A2",
+          "b": "B4"
+        }
+      ],
+      "exception_fact": "door_opened_by",
+      "exception_actor": "A",
+      "liable_unless_exception": "B"
     },
     {
       "note_id": "obs-b2-a4",
@@ -3300,7 +3309,16 @@
       "evidence_ids": [
         "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "applies_to": [
+        {
+          "a": "A4",
+          "b": "B2"
+        }
+      ],
+      "exception_fact": "door_opened_by",
+      "exception_actor": "B",
+      "liable_unless_exception": "A"
     },
     {
       "note_id": "obs-a16-b0",
@@ -3308,7 +3326,16 @@
       "evidence_ids": [
         "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "applies_to": [
+        {
+          "a": "A16",
+          "b": "B0"
+        }
+      ],
+      "exception_fact": "unpaved_road_by",
+      "exception_actor": "A",
+      "liable_unless_exception": "B"
     },
     {
       "note_id": "obs-b16-a0",
@@ -3316,7 +3343,16 @@
       "evidence_ids": [
         "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "applies_to": [
+        {
+          "a": "A0",
+          "b": "B16"
+        }
+      ],
+      "exception_fact": "unpaved_road_by",
+      "exception_actor": "B",
+      "liable_unless_exception": "A"
     }
   ],
   "reviewer_ids": [

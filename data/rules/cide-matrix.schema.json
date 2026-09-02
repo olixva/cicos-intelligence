@@ -33,20 +33,29 @@
     },
     "orientation": {
       "type": "string",
-      "enum": ["A-row-B-column", "B-row-A-column"],
+      "enum": [
+        "A-row-B-column",
+        "B-row-A-column"
+      ],
       "description": "How the printed table maps to the (a, b) responsibility positions."
     },
     "row_labels": {
       "type": "array",
       "minItems": 18,
       "maxItems": 18,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "column_labels": {
       "type": "array",
       "minItems": 18,
       "maxItems": 18,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "cells": {
       "type": "object",
@@ -54,10 +63,24 @@
       "maxProperties": 324,
       "additionalProperties": {
         "type": "object",
-        "required": ["a", "b", "outcome", "evidence_ids", "reviewer_id"],
+        "required": [
+          "a",
+          "b",
+          "outcome",
+          "evidence_ids",
+          "reviewer_id"
+        ],
         "properties": {
-          "a": { "type": "integer", "minimum": 1, "maximum": 18 },
-          "b": { "type": "integer", "minimum": 1, "maximum": 18 },
+          "a": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18
+          },
+          "b": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18
+          },
           "outcome": {
             "type": "string",
             "minLength": 1,
@@ -95,10 +118,21 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["note_id", "text", "evidence_ids", "reviewer_id"],
+        "required": [
+          "note_id",
+          "text",
+          "evidence_ids",
+          "reviewer_id"
+        ],
         "properties": {
-          "note_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
-          "text": { "type": "string", "minLength": 1 },
+          "note_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
           "evidence_ids": {
             "type": "array",
             "minItems": 1,
@@ -107,30 +141,97 @@
               "pattern": "^sha256:[0-9a-f]{64}:page:[1-9][0-9]*$"
             }
           },
-          "reviewer_id": { "type": "string", "minLength": 1 }
+          "reviewer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "applies_to": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Casillas que gobierna la observación, con las etiquetas impresas.",
+            "items": {
+              "type": "object",
+              "required": [
+                "a",
+                "b"
+              ],
+              "properties": {
+                "a": {
+                  "type": "string",
+                  "pattern": "^A(1[0-7]|[0-9])$"
+                },
+                "b": {
+                  "type": "string",
+                  "pattern": "^B(1[0-7]|[0-9])$"
+                }
+              }
+            }
+          },
+          "exception_fact": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Hecho que decide si la excepción se cumple."
+          },
+          "exception_actor": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "description": "Parte cuya acción activa la excepción."
+          },
+          "liable_unless_exception": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "description": "Parte que la tabla imputa mientras la excepción no se cumpla."
+          }
         }
       }
     },
     "reviewer_ids": {
       "type": "array",
       "minItems": 2,
-      "items": { "type": "string", "minLength": 1 },
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
       "description": "At least two independent reviewer identifiers for the matrix transcription."
     },
     "attestation": {
       "type": "object",
-      "required": ["transcriptions", "divergence_resolution", "signed_by"],
+      "required": [
+        "transcriptions",
+        "divergence_resolution",
+        "signed_by"
+      ],
       "properties": {
         "transcriptions": {
           "type": "array",
           "minItems": 2,
           "items": {
             "type": "object",
-            "required": ["reviewer_id", "independent", "pdf_page_checked", "transcription_sha256"],
+            "required": [
+              "reviewer_id",
+              "independent",
+              "pdf_page_checked",
+              "transcription_sha256"
+            ],
             "properties": {
-              "reviewer_id": { "type": "string", "minLength": 1 },
-              "independent": { "type": "boolean", "const": true },
-              "pdf_page_checked": { "type": "boolean", "const": true },
+              "reviewer_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "independent": {
+                "type": "boolean",
+                "const": true
+              },
+              "pdf_page_checked": {
+                "type": "boolean",
+                "const": true
+              },
               "transcription_sha256": {
                 "type": "string",
                 "pattern": "^[0-9a-f]{64}$",
@@ -151,7 +252,10 @@
         "signed_by": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "signed_at": {
           "type": "string",

@@ -265,7 +265,9 @@
       "prerequisites": [
         "daa_box_a",
         "daa_box_b",
-        "applicability_confirmed"
+        "daa_section_12_only",
+        "door_opened_by",
+        "unpaved_road_by"
       ],
       "outcome": "Celda (a,b) de data/rules/cide-matrix.v1.json.",
       "notes": [

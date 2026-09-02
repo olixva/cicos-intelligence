@@ -6,6 +6,7 @@ from domain.models.claim import ClaimEvidenceBlock, ClaimFact
 from domain.models.decision import ClaimAnalysis
 from domain.models.rule_evaluation import RuleEvaluation
 from domain.rules.applicability import ApplicabilityAssessment
+from domain.rules.cide_matrix import MatrixDecision
 
 
 def build_applicability_analysis(
@@ -15,6 +16,8 @@ def build_applicability_analysis(
     assessment: ApplicabilityAssessment,
     matched_manoeuvre_rules: tuple[RuleEvaluation, ...] = (),
     manoeuvre_convention: Literal["CIDE", "ASCIDE"] | None = None,
+    matrix_decision: MatrixDecision | None = None,
+    matrix_convention: Literal["CIDE", "ASCIDE"] | None = None,
 ) -> ClaimAnalysis:
     """Return a convention-scoped result without attributing liability prematurely.
 
@@ -28,6 +31,12 @@ def build_applicability_analysis(
     covers both the ASCIDE subsidiary norms and the CIDE door-opening criterion.
     When the artifact does not state one, the claim still resolves but names no
     convention instead of assuming it.
+
+    ``matrix_decision`` is only consulted when no manoeuvre rule already
+    resolved the claim: a D.A.A. pair and a recognised manoeuvre should not
+    coexist in the same narrative, and if they somehow do, guessing which one
+    wins would be exactly the invented conclusion this function exists to
+    avoid.
     """
 
     if assessment.status == "not_applicable":
@@ -71,6 +80,12 @@ def build_applicability_analysis(
             blocks=(ClaimEvidenceBlock(rule.rationale, rule.evidence_ids),),
             rules_evaluated=matched_manoeuvre_rules,
         )
+    if matrix_decision is not None:
+        resolved = _from_matrix_decision(
+            matrix_decision, parties=parties, facts=facts, convention=matrix_convention
+        )
+        if resolved is not None:
+            return resolved
     missing_information = _personalized_missing_information(facts)
     return ClaimAnalysis(
         applicability="applicable",
@@ -83,6 +98,92 @@ def build_applicability_analysis(
         missing_information=missing_information,
         blocks=(),
     )
+
+
+def _from_matrix_decision(
+    decision: MatrixDecision,
+    *,
+    parties: tuple[str, ...],
+    facts: tuple[ClaimFact, ...],
+    convention: Literal["CIDE", "ASCIDE"] | None,
+) -> ClaimAnalysis | None:
+    """Turn what the CIDE table supports into a claim result, or defer.
+
+    Returns ``None`` for ``"undetermined"`` (no D.A.A. pair declared): the
+    caller falls back to asking a manoeuvre question instead. The other four
+    statuses are the table's own possible answers and each maps to exactly
+    one outcome — none of them a guess.
+    """
+    if decision.status == "attributes":
+        text = (
+            "La tabla de culpabilidad CIDE atribuye la responsabilidad a "
+            f"{decision.liable_party}."
+        )
+        return ClaimAnalysis(
+            applicability="applicable",
+            convention=convention,
+            decision="resolved",
+            party_ids=parties,
+            facts=facts,
+            contradictions=(),
+            conditions=(),
+            missing_information=(),
+            blocks=(ClaimEvidenceBlock(text, decision.evidence_ids),),
+            # El invariante de dominio exige que un "resolved" cite al menos una
+            # regla que casó; la propia consulta a la tabla es esa regla.
+            rules_evaluated=(
+                RuleEvaluation(
+                    rule_id="cide-matrix-lookup",
+                    inputs=(),
+                    result="matched",
+                    evidence_ids=decision.evidence_ids,
+                    rationale=text,
+                ),
+            ),
+        )
+    if decision.status == "no_attribution":
+        text = (
+            "La tabla de culpabilidad CIDE no atribuye responsabilidad para esta "
+            "combinación de casillas."
+        )
+        return ClaimAnalysis(
+            applicability="applicable",
+            convention=None,
+            decision="undetermined",
+            party_ids=parties,
+            facts=facts,
+            contradictions=(),
+            conditions=(),
+            missing_information=(),
+            blocks=(ClaimEvidenceBlock(text, decision.evidence_ids),),
+        )
+    if decision.status == "needs_exception_fact":
+        assert decision.exception_text is not None
+        return ClaimAnalysis(
+            applicability="applicable",
+            convention=None,
+            decision="conditional",
+            party_ids=parties,
+            facts=facts,
+            contradictions=(),
+            conditions=(decision.exception_text,),
+            missing_information=(decision.exception_text,),
+            blocks=(),
+        )
+    if decision.status == "exception_applies":
+        assert decision.exception_text is not None
+        return ClaimAnalysis(
+            applicability="applicable",
+            convention=None,
+            decision="undetermined",
+            party_ids=parties,
+            facts=facts,
+            contradictions=(),
+            conditions=(),
+            missing_information=(),
+            blocks=(ClaimEvidenceBlock(decision.exception_text, decision.evidence_ids),),
+        )
+    return None
 
 
 def _personalized_missing_information(facts: tuple[ClaimFact, ...]) -> tuple[str, ...]:

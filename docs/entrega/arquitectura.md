@@ -90,11 +90,21 @@ De las 14 reglas:
 - **1 norma de maniobra subsidiaria ASCIDE — `ascide-b10-lane-change`** (cambio de carril
   reconocido por ambas partes + disparidad de versiones ⇒ culpable quien cambia de carril) se
   completó en este corte: tiene condición verificable y su resultado alimenta la decisión final
-  (`decision="resolved"`, `convention="ASCIDE"`) cuando casa de forma inequívoca.
-- **8 reglas siguen documentadas pero no verificables automáticamente**: `convention-scope`
+  (`decision="resolved"`, convenio leído del artefacto) cuando casa de forma inequívoca.
+- **La tabla de culpabilidad CIDE (18×18, `cide-matrix-lookup`) está conectada al flujo.**
+  Las 324 celdas estaban transcritas y atestadas desde antes; `decide_from_daa_matrix`
+  (`domain/rules/cide_matrix.py`) es lo que faltaba: distingue si la tabla atribuye
+  responsabilidad, si la celda es un «-» sin atribución, si una de las **cuatro observaciones
+  impresas** bajo la tabla (pág. 101) está pendiente de su hecho decisorio, o si esa
+  observación se cumple y retira la atribución. Las observaciones se declaran de forma
+  estructurada en el artefacto firmado (`applies_to`/`exception_fact`/`exception_actor`/
+  `liable_unless_exception`), nunca en código — una celda con asterisco sin observación
+  anotada simplemente no decide. La regla del proyecto se mantiene intacta: las casillas
+  A0–A17 sólo entran si el relato las declara explícitamente; nunca se infieren de una
+  narración de la maniobra.
+- **6 reglas siguen documentadas pero no verificables automáticamente**: `convention-scope`
   (ámbito de aplicación), `ascide-b5`, `ascide-b6`, `ascide-b9`, `ascide-b11`,
-  `ascide-traffic-light-amber`, `cide-matrix-lookup` (la tabla 18×18 de circunstancias
-  A0–A17) y `cide-door-opening`. Siguen devolviendo
+  `ascide-traffic-light-amber` y `cide-door-opening`. Siguen devolviendo
   `insufficient_data` — la respuesta honesta, no un valor inventado — hasta que se les añada
   una condición verificable siguiendo el mismo patrón.
 
@@ -150,5 +160,5 @@ sólo la página que se está mirando, no el manual entero. 96 tests unitarios, 
 - Manual de 2004: no es normativa vigente.
 - Sin autenticación multiusuario, sin operación con siniestros reales, sin alta disponibilidad.
 - El índice estructurado (Docling) existe pero no es el activo en demo.
-- 8 de 14 reglas siguen sin condición verificable.
+- 6 de 14 reglas siguen sin condición verificable.
 - El golden set no tiene revisión de un experto humano del dominio.

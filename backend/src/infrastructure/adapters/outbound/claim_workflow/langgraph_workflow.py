@@ -21,10 +21,17 @@ from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.evidence_reader import EvidenceReader
 from application.ports.outbound.retriever import RetrievalMode, RetrievalRequest, Retriever
 from application.services.claim_analysis import build_applicability_analysis
-from domain.models.claim import ClaimContradiction, ClaimEvidenceBlock, ClaimFact, ClaimInput
+from domain.models.claim import (
+    ClaimContradiction,
+    ClaimEvidenceBlock,
+    ClaimFact,
+    ClaimInput,
+    MatrixCell,
+)
 from domain.models.decision import ClaimAnalysis
 from domain.models.rule_evaluation import RuleEvaluation
 from domain.rules.applicability import ApplicabilityFacts, assess_applicability
+from domain.rules.cide_matrix import MatrixDecision, MatrixException, decide_from_daa_matrix
 from domain.rules.ruleset import LoadedRule, evaluate_ruleset
 
 
@@ -71,6 +78,8 @@ class LangGraphClaimWorkflow:
         retrieval_limit: int = 6,
         timeout_seconds: float = 30.0,
         rules: tuple[LoadedRule, ...] = (),
+        matrix_cells: dict[tuple[int, int], MatrixCell] | None = None,
+        matrix_exceptions: tuple[MatrixException, ...] = (),
         trace_id_factory: Callable[[], str | None] = lambda: None,
         trace_url_factory: Callable[[str], str | None] | None = None,
         callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
@@ -87,6 +96,8 @@ class LangGraphClaimWorkflow:
         self._timeout_seconds = timeout_seconds
         self._rules = rules
         self._rules_by_id = {rule.rule_id: rule for rule in rules}
+        self._matrix_cells = matrix_cells or {}
+        self._matrix_exceptions = matrix_exceptions
         self._trace_id_factory = trace_id_factory
         self._callback_factory = callback_factory
         self._trace_url_factory = trace_url_factory
@@ -221,17 +232,24 @@ class LangGraphClaimWorkflow:
         assessment = assess_applicability(
             _applicability_facts(extracted.facts), evidence_ids=evidence_ids
         )
+        raw_facts = {fact.name: fact.value for fact in extracted.facts if fact.value}
         # Cada regla del corpus firmado se ejecuta y se reporta, incluidas las
         # que no casan y las que no pueden comprobarse: la interfaz tiene que
         # poder enseñar qué se evaluó, no sólo el veredicto.
-        evaluations = evaluate_ruleset(
-            self._rules, {fact.name: fact.value for fact in extracted.facts if fact.value}
-        )
+        evaluations = evaluate_ruleset(self._rules, raw_facts)
         matched_manoeuvre_rules = tuple(
             evaluation
             for evaluation in evaluations
             if evaluation.result == "matched" and self._kind_of(evaluation.rule_id) == "manoeuvre"
         )
+        matrix_decision = decide_from_daa_matrix(
+            self._matrix_cells,
+            exceptions=self._matrix_exceptions,
+            facts=raw_facts,
+            prerequisites_confirmed=raw_facts.get("daa_section_12_only", "").strip().lower()
+            == "true",
+        )
+        evaluations = _apply_matrix_evaluation(evaluations, matrix_decision)
         analysis = build_applicability_analysis(
             parties=extracted.party_ids,
             facts=extracted.facts,
@@ -242,6 +260,12 @@ class LangGraphClaimWorkflow:
                 if len(matched_manoeuvre_rules) == 1
                 else None
             ),
+            # Una D.A.A. declarada y una maniobra reconocida no deberían coexistir
+            # en el mismo relato; si por lo que sea lo hicieran, se prioriza la
+            # norma subsidiaria ya resuelta y la matriz no se consulta, en vez de
+            # elegir entre dos caminos que discrepan.
+            matrix_decision=matrix_decision if len(matched_manoeuvre_rules) != 1 else None,
+            matrix_convention=self._convention_of("cide-matrix-lookup"),
         )
         blocks = analysis.blocks or _rule_blocks(evaluations)
         analysis = ClaimAnalysis(
@@ -400,6 +424,48 @@ def _contradictions(facts: tuple[ClaimFact, ...]) -> tuple[ClaimContradiction, .
         for name, statements in by_name.items()
         if len({statement.value for statement in statements}) > 1 and len(statements) > 1
     )
+
+
+def _apply_matrix_evaluation(
+    evaluations: tuple[RuleEvaluation, ...], decision: MatrixDecision
+) -> tuple[RuleEvaluation, ...]:
+    """Replace the generic ``cide-matrix-lookup`` placeholder with what the table said.
+
+    ``evaluate_ruleset`` always reports this rule as ``insufficient_data``: it is
+    a lookup, not a boolean predicate, so it has no ``applies_when`` to evaluate.
+    When the caller declared a D.A.A. pair, this substitutes the real outcome so
+    the audit trail shows what the table actually decided, not a placeholder.
+    """
+    if decision.status == "undetermined":
+        return evaluations
+    rationale = _matrix_rationale(decision)
+    replaced = tuple(
+        RuleEvaluation(
+            rule_id=evaluation.rule_id,
+            inputs=evaluation.inputs,
+            result="matched",
+            evidence_ids=decision.evidence_ids,
+            rationale=rationale,
+        )
+        if evaluation.rule_id == "cide-matrix-lookup"
+        else evaluation
+        for evaluation in evaluations
+    )
+    return replaced
+
+
+def _matrix_rationale(decision: MatrixDecision) -> str:
+    if decision.status == "attributes":
+        return f"Tabla de culpabilidad CIDE: atribuye la responsabilidad a {decision.liable_party}."
+    if decision.status == "no_attribution":
+        return "Tabla de culpabilidad CIDE: la celda declarada no atribuye responsabilidad."
+    assert decision.exception_text is not None
+    if decision.status == "needs_exception_fact":
+        return (
+            "Tabla de culpabilidad CIDE: pendiente de la observación — "
+            f"{decision.exception_text}"
+        )
+    return f"Tabla de culpabilidad CIDE: la observación se cumple — {decision.exception_text}"
 
 
 def _rule_blocks(evaluations: tuple[RuleEvaluation, ...]) -> tuple[ClaimEvidenceBlock, ...]:
