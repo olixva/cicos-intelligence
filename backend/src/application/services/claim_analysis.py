@@ -71,6 +71,7 @@ def build_applicability_analysis(
             blocks=(ClaimEvidenceBlock(rule.rationale, rule.evidence_ids),),
             rules_evaluated=matched_manoeuvre_rules,
         )
+    missing_information = _personalized_missing_information(facts)
     return ClaimAnalysis(
         applicability="applicable",
         convention=None,
@@ -79,22 +80,29 @@ def build_applicability_analysis(
         facts=facts,
         contradictions=(),
         conditions=(),
-        missing_information=_MISSING_TO_ATTRIBUTE_FAULT,
+        missing_information=missing_information,
         blocks=(),
     )
 
 
-#: Qué hace falta para pasar de "el Convenio se aplica" a "quién responde".
-#: El texto anterior —«Determinar el convenio y las circunstancias
-#: aplicables»— era circular: decía que el Convenio es aplicable y acto
-#: seguido pedía determinar el convenio, sin indicar qué dato falta. Estas
-#: tres entradas nombran los datos concretos que el manual exige.
-_MISSING_TO_ATTRIBUTE_FAULT: tuple[str, ...] = (
-    "Las casillas del apartado 12 de la D.A.A. (A0–A17) declaradas por ambos "
-    "vehículos: sin ellas no puede aplicarse la tabla de culpabilidad CIDE.",
-    "O bien los hechos concretos de la maniobra que activen una norma subsidiaria "
-    "ASCIDE: cambio de carril reconocido por ambos, vehículo aparcado, salida de "
-    "estacionamiento, marcha atrás, rotonda o semáforo en ámbar.",
-    "Si existe D.A.A. conjunta firmada por ambos conductores (vía CIDE) o "
-    "declaración informatizada (vía ASCIDE), para saber por qué convenio se tramita.",
-)
+def _personalized_missing_information(facts: tuple[ClaimFact, ...]) -> tuple[str, ...]:
+    """Ask about an observable accident fact, never about internal DAA fields.
+
+    A fully described claim can remain ``undetermined`` when no reviewed rule
+    matches it; that is not a reason to interrupt the conversation asking for
+    the CIDE form's internal boxes. Only a claim with no manoeuvre narrative
+    gets a follow-up question, phrased in terms a person can answer.
+    """
+    values = {fact.name: fact.value for fact in facts if fact.value is not None}
+    core = {
+        "vehicle_count",
+        "direct_collision",
+        "third_vehicle_identified",
+        "chain_collision",
+    }
+    if any(name not in core for name in values):
+        return ()
+    return (
+        "¿Qué maniobra realizaba cada vehículo justo antes del impacto? "
+        "Si existen versiones de A y B, describe ambas.",
+    )
