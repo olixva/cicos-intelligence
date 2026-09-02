@@ -33,10 +33,12 @@ make doctor
 ```
 
 La aplicación carga sus credenciales desde el `.env` privado de la raíz. Copia
-`.env.example` a `.env` y completa `OPENAI_API_KEY`, `LANGFUSE_PUBLIC_KEY` y
-`LANGFUSE_SECRET_KEY`. Las dos claves de Langfuse pertenecen al proyecto local y se obtienen en
-sus ajustes; `LANGFUSE_BASE_URL` debe mantenerse en `http://127.0.0.1:3000` para evitar que una
-configuración incompleta use el servicio cloud por defecto.
+`.env.example` a `.env` y completa `OPENAI_API_KEY`, `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY` y `LANGFUSE_PROJECT_ID`. Las claves se obtienen en
+`Settings / API Keys` del proyecto local activo; el ID se obtiene en `Settings / General`.
+`LANGFUSE_BASE_URL` debe mantenerse en `http://127.0.0.1:3000` para evitar que una configuración
+incompleta use el servicio cloud por defecto. Si se cambian las claves, actualiza también sus
+equivalentes `ALLIANZ_LANGFUSE_*` en `ops/local.env` antes de reiniciar Docker.
 
 Antes de consultar, crea en Langfuse el prompt de texto `document-question`. La configuración
 inicial fija `ALLIANZ_QUESTION_PROMPT_VERSION=1`: si se mejora el prompt, crea una versión nueva y

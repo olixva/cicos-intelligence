@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from typing import Any
 
 from application.models.claim import ClaimExecution
 from application.models.query import (
@@ -166,3 +167,40 @@ def test_routing_metadata_defaults_match_module_state() -> None:
     assert metadata["langfuse_prompt_version"] >= 1
     assert isinstance(metadata["model_name"], str)
     assert metadata["model_name"] != ""
+
+
+def test_auto_router_attaches_session_and_self_describing_run_metadata() -> None:
+    """A missing router session would split one user conversation in Langfuse."""
+
+    class _GraphCapture:
+        config: dict[str, Any] | None = None
+
+        async def ainvoke(self, state: Any, *, config: dict[str, Any]) -> dict[str, Any]:
+            self.config = config
+            return {
+                "classification": RouteClassification("clarification_required", "faltan datos"),
+                "dispatch": ClarificationResult("faltan datos"),
+            }
+
+    workflow = build_resolve_query_workflow(
+        classifier=_StubClassifier(RouteClassification("clarification_required")),
+        answer_question=_CounterAnswerQuestion(),
+        analyze_claim=_CounterAnalyzeClaim(),
+    )
+    graph = _GraphCapture()
+    workflow._graph = graph  # pyright: ignore[reportPrivateUsage]
+
+    asyncio.run(
+        workflow.execute(
+            QueryInput("texto de prueba", "es", session_id="session-observability-test")
+        )
+    )
+
+    assert graph.config is not None
+    assert graph.config["run_name"] == "allianz_auto_router"
+    assert graph.config["tags"] == ["allianz", "workflow:auto_router"]
+    assert graph.config["metadata"] == {
+        "langfuse_session_id": "session-observability-test",
+        "session_id": "session-observability-test",
+        "allianz_workflow": "auto_router",
+    }

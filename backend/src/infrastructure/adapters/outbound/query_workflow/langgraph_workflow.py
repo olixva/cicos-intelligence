@@ -169,6 +169,17 @@ class LangGraphResolveQuery:
     async def execute(self, query: QueryInput) -> RouteExecution:
         trace_id = self._trace_id_factory()
         config = RunnableConfig(recursion_limit=8)
+        config["run_name"] = "allianz_auto_router"
+        config["tags"] = ["allianz", "workflow:auto_router"]
+        metadata: dict[str, str] = {"allianz_workflow": "auto_router"}
+        if query.session_id:
+            metadata.update(
+                {
+                    "langfuse_session_id": query.session_id,
+                    "session_id": query.session_id,
+                }
+            )
+        config["metadata"] = metadata
         if trace_id is not None and self._callback_factory is not None:
             config["callbacks"] = [self._callback_factory(trace_id)]  # type: ignore[arg-type]
         try:
