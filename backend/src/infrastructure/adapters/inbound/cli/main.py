@@ -96,6 +96,20 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("data/evaluation/golden"),
     )
+    rules = subcommands.add_parser("rules")
+    rules_subcommands = rules.add_subparsers(dest="rules_command", required=True)
+    rules_validate = rules_subcommands.add_parser("validate")
+    rules_validate.add_argument("--matrix", type=Path)
+    rules_validate.add_argument("--ruleset", type=Path)
+    rules_validate.add_argument(
+        "--evidence-roots",
+        type=Path,
+        nargs="+",
+        default=[Path("data/extractions")],
+    )
+    rules_compare = rules_subcommands.add_parser("compare-transcriptions")
+    rules_compare.add_argument("left", type=Path)
+    rules_compare.add_argument("right", type=Path)
     doctor = subcommands.add_parser("doctor")
     doctor.add_argument(
         "--operation",
@@ -174,6 +188,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_parser_comparison(arguments)
         elif arguments.command == "golden":
             return _run_golden_command(arguments)
+        elif arguments.command == "rules":
+            return _run_rules_command(arguments)
         elif arguments.command == "doctor":
             from infrastructure.adapters.inbound.cli import doctor
 
@@ -307,6 +323,72 @@ def _sparse_double():  # type: ignore[no-untyped-def]
             return models.SparseVector(indices=[], values=[])
 
     return _Double()
+
+
+def _run_rules_command(arguments: argparse.Namespace) -> int:
+    """Dispatch rules-related CLI subcommands."""
+    if arguments.rules_command == "validate":
+        return _run_rules_validate(arguments)
+    if arguments.rules_command == "compare-transcriptions":
+        return _run_rules_compare(arguments)
+    print(f"error: unknown rules subcommand: {arguments.rules_command}", file=sys.stderr)
+    return 2
+
+
+def _run_rules_validate(arguments: argparse.Namespace) -> int:
+    """Validate matrix and/or ruleset artifacts against schemas and attestation."""
+    from domain.rules.artifact_validation import (
+        evidence_pool_from_publications,
+        validate_cide_matrix,
+        validate_ruleset,
+    )
+
+    expected_hash = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+    evidence_pool = evidence_pool_from_publications(list(arguments.evidence_roots))
+    reports = []
+    exit_code = 0
+    if arguments.matrix is not None:
+        try:
+            report = validate_cide_matrix(
+                arguments.matrix,
+                expected_document_hash=expected_hash,
+                evidence_pool=evidence_pool,
+            )
+        except Exception as error:  # noqa: BLE001
+            print(f"error: matrix validation: {error}", file=sys.stderr)
+            return 2
+        reports.append({"artifact": "matrix", **report.__dict__})
+        if not report.ok:
+            exit_code = 2
+    if arguments.ruleset is not None:
+        try:
+            report = validate_ruleset(
+                arguments.ruleset,
+                expected_document_hash=expected_hash,
+                evidence_pool=evidence_pool,
+            )
+        except Exception as error:  # noqa: BLE001
+            print(f"error: ruleset validation: {error}", file=sys.stderr)
+            return 2
+        reports.append({"artifact": "ruleset", **report.__dict__})
+        if not report.ok:
+            exit_code = 2
+    if not reports:
+        print("error: at least one of --matrix or --ruleset must be supplied", file=sys.stderr)
+        return 2
+    print(json.dumps(reports, sort_keys=True, indent=2, default=str))
+    return exit_code
+
+
+def _run_rules_compare(arguments: argparse.Namespace) -> int:
+    """Print divergences between two matrix transcriptions."""
+    from domain.rules.artifact_validation import compare_transcriptions
+
+    report = compare_transcriptions(arguments.left, arguments.right)
+    print(json.dumps(report, sort_keys=True, indent=2, default=str))
+    if report["differences"]:
+        return 2
+    return 0
 
 
 def _run_golden_command(arguments: argparse.Namespace) -> int:
