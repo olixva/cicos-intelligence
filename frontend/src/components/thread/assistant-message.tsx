@@ -96,6 +96,8 @@ export function AssistantMessage({
         )}
 
         <div
+          aria-live="polite"
+          aria-atomic="false"
           className={cn(
             'rounded-lg border bg-card px-3 py-2 text-sm shadow-sm',
             isError && 'border-destructive/40 bg-destructive/5',

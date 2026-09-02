@@ -202,6 +202,14 @@ export default function IndexRoute() {
     return () => window.clearTimeout(t);
   }, [draftPrompt]);
 
+  // Finding G3 #1: `/api/v1/manual/pdf` exige el query param `version`
+  // (el sha256 del documento). Sin él el backend responde 422 y pdfjs
+  // falla con "Unexpected server response (422) while retrieving PDF".
+  const pdfDocumentHash = state.openPdf?.evidence?.document_hash;
+  const pdfSrc = pdfDocumentHash
+    ? `/api/v1/manual/pdf?version=${encodeURIComponent(pdfDocumentHash)}`
+    : null;
+
   const lastEnvelope: EnvelopeResponse | undefined = (() => {
     for (let i = state.messages.length - 1; i >= 0; i--) {
       const m = state.messages[i];
@@ -300,13 +308,15 @@ export default function IndexRoute() {
           response={lastEnvelope ?? null}
         />
 
-        <PdfOverlay
-          open={!!state.openPdf}
-          onOpenChange={handleClosePdf}
-          src="/api/v1/manual/pdf"
-          evidence={state.openPdf?.evidence ?? null}
-          snippet={state.openPdf?.snippet ?? null}
-        />
+        {pdfSrc && (
+          <PdfOverlay
+            open={!!state.openPdf}
+            onOpenChange={handleClosePdf}
+            src={pdfSrc}
+            evidence={state.openPdf?.evidence ?? null}
+            snippet={state.openPdf?.snippet ?? null}
+          />
+        )}
       </div>
     </TooltipProvider>
   );

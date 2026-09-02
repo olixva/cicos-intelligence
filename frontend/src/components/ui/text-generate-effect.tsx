@@ -71,8 +71,12 @@ export function TextGenerateEffect({
           </motion.span>
         )}
       </AnimatePresence>
-      {/* Texto oculto para lectores de pantalla: siempre el texto completo. */}
-      <span className="sr-only">{text}</span>
+      {/* Texto oculto para lectores de pantalla: siempre el texto completo.
+          `aria-hidden` evita que la live region del padre (assistant-message)
+          anuncie el contenido dos veces (Finding G3 #2). */}
+      <span className="sr-only" aria-hidden="true">
+        {text}
+      </span>
     </div>
   );
 }
