@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cicos-intelligence.local/schemas/ruleset/1.0.0",
+  "title": "Allianz RAG — Ruleset artifact (v1)",
+  "description": "Schema for the verified ruleset that drives convention decisions: applicability, manoeuvre gates, matrix lookup, exceptions and prerequisites. Every rule binds to source evidence and a reviewer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "document_hash",
+    "rules",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "document_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "kind",
+          "description",
+          "prerequisites",
+          "evidence_ids",
+          "reviewer_id"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "applicability",
+              "exception",
+              "manoeuvre",
+              "matrix_lookup",
+              "third_party",
+              "unknown"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prerequisites": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "outcome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "applies_when": {
+            "type": "object",
+            "description": "Predicate that must hold for the rule to be evaluated. Field is intentionally open so reviewers can express ranges, in/outside values, etc."
+          },
+          "evidence_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}:page:[1-9][0-9]*$"
+            }
+          },
+          "reviewer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "required": ["transcriptions", "divergence_resolution", "signed_by"],
+      "properties": {
+        "transcriptions": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["reviewer_id", "independent", "pdf_page_checked", "transcription_sha256"],
+            "properties": {
+              "reviewer_id": { "type": "string", "minLength": 1 },
+              "independent": { "type": "boolean", "const": true },
+              "pdf_page_checked": { "type": "boolean", "const": true },
+              "transcription_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "transcribed_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "divergence_resolution": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signed_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "signed_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

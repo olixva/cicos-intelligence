@@ -13,7 +13,15 @@ dist/
 .idea/
 .playwright-mcp/
 .slim/deepwork/
-data/
+# Datos. Las fuentes y publicaciones son binarios grandes y quedan fuera;
+# los artefactos de reglas y el golden SÍ se versionan: son entregables con
+# attestation firmada, y `domain.rules.artifact_validation.load_schema()` los
+# lee desde `data/rules/`, así que sin ellos un checkout limpio no pasa tests.
+data/*
+!data/rules/
+!data/evaluation/
+data/evaluation/*
+!data/evaluation/golden/
 ops/local.env
 *.tar.gz
 *.whl
