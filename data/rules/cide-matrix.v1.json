@@ -1,0 +1,3350 @@
+{
+  "schema_version": "1.0.0",
+  "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+  "pdf_page": 101,
+  "orientation": "A-row-B-column",
+  "row_labels": [
+    "A0",
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "A5",
+    "A6",
+    "A7",
+    "A8",
+    "A9",
+    "A10",
+    "A11",
+    "A12",
+    "A13",
+    "A14",
+    "A15",
+    "A16",
+    "A17"
+  ],
+  "column_labels": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5",
+    "B6",
+    "B7",
+    "B8",
+    "B9",
+    "B10",
+    "B11",
+    "B12",
+    "B13",
+    "B14",
+    "B15",
+    "B16",
+    "B17"
+  ],
+  "cells": {
+    "1,1": {
+      "a": 1,
+      "b": 1,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,2": {
+      "a": 1,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,3": {
+      "a": 1,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,4": {
+      "a": 1,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,5": {
+      "a": 1,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,6": {
+      "a": 1,
+      "b": 6,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,7": {
+      "a": 1,
+      "b": 7,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,8": {
+      "a": 1,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,9": {
+      "a": 1,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,10": {
+      "a": 1,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,11": {
+      "a": 1,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,12": {
+      "a": 1,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,13": {
+      "a": 1,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,14": {
+      "a": 1,
+      "b": 14,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,15": {
+      "a": 1,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,16": {
+      "a": 1,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,17": {
+      "a": 1,
+      "b": 17,
+      "outcome": "A*",
+      "normalized_outcome": "exception",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "1,18": {
+      "a": 1,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,1": {
+      "a": 2,
+      "b": 1,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,2": {
+      "a": 2,
+      "b": 2,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,3": {
+      "a": 2,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,4": {
+      "a": 2,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,5": {
+      "a": 2,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,6": {
+      "a": 2,
+      "b": 6,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,7": {
+      "a": 2,
+      "b": 7,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,8": {
+      "a": 2,
+      "b": 8,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,9": {
+      "a": 2,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,10": {
+      "a": 2,
+      "b": 10,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,11": {
+      "a": 2,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,12": {
+      "a": 2,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,13": {
+      "a": 2,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,14": {
+      "a": 2,
+      "b": 14,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,15": {
+      "a": 2,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,16": {
+      "a": 2,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,17": {
+      "a": 2,
+      "b": 17,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "2,18": {
+      "a": 2,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,1": {
+      "a": 3,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,2": {
+      "a": 3,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,3": {
+      "a": 3,
+      "b": 3,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,4": {
+      "a": 3,
+      "b": 4,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,5": {
+      "a": 3,
+      "b": 5,
+      "outcome": "B*",
+      "normalized_outcome": "exception",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,6": {
+      "a": 3,
+      "b": 6,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,7": {
+      "a": 3,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,8": {
+      "a": 3,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,9": {
+      "a": 3,
+      "b": 9,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,10": {
+      "a": 3,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,11": {
+      "a": 3,
+      "b": 11,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,12": {
+      "a": 3,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,13": {
+      "a": 3,
+      "b": 13,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,14": {
+      "a": 3,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,15": {
+      "a": 3,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,16": {
+      "a": 3,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,17": {
+      "a": 3,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "3,18": {
+      "a": 3,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,1": {
+      "a": 4,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,2": {
+      "a": 4,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,3": {
+      "a": 4,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,4": {
+      "a": 4,
+      "b": 4,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,5": {
+      "a": 4,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,6": {
+      "a": 4,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,7": {
+      "a": 4,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,8": {
+      "a": 4,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,9": {
+      "a": 4,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,10": {
+      "a": 4,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,11": {
+      "a": 4,
+      "b": 11,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,12": {
+      "a": 4,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,13": {
+      "a": 4,
+      "b": 13,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,14": {
+      "a": 4,
+      "b": 14,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,15": {
+      "a": 4,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,16": {
+      "a": 4,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,17": {
+      "a": 4,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "4,18": {
+      "a": 4,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,1": {
+      "a": 5,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,2": {
+      "a": 5,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,3": {
+      "a": 5,
+      "b": 3,
+      "outcome": "A*",
+      "normalized_outcome": "exception",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,4": {
+      "a": 5,
+      "b": 4,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,5": {
+      "a": 5,
+      "b": 5,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,6": {
+      "a": 5,
+      "b": 6,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,7": {
+      "a": 5,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,8": {
+      "a": 5,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,9": {
+      "a": 5,
+      "b": 9,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,10": {
+      "a": 5,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,11": {
+      "a": 5,
+      "b": 11,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,12": {
+      "a": 5,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,13": {
+      "a": 5,
+      "b": 13,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,14": {
+      "a": 5,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,15": {
+      "a": 5,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,16": {
+      "a": 5,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,17": {
+      "a": 5,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "5,18": {
+      "a": 5,
+      "b": 18,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,1": {
+      "a": 6,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,2": {
+      "a": 6,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,3": {
+      "a": 6,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,4": {
+      "a": 6,
+      "b": 4,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,5": {
+      "a": 6,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,6": {
+      "a": 6,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,7": {
+      "a": 6,
+      "b": 7,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,8": {
+      "a": 6,
+      "b": 8,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,9": {
+      "a": 6,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,10": {
+      "a": 6,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,11": {
+      "a": 6,
+      "b": 11,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,12": {
+      "a": 6,
+      "b": 12,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,13": {
+      "a": 6,
+      "b": 13,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,14": {
+      "a": 6,
+      "b": 14,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,15": {
+      "a": 6,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,16": {
+      "a": 6,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,17": {
+      "a": 6,
+      "b": 17,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "6,18": {
+      "a": 6,
+      "b": 18,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,1": {
+      "a": 7,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,2": {
+      "a": 7,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,3": {
+      "a": 7,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,4": {
+      "a": 7,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,5": {
+      "a": 7,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,6": {
+      "a": 7,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,7": {
+      "a": 7,
+      "b": 7,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,8": {
+      "a": 7,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,9": {
+      "a": 7,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,10": {
+      "a": 7,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,11": {
+      "a": 7,
+      "b": 11,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,12": {
+      "a": 7,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,13": {
+      "a": 7,
+      "b": 13,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,14": {
+      "a": 7,
+      "b": 14,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,15": {
+      "a": 7,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,16": {
+      "a": 7,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,17": {
+      "a": 7,
+      "b": 17,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "7,18": {
+      "a": 7,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,1": {
+      "a": 8,
+      "b": 1,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,2": {
+      "a": 8,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,3": {
+      "a": 8,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,4": {
+      "a": 8,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,5": {
+      "a": 8,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,6": {
+      "a": 8,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,7": {
+      "a": 8,
+      "b": 7,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,8": {
+      "a": 8,
+      "b": 8,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,9": {
+      "a": 8,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,10": {
+      "a": 8,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,11": {
+      "a": 8,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,12": {
+      "a": 8,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,13": {
+      "a": 8,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,14": {
+      "a": 8,
+      "b": 14,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,15": {
+      "a": 8,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,16": {
+      "a": 8,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,17": {
+      "a": 8,
+      "b": 17,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "8,18": {
+      "a": 8,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,1": {
+      "a": 9,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,2": {
+      "a": 9,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,3": {
+      "a": 9,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,4": {
+      "a": 9,
+      "b": 4,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,5": {
+      "a": 9,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,6": {
+      "a": 9,
+      "b": 6,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,7": {
+      "a": 9,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,8": {
+      "a": 9,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,9": {
+      "a": 9,
+      "b": 9,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,10": {
+      "a": 9,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,11": {
+      "a": 9,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,12": {
+      "a": 9,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,13": {
+      "a": 9,
+      "b": 13,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,14": {
+      "a": 9,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,15": {
+      "a": 9,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,16": {
+      "a": 9,
+      "b": 16,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,17": {
+      "a": 9,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "9,18": {
+      "a": 9,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,1": {
+      "a": 10,
+      "b": 1,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,2": {
+      "a": 10,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,3": {
+      "a": 10,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,4": {
+      "a": 10,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,5": {
+      "a": 10,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,6": {
+      "a": 10,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,7": {
+      "a": 10,
+      "b": 7,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,8": {
+      "a": 10,
+      "b": 8,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,9": {
+      "a": 10,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,10": {
+      "a": 10,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,11": {
+      "a": 10,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,12": {
+      "a": 10,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,13": {
+      "a": 10,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,14": {
+      "a": 10,
+      "b": 14,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,15": {
+      "a": 10,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,16": {
+      "a": 10,
+      "b": 16,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,17": {
+      "a": 10,
+      "b": 17,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "10,18": {
+      "a": 10,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,1": {
+      "a": 11,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,2": {
+      "a": 11,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,3": {
+      "a": 11,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,4": {
+      "a": 11,
+      "b": 4,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,5": {
+      "a": 11,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,6": {
+      "a": 11,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,7": {
+      "a": 11,
+      "b": 7,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,8": {
+      "a": 11,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,9": {
+      "a": 11,
+      "b": 9,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,10": {
+      "a": 11,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,11": {
+      "a": 11,
+      "b": 11,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,12": {
+      "a": 11,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,13": {
+      "a": 11,
+      "b": 13,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,14": {
+      "a": 11,
+      "b": 14,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,15": {
+      "a": 11,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,16": {
+      "a": 11,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,17": {
+      "a": 11,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "11,18": {
+      "a": 11,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,1": {
+      "a": 12,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,2": {
+      "a": 12,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,3": {
+      "a": 12,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,4": {
+      "a": 12,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,5": {
+      "a": 12,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,6": {
+      "a": 12,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,7": {
+      "a": 12,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,8": {
+      "a": 12,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,9": {
+      "a": 12,
+      "b": 9,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,10": {
+      "a": 12,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,11": {
+      "a": 12,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,12": {
+      "a": 12,
+      "b": 12,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,13": {
+      "a": 12,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,14": {
+      "a": 12,
+      "b": 14,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,15": {
+      "a": 12,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,16": {
+      "a": 12,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,17": {
+      "a": 12,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "12,18": {
+      "a": 12,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,1": {
+      "a": 13,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,2": {
+      "a": 13,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,3": {
+      "a": 13,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,4": {
+      "a": 13,
+      "b": 4,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,5": {
+      "a": 13,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,6": {
+      "a": 13,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,7": {
+      "a": 13,
+      "b": 7,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,8": {
+      "a": 13,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,9": {
+      "a": 13,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,10": {
+      "a": 13,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,11": {
+      "a": 13,
+      "b": 11,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,12": {
+      "a": 13,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,13": {
+      "a": 13,
+      "b": 13,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,14": {
+      "a": 13,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,15": {
+      "a": 13,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,16": {
+      "a": 13,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,17": {
+      "a": 13,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "13,18": {
+      "a": 13,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,1": {
+      "a": 14,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,2": {
+      "a": 14,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,3": {
+      "a": 14,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,4": {
+      "a": 14,
+      "b": 4,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,5": {
+      "a": 14,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,6": {
+      "a": 14,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,7": {
+      "a": 14,
+      "b": 7,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,8": {
+      "a": 14,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,9": {
+      "a": 14,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,10": {
+      "a": 14,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,11": {
+      "a": 14,
+      "b": 11,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,12": {
+      "a": 14,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,13": {
+      "a": 14,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,14": {
+      "a": 14,
+      "b": 14,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,15": {
+      "a": 14,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,16": {
+      "a": 14,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,17": {
+      "a": 14,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "14,18": {
+      "a": 14,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,1": {
+      "a": 15,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,2": {
+      "a": 15,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,3": {
+      "a": 15,
+      "b": 3,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,4": {
+      "a": 15,
+      "b": 4,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,5": {
+      "a": 15,
+      "b": 5,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,6": {
+      "a": 15,
+      "b": 6,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,7": {
+      "a": 15,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,8": {
+      "a": 15,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,9": {
+      "a": 15,
+      "b": 9,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,10": {
+      "a": 15,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,11": {
+      "a": 15,
+      "b": 11,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,12": {
+      "a": 15,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,13": {
+      "a": 15,
+      "b": 13,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,14": {
+      "a": 15,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,15": {
+      "a": 15,
+      "b": 15,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,16": {
+      "a": 15,
+      "b": 16,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,17": {
+      "a": 15,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "15,18": {
+      "a": 15,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,1": {
+      "a": 16,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,2": {
+      "a": 16,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,3": {
+      "a": 16,
+      "b": 3,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,4": {
+      "a": 16,
+      "b": 4,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,5": {
+      "a": 16,
+      "b": 5,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,6": {
+      "a": 16,
+      "b": 6,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,7": {
+      "a": 16,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,8": {
+      "a": 16,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,9": {
+      "a": 16,
+      "b": 9,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,10": {
+      "a": 16,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,11": {
+      "a": 16,
+      "b": 11,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,12": {
+      "a": 16,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,13": {
+      "a": 16,
+      "b": 13,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,14": {
+      "a": 16,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,15": {
+      "a": 16,
+      "b": 15,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,16": {
+      "a": 16,
+      "b": 16,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,17": {
+      "a": 16,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "16,18": {
+      "a": 16,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,1": {
+      "a": 17,
+      "b": 1,
+      "outcome": "B*",
+      "normalized_outcome": "exception",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,2": {
+      "a": 17,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,3": {
+      "a": 17,
+      "b": 3,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,4": {
+      "a": 17,
+      "b": 4,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,5": {
+      "a": 17,
+      "b": 5,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,6": {
+      "a": 17,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,7": {
+      "a": 17,
+      "b": 7,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,8": {
+      "a": 17,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,9": {
+      "a": 17,
+      "b": 9,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,10": {
+      "a": 17,
+      "b": 10,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,11": {
+      "a": 17,
+      "b": 11,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,12": {
+      "a": 17,
+      "b": 12,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,13": {
+      "a": 17,
+      "b": 13,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,14": {
+      "a": 17,
+      "b": 14,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,15": {
+      "a": 17,
+      "b": 15,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,16": {
+      "a": 17,
+      "b": 16,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,17": {
+      "a": 17,
+      "b": 17,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "17,18": {
+      "a": 17,
+      "b": 18,
+      "outcome": "B",
+      "normalized_outcome": "B_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,1": {
+      "a": 18,
+      "b": 1,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,2": {
+      "a": 18,
+      "b": 2,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,3": {
+      "a": 18,
+      "b": 3,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,4": {
+      "a": 18,
+      "b": 4,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,5": {
+      "a": 18,
+      "b": 5,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,6": {
+      "a": 18,
+      "b": 6,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,7": {
+      "a": 18,
+      "b": 7,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,8": {
+      "a": 18,
+      "b": 8,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,9": {
+      "a": 18,
+      "b": 9,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,10": {
+      "a": 18,
+      "b": 10,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,11": {
+      "a": 18,
+      "b": 11,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,12": {
+      "a": 18,
+      "b": 12,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,13": {
+      "a": 18,
+      "b": 13,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,14": {
+      "a": 18,
+      "b": 14,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,15": {
+      "a": 18,
+      "b": 15,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,16": {
+      "a": 18,
+      "b": 16,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,17": {
+      "a": 18,
+      "b": 17,
+      "outcome": "A",
+      "normalized_outcome": "A_full",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    "18,18": {
+      "a": 18,
+      "b": 18,
+      "outcome": "-",
+      "normalized_outcome": "no_convention",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    }
+  },
+  "notes": [
+    {
+      "note_id": "obs-a2-b4",
+      "text": "A2 + B4 = Culpable B, salvo que el A abra la puerta.",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "note_id": "obs-b2-a4",
+      "text": "B2 + A4 = Culpable A, salvo que el B abra la puerta.",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "note_id": "obs-a16-b0",
+      "text": "A16 + B0 = Culpable B, salvo que el A circule por vía sin pavimentar.",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "note_id": "obs-b16-a0",
+      "text": "B16 + A0 = Culpable A, salvo que el B circule por vía sin pavimentar.",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    }
+  ],
+  "reviewer_ids": [
+    "claude-visual-a",
+    "claude-textlayer-b",
+    "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+  ],
+  "attestation": {
+    "transcriptions": [
+      {
+        "reviewer_id": "claude-visual-a",
+        "independent": true,
+        "pdf_page_checked": true,
+        "transcription_sha256": "442cbdc99bcd6622072184656190d5309125fd109df44bba9d6bb6efa60e7af0",
+        "transcribed_at": "2026-09-02T12:57:36+00:00"
+      },
+      {
+        "reviewer_id": "claude-textlayer-b",
+        "independent": true,
+        "pdf_page_checked": true,
+        "transcription_sha256": "6f0cd630e630dfcc8b761979fe04df69d216035218076a7618b5332e3b129310",
+        "transcribed_at": "2026-09-02T12:57:36+00:00"
+      }
+    ],
+    "divergence_resolution": "No hubo divergencias que adjudicar: las dos transcripciones coinciden en las 324 celdas (compared_cells=324, matching_cells=324, differences=[]). Las vías no comparten ruta de extracción: A es una lectura visual de un render a 300 dpi de la página física 101 y B es un parser estricto de la capa de texto de pypdf, que rechaza toda fila que no traiga exactamente 18 valores reconocidos en lugar de rellenarla. La transcripción A satisface además dos invariantes estructurales de la tabla impresa que no se le impusieron y se comprobaron a posteriori: las 18 celdas de la diagonal son '-', y la rejilla es antisimétrica bajo el intercambio de papeles A/B, asteriscos incluidos. Las cuatro observaciones al pie se verificaron por la misma doble vía y se corresponden con las cuatro únicas celdas asteriscadas (A2/B4, A4/B2, A16/B0, A0/B16). Revisión humana y firma por el responsable del proyecto el 2026-09-02.",
+    "signed_by": [
+      "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    ],
+    "signed_at": "2026-09-02T12:57:36+00:00"
+  }
+}
