@@ -1,0 +1,4 @@
+# OpenCode read override for the git-ignored deepwork state directory.
+# Keeps `.slim/deepwork/` out of git while still searchable/readable by OpenCode.
+!.slim/deepwork/
+!.slim/deepwork/**

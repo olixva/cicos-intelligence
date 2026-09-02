@@ -65,22 +65,22 @@ frontend/
 pnpm install
 
 # Regenerar tipos manualmente
-pnpm --filter frontend openapi:gen
+pnpm openapi:gen
 
 # Verificar que no hay drift (lo usaremos en CI)
-pnpm --filter frontend openapi:check
+pnpm openapi:check
 
 # Servidor de desarrollo
-pnpm --filter frontend dev   # http://127.0.0.1:5173
+pnpm dev   # http://127.0.0.1:5173
 
 # Build de producción
-pnpm --filter frontend build
+pnpm build
 
 # Verificación
-pnpm --filter frontend typecheck
-pnpm --filter frontend lint
-pnpm --filter frontend test        # vitest run
-pnpm --filter frontend e2e         # arranca dev server + playwright
+pnpm typecheck
+pnpm lint
+pnpm test        # vitest run
+pnpm e2e         # arranca dev server + playwright
 ```
 
 ## Tipos OpenAPI — generación automática
@@ -95,8 +95,8 @@ tipos frescos en CI.
 Para regenerar a mano:
 
 ```bash
-pnpm --filter frontend openapi:gen       # regenera src/types/api.gen.ts
-pnpm --filter frontend openapi:check     # regenera y falla si hay diff
+pnpm openapi:gen       # regenera src/types/api.gen.ts
+pnpm openapi:check     # regenera y falla si hay diff
 ```
 
 El path al `openapi.json` se puede sobreescribir con la env var

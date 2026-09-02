@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Allianz CICOS Claims Intelligence — frontend (Vite + React 19 + TS estricto).",
+  "packageManager": "pnpm@9.12.0",
   "scripts": {
     "predev": "pnpm run openapi:gen",
     "dev": "vite",

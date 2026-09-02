@@ -10,16 +10,19 @@ build/
 dist/
 .DS_Store
 .worktrees/
+.idea/
+.playwright-mcp/
 .slim/deepwork/
 data/
 ops/local.env
 *.tar.gz
 *.whl
 
-# Frontend (pnpm workspace)
-frontend/node_modules/
+# Frontend
+**/node_modules/
 frontend/dist/
 frontend/coverage/
 frontend/playwright-report/
 frontend/test-results/
+frontend/*.tsbuildinfo
 frontend/src/types/api.gen.ts

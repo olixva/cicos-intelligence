@@ -2,7 +2,7 @@
 
 Run from the project root:
 
-    uv run --project backend python scripts/check_openapi.py
+    uv run --project backend python backend/scripts/check_openapi.py
 
 Composes the app the same way ``export_openapi.py`` does and compares
 the regenerated schema to the committed JSON file. CI should run this
@@ -16,6 +16,9 @@ import json
 import sys
 from pathlib import Path
 
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+OPENAPI_PATH = REPOSITORY_ROOT / "docs" / "api" / "openapi.json"
+
 
 class _FakePort:
     async def execute(self, *_args, **_kwargs):  # type: ignore[no-untyped-def]
@@ -23,8 +26,7 @@ class _FakePort:
 
 
 def main() -> int:
-    repo_root = Path(__file__).resolve().parent.parent
-    sys.path.insert(0, str(repo_root / "backend" / "src"))
+    sys.path.insert(0, str(REPOSITORY_ROOT / "backend" / "src"))
 
     from infrastructure.adapters.inbound.api.app import create_app
 
@@ -36,24 +38,19 @@ def main() -> int:
     )
 
     expected = app.openapi()
-    target = repo_root / "docs" / "api" / "openapi.json"
-    if not target.exists():
-        print(f"missing {target}", file=sys.stderr)
+    if not OPENAPI_PATH.exists():
+        print(f"missing {OPENAPI_PATH}", file=sys.stderr)
         return 1
 
-    actual = json.loads(target.read_text(encoding="utf-8"))
+    actual = json.loads(OPENAPI_PATH.read_text(encoding="utf-8"))
     if actual != expected:
         diff_start = next(
-            (
-                key
-                for key in expected
-                if expected.get(key) != actual.get(key)
-            ),
+            (key for key in expected if expected.get(key) != actual.get(key)),
             None,
         )
         print(
             f"openapi.json is out of date (first diverging key: {diff_start!r}); "
-            "run scripts/export_openapi.py and commit the result.",
+            "run backend/scripts/export_openapi.py and commit the result.",
             file=sys.stderr,
         )
         return 1

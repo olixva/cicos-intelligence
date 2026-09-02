@@ -519,8 +519,8 @@ inalteradas. La nueva ruta envelope `POST /api/v1/queries` dispatcha por el camp
 correspondiente (sin pasar por el router — regla del Oracle Gate 1); `auto` invoca el
 router cerrado. La ruta streaming `POST /api/v1/queries/stream` emite los eventos
 `started` / `stage` / `completed` / `failed` mediante `sse-starlette` (graceful fallback
-cuando la dep falta). El export OpenAPI está disponible vía `scripts/export_openapi.py`
-y verificado por `scripts/check_openapi.py`. Los códigos de error cerrados viven en
+cuando la dep falta). El export OpenAPI está disponible vía `backend/scripts/export_openapi.py`
+y verificado por `backend/scripts/check_openapi.py`. Los códigos de error cerrados viven en
 `schemas/errors.py` y nunca filtran trazas internas. Faltan pruebas end-to-end con
 proveedor real y la documentación de operación del `/health/ready` (Oracle R6) en
 `docs/operations/`.
@@ -529,8 +529,8 @@ proveedor real y la documentación de operación del `/health/ready` (Oracle R6)
 `backend/src/infrastructure/adapters/inbound/api/routes/queries.py` (extendido con
 `build_envelope_router` y `build_envelope_stream_router`; preserva `build_query_router`
 del T16), `backend/tests/test_envelope_api.py` (14 tests focales),
-`backend/tests/test_streaming_api.py` (7 tests focales), `scripts/export_openapi.py`,
-`scripts/check_openapi.py`, `docs/api/openapi.json`. `app.py` y `bootstrap.py`
+`backend/tests/test_streaming_api.py` (7 tests focales), `backend/scripts/export_openapi.py`,
+`backend/scripts/check_openapi.py`, `docs/api/openapi.json`. `app.py` y `bootstrap.py`
 modificados para `allowed_profiles` y montaje condicional del envelope.
 
 **Interfaces:** Request común `text`, `language`, `mode` (`question|claim|auto`), `profile`

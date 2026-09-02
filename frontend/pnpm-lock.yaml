@@ -6,9 +6,7 @@ settings:
 
 importers:
 
-  .: {}
-
-  frontend:
+  .:
     dependencies:
       '@assistant-ui/react':
         specifier: ^0.15.17
