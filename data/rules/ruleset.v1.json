@@ -1,0 +1,247 @@
+{
+  "schema_version": "1.0.0",
+  "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+  "rules": [
+    {
+      "rule_id": "convention-scope",
+      "kind": "applicability",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:10"
+      ],
+      "description": "Los Convenios CIDE/ASCIDE se aplican a accidentes de circulación en el EEE o países del Sistema de Certificado Internacional, con vehículos matriculados en España asegurados en entidad adherida, o con estacionamiento habitual en España (art. 2 LRCSCVM).",
+      "prerequisites": [
+        "accident_location_in_scope",
+        "vehicles_registered_in_spain",
+        "insurer_adhered"
+      ],
+      "outcome": "Fuera de estos supuestos el Convenio no es de aplicación.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "cide-requires-two-vehicles",
+      "kind": "applicability",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56"
+      ],
+      "description": "Para la aplicación de los Convenios CIDE/ASCIDE es requisito indispensable la intervención de sólo dos vehículos.",
+      "prerequisites": [
+        "vehicle_count"
+      ],
+      "outcome": "vehicle_count != 2 ⇒ Convenio no aplicable.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "cide-requires-direct-collision",
+      "kind": "applicability",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56"
+      ],
+      "description": "Entre los dos vehículos intervinientes debe existir colisión directa.",
+      "prerequisites": [
+        "direct_collision"
+      ],
+      "outcome": "direct_collision = false ⇒ Convenio no aplicable.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "third-vehicle-identified-excludes-convention",
+      "kind": "third_party",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+      ],
+      "description": "La existencia de un tercer vehículo identificado que interviene en el accidente, con o sin colisión directa con los otros dos, invalida la aplicación de los Convenios.",
+      "prerequisites": [
+        "third_vehicle_identified"
+      ],
+      "outcome": "third_vehicle_identified = true ⇒ Convenio no aplicable.",
+      "notes": [
+        "Si ninguno de los dos implicados identifica la matrícula del tercero, a efectos de los Convenios se considera que no intervino y se aplica Convenio entre los otros dos (pág. 57)."
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "rule_id": "chain-collision-excludes-convention",
+      "kind": "exception",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+      ],
+      "description": "La colisión en cadena, con o sin desplazamiento, no se considera Convenio. Hay cadena si la secuencia de colisiones entre los vehículos implicados no se interrumpe en algún momento.",
+      "prerequisites": [
+        "chain_collision"
+      ],
+      "outcome": "chain_collision = true ⇒ Convenio no aplicable.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "alcohol-does-not-exclude-convention",
+      "kind": "exception",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:9"
+      ],
+      "description": "No se considera la alcoholemia ni la conducción bajo la influencia de bebidas alcohólicas, drogas, estupefacientes o sustancias psicotrópicas como motivo de exclusión: en estos casos son de aplicación los Convenios.",
+      "prerequisites": [
+        "driver_under_influence"
+      ],
+      "outcome": "driver_under_influence = true ⇒ el Convenio SIGUE siendo aplicable.",
+      "notes": [
+        "Regla de no-exclusión: existe para impedir que el sistema descarte el Convenio por presencia de alcohol.",
+        "Las consecuencias penales y los daños personales quedan fuera del alcance convencional."
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "rule_id": "ascide-b5-parked-vehicle",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:73"
+      ],
+      "description": "Norma subsidiaria b.5, vehículos aparcados: cuando existe un vehículo mal aparcado y se le pretende imputar la responsabilidad por ese motivo, es siempre culpable el vehículo que colisiona con el aparcado.",
+      "prerequisites": [
+        "one_vehicle_parked",
+        "collision_with_parked_vehicle"
+      ],
+      "outcome": "Culpable el vehículo que colisiona con el aparcado.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "ascide-b6-exit-from-parking",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:73"
+      ],
+      "description": "Norma subsidiaria b.6, salida de estacionamientos, callejones, vías cortadas, garajes, zonas de aparcamiento y recintos cerrados: culpable el vehículo que realice la maniobra de salida, incluso aunque indique que no ha iniciado todavía dicha maniobra.",
+      "prerequisites": [
+        "exit_manoeuvre_by"
+      ],
+      "outcome": "Culpable el vehículo que sale.",
+      "notes": [
+        "Excepción: ver «Incorporación a la circulación» (pág. 46)."
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "rule_id": "ascide-b9-reverse-vs-rear-impact",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:75"
+      ],
+      "description": "Norma subsidiaria b.9, marcha atrás/alcance trasero: ante disparidad de versiones, si uno alega alcance por la parte trasera y el otro declara colisión en su parte delantera por marcha atrás del adverso, incluso para estacionar, se considera responsable el conductor del vehículo que presente los daños en la parte delantera.",
+      "prerequisites": [
+        "contradictory_versions",
+        "damage_location"
+      ],
+      "outcome": "Responsable quien presenta daños en la parte delantera.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "ascide-b10-lane-change",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:75"
+      ],
+      "description": "Norma subsidiaria b.10, cambio de carril/alcance trasero: cuando ambos implicados reconozcan el cambio de carril por parte de uno de los dos y exista discrepancia sobre la responsabilidad, se considera culpable el que cambia de carril, aunque alegue que estaba parado, con independencia de la ubicación de los daños.",
+      "prerequisites": [
+        "lane_change_acknowledged_by_both",
+        "contradictory_versions"
+      ],
+      "outcome": "Culpable quien cambia de carril.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "ascide-b11-roundabout",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:75"
+      ],
+      "description": "Norma subsidiaria b.11, rotondas: si ambos manifiestan circular por una rotonda y uno alega que el otro entra mientras el otro alega que el contrario sale o cambia de carril, resulta culpable el vehículo que pudiera estar accediendo a la rotonda, salvo que ambos tengan daños en los laterales no angulares, en cuyo caso es culpable el que tenga los daños en el lateral derecho.",
+      "prerequisites": [
+        "roundabout",
+        "contradictory_versions"
+      ],
+      "outcome": "Culpable quien accede a la rotonda, con la excepción de los daños laterales no angulares.",
+      "notes": [
+        "Daños angulares son los localizados en los vértices traseros o delanteros del vehículo."
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    },
+    {
+      "rule_id": "ascide-traffic-light-amber",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:97"
+      ],
+      "description": "Semáforos: en ASCIDE prevalecen las normas genéricas de prioridad, primero la señalización vertical u horizontal y después la prioridad de los vehículos que vengan de la derecha. Si uno dice pasar en ámbar no intermitente y el otro en verde, se considera culpable al que admite pasar en ámbar.",
+      "prerequisites": [
+        "traffic_light_junction",
+        "admitted_amber"
+      ],
+      "outcome": "Culpable quien admite pasar en ámbar no intermitente.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "cide-door-opening",
+      "kind": "manoeuvre",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:91"
+      ],
+      "description": "Puertas: cuando del anverso de la D.A.A. se desprenda que se trata de un tema de puertas y no se especifique si se efectúa la acción de abrir o si ya estaba abierta, se considerará Entidad Deudora la aseguradora del vehículo que pudiera estar ejercitando la acción de abrir la puerta.",
+      "prerequisites": [
+        "door_involved"
+      ],
+      "outcome": "Deudora la aseguradora del vehículo que pudiera estar abriendo la puerta.",
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "notes": []
+    },
+    {
+      "rule_id": "cide-matrix-lookup",
+      "kind": "matrix_lookup",
+      "evidence_ids": [
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+        "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+      ],
+      "description": "Tabla de culpabilidad CIDE: cuando sólo esté cumplimentado el apartado 12 de la D.A.A., las cruces marcadas determinan la responsabilidad según la tabla. Ante contradicción entre los apartados 12 y 13 prevalece el 12, salvo error manifiesto acreditado por el 13 apoyado en los apartados 10, 11 o 14.",
+      "prerequisites": [
+        "daa_box_a",
+        "daa_box_b",
+        "applicability_confirmed"
+      ],
+      "outcome": "Celda (a,b) de data/rules/cide-matrix.v1.json.",
+      "notes": [
+        "El manual NO define qué maniobra representa cada casilla A0-A17: proceden del apartado 12 de la D.A.A., externo al manual. Ver data/rules/daa-circumstances.v1.json."
+      ],
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    }
+  ],
+  "attestation": {
+    "transcriptions": [
+      {
+        "reviewer_id": "claude-visual",
+        "independent": true,
+        "pdf_page_checked": true,
+        "transcription_sha256": "1286bca5895ff3bfcafe085dd0f385ca2b6fcd15a98e6429138107c2e744d4cf",
+        "transcribed_at": "2026-09-02T13:01:38+00:00"
+      },
+      {
+        "reviewer_id": "claude-textlayer",
+        "independent": true,
+        "pdf_page_checked": true,
+        "transcription_sha256": "2ea32fa18c3cec0e6d0eacec5a533348828d480b4e039a18e5f7e07e4be3ccfc",
+        "transcribed_at": "2026-09-02T13:01:38+00:00"
+      }
+    ],
+    "divergence_resolution": "No hubo divergencias que adjudicar. Las 9 páginas que sostienen alguna regla (9, 10, 56, 57, 73, 75, 91, 97 y 100) se leyeron por dos vías sin ruta de extracción común: una lectura visual de cada página renderizada a 200 dpi y la capa de texto de pypdf. Para cada página se registró la frase normativa concreta de la que depende la regla, y se comprobó programáticamente que cada frase leída visualmente aparece literal en la capa de texto tras normalizar espacios: 9 de 9, cero divergencias. Cada regla cita únicamente las páginas cuya frase se verificó así; no hay regla derivada de una página no cotejada. Revisión humana y firma por el responsable del proyecto el 2026-09-02.",
+    "signed_by": [
+      "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+    ],
+    "signed_at": "2026-09-02T13:01:38+00:00"
+  }
+}
