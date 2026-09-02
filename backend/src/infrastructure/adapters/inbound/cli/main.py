@@ -57,6 +57,45 @@ def _build_parser() -> argparse.ArgumentParser:
     compare_parsers = subcommands.add_parser("compare-parsers")
     compare_parsers.add_argument("source", type=Path)
     compare_parsers.add_argument("--output", type=Path, required=True)
+    golden = subcommands.add_parser("golden")
+    golden_subcommands = golden.add_subparsers(dest="golden_command", required=True)
+    golden_validate = golden_subcommands.add_parser("validate")
+    golden_validate.add_argument(
+        "--golden-root",
+        type=Path,
+        default=Path("data/evaluation/golden"),
+    )
+    golden_validate.add_argument(
+        "--evidence-roots",
+        type=Path,
+        nargs="+",
+        default=[Path("data/extractions")],
+    )
+    golden_freeze = golden_subcommands.add_parser("freeze")
+    golden_freeze.add_argument(
+        "--golden-root",
+        type=Path,
+        default=Path("data/evaluation/golden"),
+    )
+    golden_freeze.add_argument(
+        "--evidence-roots",
+        type=Path,
+        nargs="+",
+        default=[Path("data/extractions")],
+    )
+    golden_freeze.add_argument("--dataset", required=True)
+    golden_freeze.add_argument("--release", required=True)
+    golden_publish = golden_subcommands.add_parser("publish")
+    golden_publish.add_argument(
+        "--release",
+        required=True,
+        help="Frozen release identifier under the golden root releases directory.",
+    )
+    golden_publish.add_argument(
+        "--golden-root",
+        type=Path,
+        default=Path("data/evaluation/golden"),
+    )
     doctor = subcommands.add_parser("doctor")
     doctor.add_argument(
         "--operation",
@@ -133,6 +172,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         elif arguments.command == "compare-parsers":
             return _run_parser_comparison(arguments)
+        elif arguments.command == "golden":
+            return _run_golden_command(arguments)
         elif arguments.command == "doctor":
             from infrastructure.adapters.inbound.cli import doctor
 
@@ -214,8 +255,7 @@ def _run_list_index_versions(arguments: argparse.Namespace) -> int:
                 try:
                     signature = signature_from_metadata(info.config.metadata)
                     signature_dict = {
-                        field.name: getattr(signature, field.name)
-                        for field in _fields()
+                        field.name: getattr(signature, field.name) for field in _fields()
                     }
                 except InvalidIndexDataError:
                     signature_dict = None
@@ -267,6 +307,267 @@ def _sparse_double():  # type: ignore[no-untyped-def]
             return models.SparseVector(indices=[], values=[])
 
     return _Double()
+
+
+def _run_golden_command(arguments: argparse.Namespace) -> int:
+    """Dispatch golden-related CLI subcommands."""
+    if arguments.golden_command == "validate":
+        return _run_golden_validate(arguments)
+    if arguments.golden_command == "freeze":
+        return _run_golden_freeze(arguments)
+    if arguments.golden_command == "publish":
+        return _run_golden_publish(arguments)
+    print(f"error: unknown golden subcommand: {arguments.golden_command}", file=sys.stderr)
+    return 2
+
+
+def _golden_load_items(golden_root: Path) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    for partition in ("development", "holdout"):
+        partition_path = golden_root / f"{partition}.jsonl"
+        if not partition_path.exists():
+            continue
+        for raw in partition_path.read_text(encoding="utf-8").splitlines():
+            if not raw.strip():
+                continue
+            items.append(json.loads(raw))
+    return items
+
+
+def _golden_evidence_ids(evidence_roots: list[Path]) -> set[str]:
+    """Collect every evidence ID persisted under the publication directories."""
+    ids: set[str] = set()
+    for root in evidence_roots:
+        if not root.exists():
+            continue
+        for publication in root.glob("*/*/manifest.json"):
+            try:
+                pages_path = publication.parent / "pages.jsonl"
+                if not pages_path.exists():
+                    continue
+                for raw in pages_path.read_text(encoding="utf-8").splitlines():
+                    if not raw.strip():
+                        continue
+                    record = json.loads(raw)
+                    if isinstance(record, dict):
+                        evidence_id = record.get("evidence_id")
+                        if isinstance(evidence_id, str):
+                            ids.add(evidence_id)
+            except OSError, json.JSONDecodeError:
+                continue
+    return ids
+
+
+def _run_golden_validate(arguments: argparse.Namespace) -> int:
+    """Validate every item in development.jsonl + holdout.jsonl against the schema."""
+    from infrastructure.adapters.outbound.evaluation.golden_schema import (
+        SCHEMA_VERSION,
+        GoldenDatasetItem,
+    )
+    from infrastructure.adapters.outbound.evaluation.release_validation import (
+        canonical_schema_bytes,
+        check_family_splits,
+    )
+
+    golden_root: Path = arguments.golden_root
+    items = _golden_load_items(golden_root)
+    if not items:
+        print(f"error: no items found under {golden_root}", file=sys.stderr)
+        return 2
+    evidence_ids = _golden_evidence_ids(list(arguments.evidence_roots))
+    errors: list[str] = []
+    try:
+        check_family_splits(
+            tuple((item["metadata"]["family_id"], item["metadata"]["partition"]) for item in items)
+        )
+    except ValueError as error:
+        errors.append(f"family splits: {error}")
+    for index, item in enumerate(items):
+        try:
+            GoldenDatasetItem.model_validate(item)
+        except (ValueError, Exception) as error:
+            errors.append(f"item {index} ({item.get('metadata', {}).get('case_id', '?')}): {error}")
+    for item in items:
+        metadata = item.get("metadata", {})
+        if metadata.get("review_status") != "adjudicated":
+            errors.append(f"case {metadata.get('case_id', '?')} has incomplete review status")
+    referenced_evidence = {
+        evidence_id
+        for item in items
+        for requirement in item.get("expected_output", {}).get("evidence_requirements", [])
+        for bundle in requirement.get("any_of", [])
+        for evidence_id in bundle.get("all_of", [])
+    }
+    unknown_evidence = sorted(referenced_evidence - evidence_ids)
+    if unknown_evidence:
+        errors.append(f"unknown evidence: {', '.join(unknown_evidence)}")
+
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "schema_sha256": __import__("hashlib").sha256(canonical_schema_bytes()).hexdigest(),
+        "golden_root": str(golden_root),
+        "evidence_roots": [str(path) for path in arguments.evidence_roots],
+        "item_count": len(items),
+        "evidence_pool_size": len(evidence_ids),
+        "errors": errors,
+    }
+    print(json.dumps(payload, sort_keys=True, ensure_ascii=False, indent=2))
+    return 0 if not errors else 2
+
+
+def _run_golden_freeze(arguments: argparse.Namespace) -> int:
+    """Validate, build a release manifest, and persist the frozen snapshot."""
+    from infrastructure.adapters.outbound.evaluation.golden_schema import (
+        canonical_schema_bytes,
+    )
+    from infrastructure.adapters.outbound.evaluation.release_validation import (
+        build_release_manifest,
+        canonical_jsonl,
+        validate_release,
+    )
+
+    golden_root: Path = arguments.golden_root
+    items = _golden_load_items(golden_root)
+    evidence_ids = _golden_evidence_ids(list(arguments.evidence_roots))
+    try:
+        validated = validate_release(items, existing_evidence_ids=evidence_ids)
+    except ValueError as error:
+        print(f"error: cannot freeze: {error}", file=sys.stderr)
+        return 2
+    if not validated:
+        print("error: golden release is empty", file=sys.stderr)
+        return 2
+    schema_bytes = canonical_schema_bytes()
+    manifest = build_release_manifest(
+        dataset_name=arguments.dataset,
+        dataset_version=arguments.release,
+        items=items,
+        schema=schema_bytes,
+        existing_evidence_ids=evidence_ids,
+    )
+    release_dir = golden_root / "releases" / arguments.release
+    if release_dir.exists():
+        print(f"error: release already exists: {release_dir}", file=sys.stderr)
+        return 2
+    release_dir.mkdir(parents=True)
+    (release_dir / "items.jsonl").write_bytes(
+        canonical_jsonl(items, existing_evidence_ids=evidence_ids)
+    )
+    (release_dir / "schema.json").write_bytes(schema_bytes)
+    (release_dir / "manifest.json").write_text(
+        json.dumps(
+            json.loads(manifest.model_dump_json()),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(
+        json.dumps(
+            {
+                "release": arguments.release,
+                "release_dir": str(release_dir),
+                "content_sha256": manifest.content_sha256,
+                "schema_sha256": manifest.schema_sha256,
+                "item_count": manifest.item_count,
+            },
+            sort_keys=True,
+            indent=2,
+        )
+    )
+    return 0
+
+
+def _run_golden_publish(arguments: argparse.Namespace) -> int:
+    """Push the frozen release into a Langfuse dataset with per-item partition metadata."""
+    import asyncio
+
+    from langfuse import Langfuse
+
+    from infrastructure.adapters.outbound.evaluation.golden_schema import (
+        canonical_schema_bytes,
+    )
+
+    golden_root: Path = arguments.golden_root
+    release_dir = golden_root / "releases" / arguments.release
+    manifest_path = release_dir / "manifest.json"
+    items_path = release_dir / "items.jsonl"
+    schema_path = release_dir / "schema.json"
+    for required in (manifest_path, items_path, schema_path):
+        if not required.exists():
+            print(f"error: missing release artifact: {required}", file=sys.stderr)
+            return 2
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if (
+        manifest["content_sha256"]
+        != __import__("hashlib").sha256(items_path.read_bytes()).hexdigest()
+    ):
+        print("error: release content hash mismatch; refusing to publish", file=sys.stderr)
+        return 2
+    if (
+        manifest["schema_sha256"]
+        != __import__("hashlib").sha256(schema_path.read_bytes()).hexdigest()
+    ):
+        print("error: release schema hash mismatch; refusing to publish", file=sys.stderr)
+        return 2
+    items: list[dict[str, object]] = []
+    for raw in items_path.read_text(encoding="utf-8").splitlines():
+        if not raw.strip():
+            continue
+        items.append(json.loads(raw))
+
+    async def _publish() -> int:
+        client = Langfuse()
+        dataset_name = manifest["dataset_name"]
+        dataset_version = manifest["dataset_version"]
+        try:
+            client.create_dataset(
+                name=dataset_name,
+                description=f"Allianz RAG golden release {dataset_version}",
+            )
+        except Exception:
+            # Dataset may already exist; create_dataset is idempotent enough
+            # for the Langfuse v4 SDK used here.
+            pass
+        uploaded = 0
+        for item in items:
+            client.create_dataset_item(
+                dataset_name=dataset_name,
+                input=item["input"],
+                expected_output=item["expected_output"],
+                metadata={
+                    **item["metadata"],
+                    "release": dataset_version,
+                    "schema_version": manifest["schema_version"],
+                },
+            )
+            uploaded += 1
+        client.flush()
+        return uploaded
+
+    try:
+        loaded_schema = schema_path.read_bytes()
+        if loaded_schema != canonical_schema_bytes():
+            print("error: release schema does not match the canonical schema", file=sys.stderr)
+            return 2
+        uploaded = asyncio.run(_publish())
+    except Exception as error:  # noqa: BLE001
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {
+                "release": arguments.release,
+                "uploaded_items": uploaded,
+                "schema_sha256": manifest["schema_sha256"],
+                "content_sha256": manifest["content_sha256"],
+            },
+            sort_keys=True,
+            indent=2,
+        )
+    )
+    return 0
 
 
 def _run_parser_comparison(arguments: argparse.Namespace) -> int:
