@@ -6,14 +6,14 @@ import json
 import os
 from collections.abc import Awaitable
 from dataclasses import dataclass
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 from langfuse.openai import AsyncOpenAI  # pyright: ignore[reportPrivateImportUsage]
 from openai import APIError, APITimeoutError
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from application.models.claim import ExtractedClaimFacts
+from application.models.claim import ExtractedClaimFacts, InterviewPlan, InterviewQuestion
 from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.language_model import (
     LanguageModelError,
@@ -35,9 +35,20 @@ class ClaimFactSchema(_StrictSchema):
     source_text: str = Field(min_length=1)
 
 
+class InterviewQuestionSchema(_StrictSchema):
+    id: str = Field(min_length=1)
+    prompt: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    answer_kind: Literal["text", "choice", "boolean"] = "text"
+    options: tuple[str, ...] = ()
+
+
 class ClaimExtractionSchema(_StrictSchema):
     party_ids: tuple[str, ...]
     facts: tuple[ClaimFactSchema, ...]
+    interview_status: Literal["ask", "ready", "inconsistent", "coverage_gap"] = "ready"
+    questions: tuple[InterviewQuestionSchema, ...] = ()
+    terminal_reason: str | None = None
 
     def to_application(self) -> ExtractedClaimFacts:
         return ExtractedClaimFacts(
@@ -45,6 +56,20 @@ class ClaimExtractionSchema(_StrictSchema):
             tuple(
                 ClaimFact(item.name, item.value, item.asserted_by, item.source_text)
                 for item in self.facts
+            ),
+            InterviewPlan(
+                status=self.interview_status,
+                questions=tuple(
+                    InterviewQuestion(
+                        id=item.id,
+                        prompt=item.prompt,
+                        reason=item.reason,
+                        answer_kind=item.answer_kind,
+                        options=item.options,
+                    )
+                    for item in self.questions
+                ),
+                terminal_reason=self.terminal_reason,
             ),
         )
 
@@ -176,6 +201,13 @@ def _messages(claim: ClaimInput, fact_names: tuple[str, ...] = ()) -> ResponseIn
         "admitted_amber exige que un conductor admita pasar en ámbar. Rellenar uno de estos "
         "nombres porque el vehículo existe, y no porque la maniobra ocurra, es inventar.\n"
         "Si el relato no permite establecer un hecho, omítelo: no lo supongas."
+        "\nAdemás devuelve un plan de entrevista. Usa `ask` sólo si falta un hecho "
+        "que pueda cambiar la aplicabilidad o permitir aplicar una regla del manual; "
+        "formula entre una y tres preguntas concretas, comprensibles y no pidas "
+        "casillas internas de formularios. Usa `ready` cuando no falte ningún hecho "
+        "material para evaluar; `inconsistent` sólo para versiones incompatibles; y "
+        "`coverage_gap` si los hechos están completos pero el manual no aporta una "
+        "regla para resolver. No repitas preguntas ya contestadas en clarifications."
     )
     payload = json.dumps(
         {"claim": claim.text, "clarifications": claim.clarifications, "language": claim.language},

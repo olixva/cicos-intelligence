@@ -217,3 +217,23 @@ def test_shipped_lane_change_rule_does_not_match_without_disparity() -> None:
         if result.rule_id == "ascide-b10-lane-change"
     ]
     assert evaluation.result == "not_matched"
+
+
+def test_shipped_amber_rule_matches_when_one_driver_admits_amber() -> None:
+    from infrastructure.config.rules_artifacts import load_rules_artifacts
+
+    artifacts = load_rules_artifacts(
+        _REPO / "data" / "rules",
+        expected_document_hash=_DOCUMENT_HASH,
+        evidence_roots=(_REPO / "data" / "extractions",),
+    )
+    (evaluation,) = [
+        result
+        for result in evaluate_ruleset(
+            artifacts.rules,
+            {"traffic_light_junction": "true", "admitted_amber": "true"},
+        )
+        if result.rule_id == "ascide-traffic-light-amber"
+    ]
+
+    assert evaluation.result == "matched"

@@ -54,3 +54,14 @@ def test_claim_extractor_uses_structured_output_and_never_adds_manual_context() 
     rendered = str(transport.captured_input)
     assert "tres vehículos" in rendered
     assert "context" not in rendered.lower()
+
+
+def test_claim_extractor_instructs_the_model_to_return_a_bounded_interview_plan() -> None:
+    from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
+        _messages,
+    )
+
+    rendered = str(_messages(ClaimInput("A y B chocaron.")))
+
+    assert "plan de entrevista" in rendered.lower()
+    assert "no repitas" in rendered.lower()

@@ -111,11 +111,14 @@ class LangGraphClaimWorkflow:
         trace_id = self._trace_id_factory()
         thread_id = claim.thread_id or str(uuid.uuid4())
         config = RunnableConfig(recursion_limit=12, configurable={"thread_id": thread_id})
+        config["run_name"] = "allianz_claim_analysis"
+        config["tags"] = ["allianz", "workflow:claim_analysis"]
+        metadata: dict[str, str] = {"allianz_workflow": "claim_analysis"}
         if claim.session_id:
-            config["metadata"] = {
-                "langfuse_session_id": claim.session_id,
-                "session_id": claim.session_id,
-            }
+            metadata.update(
+                {"langfuse_session_id": claim.session_id, "session_id": claim.session_id}
+            )
+        config["metadata"] = metadata
         if trace_id is not None and self._callback_factory is not None:
             config["callbacks"] = [self._callback_factory(trace_id)]  # type: ignore[arg-type]
         # Wrap the graph dispatch in a Langfuse span so the OpenTelemetry
@@ -245,6 +248,39 @@ class LangGraphClaimWorkflow:
             blocks,
             rules_evaluated=evaluations,
         )
+        # The LLM owns the interview decision and wording. Deterministic rules
+        # still own the eventual liability result, but must not emit a premature
+        # indeterminate conclusion while the plan says a material fact is missing.
+        if extracted.interview_plan.status == "ask":
+            prompts = tuple(question.prompt for question in extracted.interview_plan.questions)
+            analysis = ClaimAnalysis(
+                analysis.applicability,
+                analysis.convention,
+                "conditional",
+                analysis.party_ids,
+                analysis.facts,
+                analysis.contradictions,
+                prompts,
+                prompts,
+                analysis.blocks,
+                rules_evaluated=analysis.rules_evaluated,
+            )
+        elif extracted.interview_plan.status in ("inconsistent", "coverage_gap"):
+            reason = extracted.interview_plan.terminal_reason
+            if reason is None:  # Guaranteed by InterviewPlan; keep the graph defensive.
+                raise RuntimeError("terminal interview plan has no reason")
+            analysis = ClaimAnalysis(
+                analysis.applicability,
+                analysis.convention,
+                "undetermined",
+                analysis.party_ids,
+                analysis.facts,
+                analysis.contradictions,
+                (),
+                (),
+                (ClaimEvidenceBlock(reason, evidence_ids),),
+                rules_evaluated=analysis.rules_evaluated,
+            )
         return _ClaimUpdate(analysis=analysis, result=analysis)
 
     def _kind_of(self, rule_id: str) -> str | None:

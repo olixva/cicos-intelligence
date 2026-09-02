@@ -225,6 +225,18 @@
       "outcome": "Culpable quien admite pasar en ámbar no intermitente.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
       "notes": [],
+      "applies_when": {
+        "all": [
+          {
+            "field": "traffic_light_junction",
+            "op": "is_true"
+          },
+          {
+            "field": "admitted_amber",
+            "op": "is_true"
+          }
+        ]
+      },
       "convention": "ASCIDE"
     },
     {
