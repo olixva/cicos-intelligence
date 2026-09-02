@@ -56,6 +56,7 @@ class LangGraphQuestionWorkflow:
         timeout_seconds: float = 45.0,
         trace_id_factory: Callable[[], str | None] = lambda: None,
         callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
+        trace_url_factory: Callable[[str], str | None] | None = None,
     ) -> None:
         if type(retrieval_limit) is not int or retrieval_limit <= 0:
             raise ValueError("retrieval_limit must be a positive integer")
@@ -69,6 +70,7 @@ class LangGraphQuestionWorkflow:
         self._timeout_seconds = timeout_seconds
         self._trace_id_factory = trace_id_factory
         self._callback_factory = callback_factory
+        self._trace_url_factory = trace_url_factory
 
         graph = StateGraph(_QuestionState)
         graph.add_node("retrieve", self._retrieve)  # pyright: ignore[reportUnknownMemberType]
@@ -117,6 +119,11 @@ class LangGraphQuestionWorkflow:
             result=result,
             context=state.get("context", ()),
             trace_id=trace_id,
+            trace_url=(
+                self._trace_url_factory(trace_id)
+                if trace_id is not None and self._trace_url_factory is not None
+                else None
+            ),
         )
 
     async def _retrieve(self, state: _QuestionState) -> _QuestionUpdate:

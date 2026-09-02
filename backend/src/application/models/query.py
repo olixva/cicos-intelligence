@@ -85,3 +85,4 @@ class QueryExecution:
     result: QuestionAnswer
     context: tuple[ContextEvidence, ...]
     trace_id: str | None = None
+    trace_url: str | None = None

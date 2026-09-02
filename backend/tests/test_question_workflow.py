@@ -205,3 +205,52 @@ def test_answer_question_use_case_preserves_workflow_execution() -> None:
         assert result.context[0].text == "Fragmento."
 
     asyncio.run(scenario())
+
+
+def _stub_workflow_fixtures(*, trace_id: str, trace_url: str | None):
+    """Build the minimum stubs that drive the question workflow to a real answer."""
+
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    page = _page()
+    chunk = Chunk(
+        chunk_id="chunk-1",
+        text="Fragmento.",
+        evidence_ids=(page.evidence_id,),
+    )
+    answer = QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
+
+    workflow = LangGraphQuestionWorkflow(
+        retriever=FakeRetriever(chunks=(chunk,)),
+        evidence_repository=FakeEvidenceRepository(pages=(page,)),
+        language_model=FakeLanguageModel(answer=answer),
+        trace_id_factory=lambda: trace_id,
+        trace_url_factory=(lambda trace_id: trace_url) if trace_url is not None else None,
+    )
+    return workflow
+
+
+def test_question_workflow_propagates_trace_url_from_factory() -> None:
+    """The question workflow must call ``trace_url_factory(trace_id)`` and
+    store the resulting URL on the execution so the API envelope can
+    expose the canonical Langfuse URL without concatenating the
+    ``/trace/<id>`` suffix by hand.
+    """
+    url = "https://langfuse.local/trace/trace-deadbeef"
+    workflow = _stub_workflow_fixtures(trace_id="trace-deadbeef", trace_url=url)
+    execution = asyncio.run(workflow.run(QueryInput("Pregunta", "es")))
+    assert execution.trace_id == "trace-deadbeef"
+    assert execution.trace_url == url
+
+
+def test_question_workflow_leaves_trace_url_none_without_factory() -> None:
+    """Without a ``trace_url_factory`` the workflow must NOT invent a URL
+    and must leave the field ``None`` so the envelope falls back to the
+    env-derived helper instead of emitting a broken link.
+    """
+    workflow = _stub_workflow_fixtures(trace_id="trace-feedface", trace_url=None)
+    execution = asyncio.run(workflow.run(QueryInput("Pregunta", "es")))
+    assert execution.trace_id == "trace-feedface"
+    assert execution.trace_url is None

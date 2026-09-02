@@ -62,6 +62,7 @@ class LangGraphClaimWorkflow:
         retrieval_limit: int = 6,
         timeout_seconds: float = 30.0,
         trace_id_factory: Callable[[], str | None] = lambda: None,
+        trace_url_factory: Callable[[str], str | None] | None = None,
         callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
     ) -> None:
         if type(retrieval_limit) is not int or retrieval_limit <= 0:
@@ -76,6 +77,7 @@ class LangGraphClaimWorkflow:
         self._timeout_seconds = timeout_seconds
         self._trace_id_factory = trace_id_factory
         self._callback_factory = callback_factory
+        self._trace_url_factory = trace_url_factory
         graph = StateGraph(_ClaimState)
         graph.add_node("extract_facts", self._extract_facts)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("retrieve_criteria", self._retrieve_criteria)  # pyright: ignore[reportUnknownMemberType]
@@ -124,7 +126,16 @@ class LangGraphClaimWorkflow:
         result = state.get("result")
         if result is None:
             raise RuntimeError("claim workflow completed without a result")
-        return ClaimExecution(result, state.get("context", ()), trace_id)
+        return ClaimExecution(
+            result,
+            state.get("context", ()),
+            trace_id,
+            trace_url=(
+                self._trace_url_factory(trace_id)
+                if trace_id is not None and self._trace_url_factory is not None
+                else None
+            ),
+        )
 
     async def _extract_facts(self, state: _ClaimState) -> _ClaimUpdate:
         return _ClaimUpdate(extracted=await self._fact_extractor.extract(state["claim"]))

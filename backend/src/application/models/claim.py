@@ -28,3 +28,4 @@ class ClaimExecution:
     result: ClaimAnalysis
     context: tuple[ContextEvidence, ...]
     trace_id: str | None = None
+    trace_url: str | None = None

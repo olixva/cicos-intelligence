@@ -168,6 +168,7 @@ def build_answer_question(profile_name: str) -> AnswerQuestion:
             ),
             trace_id_factory=langfuse.create_trace_id,
             callback_factory=callback_factory,
+            trace_url_factory=lambda trace_id: langfuse.get_trace_url(trace_id=trace_id),
         )
     )
 
@@ -226,6 +227,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
             evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
             trace_id_factory=Langfuse().create_trace_id,
             callback_factory=callback_factory,
+            trace_url_factory=lambda trace_id: Langfuse().get_trace_url(trace_id=trace_id),
         )
     )
 

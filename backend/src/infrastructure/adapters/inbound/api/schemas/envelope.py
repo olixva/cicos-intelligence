@@ -118,6 +118,7 @@ class QuestionResult(_ResponseModel):
     status: Literal["answered", "partial", "insufficient_evidence", "out_of_scope"]
     blocks: tuple[dict[str, object], ...] = ()
     trace_id: str | None = None
+    trace_url: str | None = None
 
 
 class ClaimResult(_ResponseModel):
@@ -128,6 +129,7 @@ class ClaimResult(_ResponseModel):
     convention: Literal["CIDE", "ASCIDE"] | None
     decision: Literal["resolved", "conditional", "undetermined", "not_assessed"]
     trace_id: str | None = None
+    trace_url: str | None = None
 
 
 class ClarificationResultBody(_ResponseModel):
@@ -157,6 +159,7 @@ class EnvelopeResponse(_ResponseModel):
         evidence: tuple[EvidenceItem, ...] = (),
     ) -> EnvelopeResponse:
         trace_id = execution.trace_id or ""
+        trace_url = execution.trace_url or _langfuse_trace_url(trace_id)
         return cls(
             request_id=request_id,
             requested_mode="question",
@@ -169,11 +172,12 @@ class EnvelopeResponse(_ResponseModel):
                     for block in execution.result.blocks
                 ),
                 trace_id=execution.trace_id,
+                trace_url=trace_url,
             ),
             evidence=evidence,
             metadata={
                 "trace_id": trace_id,
-                "langfuse_url": _langfuse_trace_url(trace_id),
+                "langfuse_url": trace_url,
             },
         )
 
@@ -189,6 +193,7 @@ class EnvelopeResponse(_ResponseModel):
         if not isinstance(analysis, ClaimAnalysis):
             raise TypeError("envelope.from_claim requires a ClaimAnalysis result")
         trace_id = execution.trace_id or ""
+        trace_url = execution.trace_url or _langfuse_trace_url(trace_id)
         return cls(
             request_id=request_id,
             requested_mode="claim",
@@ -199,11 +204,12 @@ class EnvelopeResponse(_ResponseModel):
                 convention=analysis.convention,
                 decision=analysis.decision,
                 trace_id=execution.trace_id,
+                trace_url=trace_url,
             ),
             evidence=evidence,
             metadata={
                 "trace_id": trace_id,
-                "langfuse_url": _langfuse_trace_url(trace_id),
+                "langfuse_url": trace_url,
             },
         )
 
