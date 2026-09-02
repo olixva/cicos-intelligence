@@ -120,12 +120,24 @@ export function persistThreadState(
   // messages so streaming deltas land in storage even before the
   // STREAM_COMPLETED action fires.
   if (state.activeThreadId) {
-    records[state.activeThreadId] = {
-      summary: ensureSummary(state),
-      session_id: records[state.activeThreadId]?.session_id ?? makeSessionId(),
-      mode: state.mode,
-      messages: state.messages,
-    };
+    if (state.messages.length === 0) {
+      // Un hilo sin mensajes no es una conversación y no se guarda: antes
+      // sobrevivía a la recarga y reaparecía en la barra lateral con un
+      // título inventado a partir de su identificador.
+      delete records[state.activeThreadId];
+    } else {
+      records[state.activeThreadId] = {
+        summary: ensureSummary(state),
+        session_id: records[state.activeThreadId]?.session_id ?? makeSessionId(),
+        mode: state.mode,
+        messages: state.messages,
+      };
+    }
+  }
+  // Ningún hilo persistido puede quedar vacío, aunque venga de una versión
+  // anterior del almacenamiento.
+  for (const [id, record] of Object.entries(records)) {
+    if (record.messages.length === 0) delete records[id];
   }
   const payload: PersistedPayload = {
     version: 1,
@@ -137,10 +149,16 @@ export function persistThreadState(
 
 function ensureSummary(state: ThreadState): ThreadSummary {
   const existing = state.threads.find((summary) => summary.id === state.activeThreadId);
-  if (existing) return existing;
+  if (existing && existing.title.trim()) return existing;
+  // El reducer titula cada hilo con su primer mensaje al enviarlo; este
+  // camino sólo cubre estados heredados. Derivar del texto real evita el
+  // antiguo "Hilo demo-1", que no decía nada de la conversación.
+  const firstUser = state.messages.find((message) => message.role === 'user');
+  const source = firstUser && firstUser.role === 'user' ? firstUser.text.trim() : '';
+  const clean = source.replace(/\s+/g, ' ');
   return {
     id: state.activeThreadId,
-    title: `Hilo ${state.activeThreadId.slice(0, 8)}`,
+    title: clean.length > 48 ? `${clean.slice(0, 48).trimEnd()}…` : clean || 'Consulta',
     updatedAt: Date.now(),
   };
 }

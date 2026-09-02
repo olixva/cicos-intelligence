@@ -426,6 +426,7 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
         classifier=classifier,
         answer_question=answer_question,
         analyze_claim=analyze_claim,
+        trace_id_factory=langfuse.create_trace_id,
         callback_factory=callback_factory,
     )
 

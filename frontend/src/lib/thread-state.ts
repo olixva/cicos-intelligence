@@ -206,6 +206,12 @@ function defaultThreadSummary(): ThreadSummary[] {
   return [];
 }
 
+/** Título corto de un hilo, derivado de su primer mensaje. */
+function threadTitle(text: string): string {
+  const clean = text.trim().replace(/\s+/g, ' ');
+  return clean.length > 48 ? `${clean.slice(0, 48).trimEnd()}…` : clean || 'Consulta';
+}
+
 export function initialState(mode: UiMode = DEFAULT_MODE): ThreadState {
   return {
     messages: [],
@@ -277,7 +283,8 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
       const id = action.id;
       const summary: ThreadSummary = {
         id,
-        title: action.title ?? `Nuevo hilo ${state.threads.length + 1}`,
+        // Sin título hasta que haya un primer mensaje del que derivarlo.
+        title: action.title ?? '',
         updatedAt: now(),
       };
       return {
@@ -304,8 +311,32 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
       const targetId = action.id;
       const targetMessages = state.threadMessages[targetId] ?? [];
       const targetMode = state.threadModes[targetId] ?? state.mode;
+
+      // Un hilo del que se sale sin haber escrito nada no llegó a existir como
+      // conversación: se descarta al abandonarlo, igual que `NEW_THREAD` no
+      // crea uno nuevo estando ya en uno vacío. Así la barra lateral sólo
+      // enumera conversaciones reales.
+      const leaving = state.activeThreadId;
+      const discardEmpty = leaving !== null && leaving !== targetId && state.messages.length === 0;
+
+      const threads = discardEmpty
+        ? state.threads.filter((thread) => thread.id !== leaving)
+        : state.threads;
+
+      /** Copia el mapa sin la clave del hilo descartado. */
+      function withoutLeaving<T>(map: Record<string, T>): Record<string, T> {
+        if (!discardEmpty || leaving === null) return map;
+        const next = { ...map };
+        delete next[leaving];
+        return next;
+      }
+
       return {
         ...state,
+        threads,
+        threadMessages: withoutLeaving(state.threadMessages),
+        threadSessionIds: withoutLeaving(state.threadSessionIds),
+        threadModes: withoutLeaving(state.threadModes),
         activeThreadId: targetId,
         messages: targetMessages,
         mode: targetMode,
@@ -314,7 +345,7 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
         pendingToolCalls: [],
         openPdf: null,
       };
-    };
+    }
 
     case 'SUBMIT': {
       const userMsg: MessageUser = {
@@ -345,8 +376,24 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
         status: 'pending',
         startedAt: now(),
       }));
+      // Un hilo entra en el historial cuando recibe su primer mensaje, no al
+      // crearse: así la barra lateral sólo enumera conversaciones reales, y el
+      // hilo activo inicial —que no tenía entrada propia— deja de perderse.
+      const alreadyListed = state.threads.some((thread) => thread.id === state.activeThreadId);
+      const threads = alreadyListed
+        ? state.threads.map((thread) =>
+            thread.id === state.activeThreadId
+              ? { ...thread, title: thread.title || threadTitle(action.text), updatedAt: now() }
+              : thread,
+          )
+        : [
+            { id: state.activeThreadId, title: threadTitle(action.text), updatedAt: now() },
+            ...state.threads,
+          ];
+
       return {
         ...state,
+        threads,
         messages: [...state.messages, userMsg, assistant],
         activeAssistantId: assistant.id,
         isStreaming: true,

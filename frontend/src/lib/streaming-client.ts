@@ -141,6 +141,32 @@ export function startStream(input: EnvelopeRequest, opts: StreamOptions): Stream
 }
 
 /** Despacha un evento SSE crudo al callback tipado. */
+/**
+ * Envoltorio de un evento SSE del backend.
+ *
+ * Desde el commit que añadió `event_id` y `timestamp`, los campos propios de
+ * cada evento viajan dentro de `payload`. Este cliente seguía leyéndolos en la
+ * raíz, así que un fallo real llegaba a la interfaz como
+ * "unknown: Error desconocido" en vez de su motivo.
+ */
+interface SseFrame<TPayload> {
+  event?: string;
+  event_id?: string;
+  request_id?: string;
+  timestamp?: string;
+  payload?: TPayload;
+}
+
+/** Lee un campo del `payload`, aceptando el formato antiguo en la raíz. */
+function field<TPayload extends object, K extends keyof TPayload>(
+  frame: SseFrame<TPayload>,
+  key: K,
+): TPayload[K] | undefined {
+  const fromPayload = frame.payload?.[key];
+  if (fromPayload !== undefined) return fromPayload;
+  return (frame as unknown as TPayload)[key];
+}
+
 function handleParsedEvent(
   msg: ParsedEvent,
   onEvent: (event: StreamingEvent) => void,
@@ -151,41 +177,45 @@ function handleParsedEvent(
   try {
     switch (event) {
       case 'started': {
-        const parsed = JSON.parse(data) as { request_id?: string; mode?: UiMode };
+        const parsed = JSON.parse(data) as SseFrame<{ mode?: UiMode }>;
         onEvent({
           type: 'started',
           requestId: parsed.request_id ?? '',
-          mode: (parsed.mode ?? 'auto') as UiMode,
+          mode: (field(parsed, 'mode') ?? 'auto') as UiMode,
         });
         return;
       }
       case 'stage': {
-        const parsed = JSON.parse(data) as { stage?: string; request_id?: string };
+        const parsed = JSON.parse(data) as SseFrame<{ stage?: string }>;
         onEvent({
           type: 'stage',
-          stage: parsed.stage ?? 'unknown',
+          stage: field(parsed, 'stage') ?? 'unknown',
           requestId: parsed.request_id ?? '',
         });
         return;
       }
       case 'completed': {
-        const parsed = JSON.parse(data) as EnvelopeResponse;
-        onEvent({ type: 'completed', response: parsed });
+        // El sobre viaja en `payload.response`. Tratando la trama entera como
+        // el sobre, `result` quedaba `undefined` y el chat no mostraba ni
+        // respuesta ni citas: la petición terminaba bien y no se veía nada.
+        const parsed = JSON.parse(data) as SseFrame<{ response?: EnvelopeResponse }> &
+          Partial<EnvelopeResponse>;
+        const response = parsed.payload?.response ?? (parsed as unknown as EnvelopeResponse);
+        onEvent({ type: 'completed', response });
         return;
       }
       case 'failed': {
-        const parsed = JSON.parse(data) as {
+        const parsed = JSON.parse(data) as SseFrame<{
           code?: string;
           message?: string;
-          request_id?: string;
           retryable?: boolean;
-        };
+        }>;
         onEvent({
           type: 'failed',
-          code: parsed.code ?? 'unknown',
-          message: parsed.message ?? 'Error desconocido',
+          code: field(parsed, 'code') ?? 'unknown',
+          message: field(parsed, 'message') ?? 'Error desconocido',
           requestId: parsed.request_id ?? '',
-          retryable: parsed.retryable ?? true,
+          retryable: field(parsed, 'retryable') ?? true,
         });
         return;
       }

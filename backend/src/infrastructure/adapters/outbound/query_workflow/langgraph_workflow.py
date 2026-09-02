@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-import uuid
 from collections.abc import Callable
 from typing import NotRequired, Required, TypedDict, cast
 
@@ -42,6 +41,45 @@ _ROUTING_METADATA: dict[str, str | int] = {
 def routing_metadata() -> dict[str, str | int]:
     """Return a copy of the prompt/model identity captured at module import."""
     return dict(_ROUTING_METADATA)
+
+
+def _question_workflow_timeout_default() -> float:
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    return _init_default(LangGraphQuestionWorkflow)
+
+
+def _claim_workflow_timeout_default() -> float:
+    from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
+        LangGraphClaimWorkflow,
+    )
+
+    return _init_default(LangGraphClaimWorkflow)
+
+
+def _init_default(cls: type) -> float:
+    import inspect
+
+    value = inspect.signature(cls.__init__).parameters["timeout_seconds"].default
+    return float(value)
+
+
+# The routing workflow's ``asyncio.timeout`` wraps classification AND the whole
+# dispatched workflow, so its budget has to be larger than the budget of the
+# workflow it contains. It used to be 20s while the question workflow allows
+# 45s and the claim workflow 30s, so auto mode could never spend the time the
+# inner workflow was entitled to and failed with "routing workflow timed out".
+# Derived from the inner defaults plus a margin for the classification itself.
+_CLASSIFICATION_BUDGET_SECONDS = 15.0
+DEFAULT_ROUTING_TIMEOUT_SECONDS = (
+    max(
+        _question_workflow_timeout_default(),
+        _claim_workflow_timeout_default(),
+    )
+    + _CLASSIFICATION_BUDGET_SECONDS
+)
 
 
 class RouteDispatchTimeoutError(TimeoutError):
@@ -85,16 +123,19 @@ class LangGraphResolveQuery:
         analyze_claim: AnalyzeClaim,
         trace_id_factory: Callable[[], str | None] | None = None,
         callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
-        timeout_seconds: float = 20.0,
+        timeout_seconds: float = DEFAULT_ROUTING_TIMEOUT_SECONDS,
     ) -> None:
         if timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive")
         self._classifier = classifier
         self._answer_question = answer_question
         self._analyze_claim = analyze_claim
-        self._trace_id_factory: Callable[[], str | None] = trace_id_factory or (
-            lambda: str(uuid.uuid4())
-        )
+        # Sin factory no hay traza. El default anterior fabricaba un
+        # ``uuid.uuid4()``, que Langfuse rechaza por no ser 32 hex en
+        # minúscula: la SDK lo descartaba y el sobre publicaba un enlace que
+        # nunca podía resolver. Igual que en los otros dos workflows, la
+        # ausencia de configuración se representa con ``None``.
+        self._trace_id_factory: Callable[[], str | None] = trace_id_factory or (lambda: None)
         self._callback_factory = callback_factory
         self._timeout_seconds = timeout_seconds
         self._graph = self._build_graph()
@@ -189,7 +230,7 @@ def build_resolve_query_workflow(
     analyze_claim: AnalyzeClaim,
     trace_id_factory: Callable[[], str | None] | None = None,
     callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
-    timeout_seconds: float = 20.0,
+    timeout_seconds: float = DEFAULT_ROUTING_TIMEOUT_SECONDS,
 ) -> LangGraphResolveQuery:
     """Module-level helper to compose the selector with explicit defaults."""
     return LangGraphResolveQuery(

@@ -146,14 +146,44 @@ describe('thread-store (T11)', () => {
     const { persistThreadState, loadThreadHydration } = await import(
       '@/lib/thread-store'
     );
+    // Con un mensaje: un hilo vacío ya no se persiste, porque todavía no es
+    // una conversación.
     const state = {
       activeThreadId: 't-fresh',
-      messages: [],
+      messages: [{ id: 'u1', role: 'user', text: 'hola', mode: 'auto', createdAt: 1 }],
       threads: [{ id: 't-fresh', title: 'nuevo', updatedAt: 1 }],
       mode: 'auto',
     } as const;
     persistThreadState(state as never, {});
     const hydration = loadThreadHydration();
     expect(hydration.threadRecords['t-fresh']?.session_id).toBeTruthy();
+  });
+
+  it('no persiste un hilo sin mensajes', async () => {
+    const { persistThreadState, loadThreadHydration } = await import('@/lib/thread-store');
+    const state = {
+      activeThreadId: 't-vacio',
+      messages: [],
+      threads: [{ id: 't-vacio', title: '', updatedAt: 1 }],
+      mode: 'auto',
+    } as const;
+    persistThreadState(state as never, {});
+    expect(loadThreadHydration().threadRecords['t-vacio']).toBeUndefined();
+  });
+
+  it('titula desde el primer mensaje en vez de desde el identificador', async () => {
+    const { persistThreadState, loadThreadHydration } = await import('@/lib/thread-store');
+    const state = {
+      activeThreadId: 'demo-1',
+      messages: [
+        { id: 'u1', role: 'user', text: '¿Cuándo se aplica el CIDE?', mode: 'auto', createdAt: 1 },
+      ],
+      threads: [],
+      mode: 'auto',
+    } as const;
+    persistThreadState(state as never, {});
+    const title = loadThreadHydration().threadRecords['demo-1']?.summary.title;
+    expect(title).toBe('¿Cuándo se aplica el CIDE?');
+    expect(title).not.toContain('Hilo demo-1');
   });
 });

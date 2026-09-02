@@ -100,3 +100,97 @@ describe('hilos vacíos', () => {
     expect(next.activeThreadId).toBe('t2');
   });
 });
+
+describe('un hilo vacío no sobrevive a salir de él', () => {
+  /** Hilo inicial con mensajes + un `t2` vacío y activo. Devuelve ambos ids. */
+  function conHiloVacioActivo(): { estado: ThreadState; conMensajes: string } {
+    const base = initialState();
+    const conMensajes = base.activeThreadId as string;
+    const conversacion = submit(base, 'question');
+    return {
+      estado: threadReducer(conversacion, { type: 'NEW_THREAD', id: 't2' }),
+      conMensajes,
+    };
+  }
+
+  it('descarta el hilo vacío al cambiar a otro del historial', () => {
+    const { estado, conMensajes } = conHiloVacioActivo();
+    expect(estado.activeThreadId).toBe('t2');
+    expect(estado.threads.map((t) => t.id)).toContain('t2');
+
+    const despues = threadReducer(estado, { type: 'SELECT_THREAD', id: conMensajes });
+    expect(despues.activeThreadId).toBe(conMensajes);
+    expect(despues.threads.map((t) => t.id)).not.toContain('t2');
+  });
+
+  it('no deja rastro del hilo vacío en los mapas del estado', () => {
+    const { estado, conMensajes } = conHiloVacioActivo();
+    const despues = threadReducer(estado, { type: 'SELECT_THREAD', id: conMensajes });
+    expect(despues.threadMessages['t2']).toBeUndefined();
+    expect(despues.threadSessionIds['t2']).toBeUndefined();
+    expect(despues.threadModes['t2']).toBeUndefined();
+  });
+
+  it('conserva el hilo de origen cuando sí tenía mensajes', () => {
+    const { estado, conMensajes } = conHiloVacioActivo();
+    // Salimos de `t2` (vacío) hacia el hilo con mensajes: `t2` desaparece,
+    // pero el que tiene conversación se queda.
+    const despues = threadReducer(estado, { type: 'SELECT_THREAD', id: conMensajes });
+    expect(despues.threads.map((t) => t.id)).toContain(conMensajes);
+  });
+
+  it('restaura los mensajes del hilo elegido', () => {
+    const { estado, conMensajes } = conHiloVacioActivo();
+    const despues = threadReducer(estado, { type: 'SELECT_THREAD', id: conMensajes });
+    expect(despues.messages.length).toBeGreaterThan(0);
+  });
+});
+
+describe('un hilo entra en el historial al recibir su primer mensaje', () => {
+  it('lista el hilo activo inicial, que antes no tenía entrada propia', () => {
+    const base = initialState();
+    expect(base.threads).toHaveLength(0);
+
+    const conversacion = submit(base, 'question');
+    expect(conversacion.threads.map((t) => t.id)).toEqual([base.activeThreadId]);
+  });
+
+  it('titula el hilo con el texto del primer mensaje, no con un contador', () => {
+    const conversacion = threadReducer(initialState(), {
+      type: 'SUBMIT',
+      messageId: 'u1',
+      assistantId: 'a1',
+      text: '¿Cuándo se aplica el convenio CIDE?',
+      mode: 'question',
+      createdAt: 1_000,
+    });
+    expect(conversacion.threads[0].title).toBe('¿Cuándo se aplica el convenio CIDE?');
+  });
+
+  it('recorta un primer mensaje largo en vez de desbordar la barra lateral', () => {
+    const largo = 'Durante una lluvia intensa se produce una colisión múltiple en la autopista';
+    const conversacion = threadReducer(initialState(), {
+      type: 'SUBMIT',
+      messageId: 'u1',
+      assistantId: 'a1',
+      text: largo,
+      mode: 'claim',
+      createdAt: 1_000,
+    });
+    const title = conversacion.threads[0].title;
+    expect(title.length).toBeLessThanOrEqual(49);
+    expect(title.endsWith('…')).toBe(true);
+  });
+
+  it('no lista un hilo que nunca recibió un mensaje', () => {
+    const conMensajes = submit(initialState(), 'question');
+    const nuevo = threadReducer(conMensajes, { type: 'NEW_THREAD', id: 't2' });
+    // `t2` existe como hilo activo pero aún no es una conversación; al volver
+    // al anterior desaparece sin dejar rastro.
+    const vuelta = threadReducer(nuevo, {
+      type: 'SELECT_THREAD',
+      id: conMensajes.activeThreadId,
+    });
+    expect(vuelta.threads).toHaveLength(1);
+  });
+});
