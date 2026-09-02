@@ -1,9 +1,15 @@
 name: allianz-rag
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-file: "3"
+    max-size: 10m
 networks:
   default:
     name: allianz-rag_default
 services:
   clickhouse:
+    logging: *default-logging
     environment:
       - CLICKHOUSE_DB=default
       - CLICKHOUSE_PASSWORD=${ALLIANZ_CLICKHOUSE_PASSWORD}
@@ -31,6 +37,7 @@ services:
         type: volume
         volume: {}
   langfuse-web:
+    logging: *default-logging
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -146,6 +153,7 @@ services:
         target: 3000
     restart: always
   langfuse-worker:
+    logging: *default-logging
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -242,6 +250,7 @@ services:
     ports: []
     restart: always
   minio:
+    logging: *default-logging
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address
       ":9001" /data'
     entrypoint: sh
@@ -274,6 +283,7 @@ services:
         type: volume
         volume: {}
   postgres:
+    logging: *default-logging
     environment:
       - PGTZ=UTC
       - POSTGRES_DB=postgres
@@ -298,6 +308,7 @@ services:
         type: volume
         volume: {}
   qdrant:
+    logging: *default-logging
     environment:
       QDRANT__TELEMETRY_DISABLED: "true"
     image: qdrant/qdrant@sha256:057ee3a8da769fe7310dd3537b4dc7583bf87a95ce8ac43c0af5a46bc580d1fc
@@ -316,6 +327,7 @@ services:
         type: volume
         volume: {}
   redis:
+    logging: *default-logging
     command:
       - --requirepass
       - ${ALLIANZ_REDIS_PASSWORD}
