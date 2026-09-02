@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
+from typing import cast
 
 from application.models.query import QueryExecution, QueryInput
 from application.ports.outbound.language_model import LanguageModelError
@@ -250,8 +251,7 @@ def _run_index_rollback(arguments: argparse.Namespace) -> int:
                 sparse_encoder=_sparse_double(),
                 active_alias="allianz-manual-active",
             )
-            await builder.rollback_alias(arguments.collection)
-            active = await builder._active_collection()
+            active = await builder.rollback_alias(arguments.collection)
             return {"collection": arguments.collection, "active_alias": active}
         finally:
             await client.close()
@@ -364,7 +364,7 @@ def _run_rules_validate(arguments: argparse.Namespace) -> int:
         or "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
     )
     evidence_pool = evidence_pool_from_publications(list(arguments.evidence_roots))
-    reports = []
+    reports: list[dict[str, object]] = []
     exit_code = 0
     if arguments.matrix is not None:
         try:
@@ -376,7 +376,7 @@ def _run_rules_validate(arguments: argparse.Namespace) -> int:
         except Exception as error:  # noqa: BLE001
             print(f"error: matrix validation: {error}", file=sys.stderr)
             return 2
-        reports.append({"artifact": "matrix", **report.__dict__})
+        reports.append({"artifact": "matrix", **asdict(report)})
         if not report.ok:
             exit_code = 2
     if arguments.ruleset is not None:
@@ -389,7 +389,7 @@ def _run_rules_validate(arguments: argparse.Namespace) -> int:
         except Exception as error:  # noqa: BLE001
             print(f"error: ruleset validation: {error}", file=sys.stderr)
             return 2
-        reports.append({"artifact": "ruleset", **report.__dict__})
+        reports.append({"artifact": "ruleset", **asdict(report)})
         if not report.ok:
             exit_code = 2
     if not reports:
@@ -431,7 +431,10 @@ def _golden_load_items(golden_root: Path) -> list[dict[str, object]]:
         for raw in partition_path.read_text(encoding="utf-8").splitlines():
             if not raw.strip():
                 continue
-            items.append(json.loads(raw))
+            item = _json_object(json.loads(raw))
+            if item is None:
+                raise ValueError(f"golden item in {partition_path} must be a JSON object")
+            items.append(item)
     return items
 
 
@@ -449,8 +452,8 @@ def _golden_evidence_ids(evidence_roots: list[Path]) -> set[str]:
                 for raw in pages_path.read_text(encoding="utf-8").splitlines():
                     if not raw.strip():
                         continue
-                    record = json.loads(raw)
-                    if isinstance(record, dict):
+                    record = _json_object(json.loads(raw))
+                    if record is not None:
                         evidence_id = record.get("evidence_id")
                         if isinstance(evidence_id, str):
                             ids.add(evidence_id)
@@ -477,27 +480,28 @@ def _run_golden_validate(arguments: argparse.Namespace) -> int:
         return 2
     evidence_ids = _golden_evidence_ids(list(arguments.evidence_roots))
     errors: list[str] = []
+    validated_items: list[GoldenDatasetItem] = []
+    for index, item in enumerate(items):
+        try:
+            validated_items.append(GoldenDatasetItem.model_validate(item))
+        except (ValueError, Exception) as error:
+            errors.append(f"item {index} ({_golden_case_id(item)}): {error}")
     try:
         check_family_splits(
-            tuple((item["metadata"]["family_id"], item["metadata"]["partition"]) for item in items)
+            tuple((item.metadata.family_id, item.metadata.partition) for item in validated_items)
         )
     except ValueError as error:
         errors.append(f"family splits: {error}")
-    for index, item in enumerate(items):
-        try:
-            GoldenDatasetItem.model_validate(item)
-        except (ValueError, Exception) as error:
-            errors.append(f"item {index} ({item.get('metadata', {}).get('case_id', '?')}): {error}")
-    for item in items:
-        metadata = item.get("metadata", {})
-        if metadata.get("review_status") != "adjudicated":
-            errors.append(f"case {metadata.get('case_id', '?')} has incomplete review status")
+    for item in validated_items:
+        metadata = item.metadata
+        if metadata.review_status != "adjudicated":
+            errors.append(f"case {metadata.case_id} has incomplete review status")
     referenced_evidence = {
         evidence_id
-        for item in items
-        for requirement in item.get("expected_output", {}).get("evidence_requirements", [])
-        for bundle in requirement.get("any_of", [])
-        for evidence_id in bundle.get("all_of", [])
+        for item in validated_items
+        for requirement in item.expected_output.evidence_requirements
+        for bundle in requirement.any_of
+        for evidence_id in bundle.all_of
     }
     unknown_evidence = sorted(referenced_evidence - evidence_ids)
     if unknown_evidence:
@@ -514,6 +518,21 @@ def _run_golden_validate(arguments: argparse.Namespace) -> int:
     }
     print(json.dumps(payload, sort_keys=True, ensure_ascii=False, indent=2))
     return 0 if not errors else 2
+
+
+def _json_object(value: object) -> dict[str, object] | None:
+    if not isinstance(value, dict):
+        return None
+    mapping = cast(dict[object, object], value)
+    if not all(isinstance(key, str) for key in mapping):
+        return None
+    return cast(dict[str, object], mapping)
+
+
+def _golden_case_id(item: dict[str, object]) -> str:
+    metadata = _json_object(item.get("metadata"))
+    case_id = metadata.get("case_id") if metadata is not None else None
+    return case_id if isinstance(case_id, str) else "?"
 
 
 def _run_golden_freeze(arguments: argparse.Namespace) -> int:
@@ -642,12 +661,15 @@ def _run_golden_publish(arguments: argparse.Namespace) -> int:
             pass
         uploaded = 0
         for item in items:
+            metadata = _json_object(item["metadata"])
+            if metadata is None:
+                raise ValueError("frozen golden item metadata must be an object")
             client.create_dataset_item(
                 dataset_name=dataset_name,
                 input=item["input"],
                 expected_output=item["expected_output"],
                 metadata={
-                    **item["metadata"],
+                    **metadata,
                     "release": dataset_version,
                     "schema_version": manifest["schema_version"],
                 },
@@ -708,7 +730,7 @@ def _run_parser_comparison(arguments: argparse.Namespace) -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parents[5] / "scripts"))
     from compare_parsers import compare_extractions  # type: ignore[import-not-found]
 
-    report = compare_extractions(pypdf_extraction, docling_extraction)
+    report = cast(dict[str, object], compare_extractions(pypdf_extraction, docling_extraction))
     report["timings_seconds"] = {
         "pypdf": pypdf_elapsed,
         "docling": docling_elapsed,

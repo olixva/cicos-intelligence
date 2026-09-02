@@ -10,16 +10,17 @@ avoid.
 
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import cast
 
 from domain.models.claim import MatrixCell
 from domain.rules.artifact_validation import (
+    JsonObject,
     RulesArtifactError,
     evidence_pool_from_publications,
+    load_json_object,
     load_matrix_cells,
     validate_cide_matrix,
     validate_ruleset,
@@ -81,32 +82,56 @@ def load_rules_artifacts(
                 f"{label} artifact has an incomplete attestation and must not drive decisions"
             )
 
-    matrix_payload = json.loads(matrix_path.read_text(encoding="utf-8"))
+    matrix_payload = load_json_object(matrix_path)
     cells = {
         position: MatrixCell(
             a=position[0],
             b=position[1],
             outcome=str(cell["outcome"]),
-            evidence_ids=tuple(str(item) for item in cell.get("evidence_ids", ())),
+            evidence_ids=_string_values(cell.get("evidence_ids")),
         )
         for position, cell in load_matrix_cells(matrix_path).items()
     }
     return RulesArtifacts(
-        rules=tuple(_rule(raw) for raw in json.loads(ruleset_path.read_text("utf-8"))["rules"]),
+        rules=tuple(
+            _rule(raw) for raw in _object_list(load_json_object(ruleset_path).get("rules"))
+        ),
         matrix_cells=cells,
-        row_labels=tuple(str(label) for label in matrix_payload["row_labels"]),
-        column_labels=tuple(str(label) for label in matrix_payload["column_labels"]),
+        row_labels=_string_values(matrix_payload.get("row_labels")),
+        column_labels=_string_values(matrix_payload.get("column_labels")),
     )
 
 
-def _rule(raw: dict[str, Any]) -> LoadedRule:
+def _rule(raw: JsonObject) -> LoadedRule:
     applies_when = raw.get("applies_when")
     return LoadedRule(
         rule_id=str(raw["rule_id"]),
         kind=str(raw["kind"]),
         description=str(raw["description"]),
-        prerequisites=tuple(str(item) for item in raw.get("prerequisites", ())),
+        prerequisites=_string_values(raw.get("prerequisites")),
         outcome=str(raw["outcome"]) if raw.get("outcome") else None,
-        evidence_ids=tuple(str(item) for item in raw.get("evidence_ids", ())),
-        applies_when=dict(applies_when) if isinstance(applies_when, dict) else None,
+        evidence_ids=_string_values(raw.get("evidence_ids")),
+        applies_when=cast(dict[str, object], applies_when)
+        if isinstance(applies_when, dict)
+        else None,
     )
+
+
+def _object_list(value: object) -> tuple[JsonObject, ...]:
+    if not isinstance(value, list):
+        raise RulesArtifactsUnavailable("ruleset rules must be a JSON array")
+    objects: list[JsonObject] = []
+    for raw_item in cast(list[object], value):
+        if not isinstance(raw_item, dict):
+            raise RulesArtifactsUnavailable("ruleset rules must contain JSON objects")
+        item = cast(dict[object, object], raw_item)
+        if not all(isinstance(key, str) for key in item):
+            raise RulesArtifactsUnavailable("ruleset rules must contain JSON objects")
+        objects.append(cast(JsonObject, item))
+    return tuple(objects)
+
+
+def _string_values(value: object) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple(item for item in cast(list[object], value) if isinstance(item, str))

@@ -11,6 +11,11 @@ from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.resolve_query import ResolveQuery
 from application.ports.outbound.evidence_repository import EvidenceRepository
+from application.services.ingestion_jobs import IngestionJobService
+from infrastructure.adapters.inbound.api.routes.admin_ingestion import (
+    IngestionRunner,
+    build_admin_ingestion_router,
+)
 from infrastructure.adapters.inbound.api.routes.claims import build_claim_router
 from infrastructure.adapters.inbound.api.routes.manual import (
     RegisteredSource,
@@ -41,6 +46,10 @@ def create_app(
     analyze_claim: AnalyzeClaim | None = None,
     resolve_query: ResolveQuery | None = None,
     allowed_profiles: tuple[str, ...] = (),
+    admin_ingestion_service: IngestionJobService | None = None,
+    admin_ingestion_runner: IngestionRunner | None = None,
+    admin_ingestion_repository: EvidenceRepository | None = None,
+    admin_ingestion_document_hash: str | None = None,
 ) -> FastAPI:
     """Create the API with explicit dependencies or safe local defaults.
 
@@ -85,6 +94,14 @@ def create_app(
             catalog=catalog,
             repository=evidence_repository,
             active_version=active_version,
+        )
+    )
+    app.include_router(
+        build_admin_ingestion_router(
+            service=admin_ingestion_service,
+            runner=admin_ingestion_runner,
+            evidence_repository=admin_ingestion_repository or evidence_repository,
+            document_hash=admin_ingestion_document_hash or active_version,
         )
     )
     if answer_question is not None:

@@ -160,7 +160,7 @@ class EnvelopeRequest(_ResponseModel):
             if self.mode != "claim":
                 raise ValueError("clarifications are only allowed when mode is 'claim'")
             for item in self.clarifications:
-                if not isinstance(item, str) or not item.strip():
+                if not item.strip():
                     raise ValueError("each clarification must be a nonempty string")
         return self
 
@@ -276,8 +276,6 @@ class EnvelopeResponse(_ResponseModel):
         evidence: tuple[EvidenceItem, ...] = (),
     ) -> EnvelopeResponse:
         analysis = execution.result
-        if not isinstance(analysis, ClaimAnalysis):
-            raise TypeError("envelope.from_claim requires a ClaimAnalysis result")
         trace_id = execution.trace_id or ""
         trace_url = execution.trace_url or _langfuse_trace_url(trace_id)
         return cls(
@@ -362,8 +360,6 @@ class EnvelopeResponse(_ResponseModel):
             )
         if isinstance(dispatch, ClaimExecution):
             analysis = dispatch.result
-            if not isinstance(analysis, ClaimAnalysis):
-                raise TypeError("envelope.from_route_execution requires ClaimAnalysis result")
             return cls(
                 request_id=request_id,
                 requested_mode="auto",
@@ -375,21 +371,19 @@ class EnvelopeResponse(_ResponseModel):
                     "langfuse_url": _langfuse_trace_url(trace_id),
                 },
             )
-        if isinstance(dispatch, ClarificationResult):
-            return cls(
-                request_id=request_id,
-                requested_mode="auto",
-                resolved_mode="clarification",
-                result=ClarificationResultBody(
-                    kind="clarification",
-                    message=dispatch.message,
-                    missing_fields=dispatch.missing_fields,
-                ),
-                evidence=(),
-                metadata={
-                    "trace_id": trace_id,
-                    "langfuse_url": _langfuse_trace_url(trace_id),
-                    "decision": execution.classification.decision,
-                },
-            )
-        raise TypeError(f"unsupported dispatch type: {type(dispatch).__name__}")
+        return cls(
+            request_id=request_id,
+            requested_mode="auto",
+            resolved_mode="clarification",
+            result=ClarificationResultBody(
+                kind="clarification",
+                message=dispatch.message,
+                missing_fields=dispatch.missing_fields,
+            ),
+            evidence=(),
+            metadata={
+                "trace_id": trace_id,
+                "langfuse_url": _langfuse_trace_url(trace_id),
+                "decision": execution.classification.decision,
+            },
+        )

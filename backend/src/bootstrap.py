@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from application.models.ingestion import IngestionJobStore
 from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.ingest_document import IngestDocument
 from application.ports.inbound.inspect_manual import InspectManual
 from application.ports.inbound.resolve_query import ResolveQuery
+from application.services.ingestion_jobs import IngestionJobService
+from application.services.ingestion_runner import IngestionRunner
 from application.use_cases.analyze_claim_use_case import AnalyzeClaimUseCase
 from application.use_cases.answer_question_use_case import AnswerQuestionUseCase
 from application.use_cases.build_retrieval_index_use_case import (
@@ -20,8 +24,10 @@ from application.use_cases.build_retrieval_index_use_case import (
 )
 from application.use_cases.ingest_document_use_case import IngestDocumentUseCase
 from application.use_cases.inspect_manual_use_case import InspectManualUseCase
+from domain.models.evidence import Extraction
 from infrastructure.adapters.outbound.document_parser.pypdf_parser import PypdfDocumentParser
 from infrastructure.adapters.outbound.evidence_repository.filesystem_repository import (
+    EvidencePublicationError,
     FilesystemEvidenceRepository,
 )
 from infrastructure.adapters.outbound.source_inspector.pypdf_source_inspector import (
@@ -320,12 +326,57 @@ def build_api(
             "pass profile_name or any of question_profile/claim_profile/resolve_query_profile, "
             "or fix the Langfuse/Qdrant configuration before serving the API"
         )
+    ingestion_service = IngestionJobService(
+        IngestionJobStore(Path(os.environ.get("ALLIANZ_INGESTION_STATE", "data/ingestion.json")))
+    )
+    ingestion_source = Path(
+        os.environ.get("ALLIANZ_MANUAL_SOURCE", "data/raw/Manual-cide-ascide-y-cicos.pdf")
+    )
+    ingestion_root = Path(os.environ.get("ALLIANZ_EXTRACTIONS_ROOT", "data/extractions"))
+    ingestion_profile = profile_name or question_profile or "baseline"
+    ingestion_hash = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+
+    async def publish_ingestion_index(*, document_hash: str, parser: str) -> IndexBuildResult:
+        return await build_and_publish_retrieval_index(
+            document_hash=document_hash,
+            evidence_root=ingestion_root,
+            parser=parser,
+            profile_name=ingestion_profile,
+            qdrant_url=os.environ.get("ALLIANZ_QDRANT_URL", "http://127.0.0.1:6333"),
+        )
+
+    def extract_manual(source: Path) -> Extraction:
+        parser = PypdfDocumentParser()
+        extraction = parser.parse(source)
+        repository = FilesystemEvidenceRepository(ingestion_root, parser.parser)
+        try:
+            repository.publish(extraction)
+        except EvidencePublicationError:
+            # The publication is immutable. A prior run with the same source hash
+            # may carry an older filename metadata value; it remains valid evidence
+            # and can be reused after the pages are verified by the repository.
+            pages = repository.get_document_pages(extraction.manifest.sha256)
+            if len(pages) != extraction.manifest.page_count:
+                raise
+        return extraction
+
+    ingestion_runner = IngestionRunner(
+        store=ingestion_service.store,
+        source=ingestion_source,
+        expected_hash=ingestion_hash,
+        inspect_and_extract=extract_manual,
+        publish_index=publish_ingestion_index,
+    )
     return create_app(
         answer_question=answer_question,
         analyze_claim=analyze_claim,
         resolve_query=resolve_query,
         allowed_profiles=_known_profiles(),
         required_index_ready=required_index_ready,
+        admin_ingestion_service=ingestion_service,
+        admin_ingestion_runner=ingestion_runner.run,
+        admin_ingestion_repository=FilesystemEvidenceRepository(ingestion_root, "pypdf-6.16.2"),
+        admin_ingestion_document_hash=ingestion_hash,
     )
 
 

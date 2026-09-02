@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -11,6 +10,14 @@ import { PdfOverlay } from '@/components/pdf-overlay/pdf-overlay';
 import { BannerSystem } from '@/components/banner-system';
 import { Footer } from '@/components/footer';
 import { DotPattern } from '@/components/ui/dot-pattern';
+import { IngestionPanel } from '@/components/admin/ingestion-panel';
+import {
+  getIngestionSnapshot,
+  getIngestionExtractions,
+  startIngestion,
+  subscribeToIngestion,
+  type IngestionSnapshot,
+} from '@/api/ingestion';
 import { streamQuery, type StreamingEvent } from '@/lib/streaming-client';
 import {
   buildRequest,
@@ -48,6 +55,15 @@ export default function IndexRoute() {
   const sidebarCollapsed = false;
   const [showSidebar, setShowSidebar] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<string | null>(null);
+  const [adminMode, setAdminMode] = useState(false);
+  const [ingestionSnapshot, setIngestionSnapshot] = useState<IngestionSnapshot>({
+    active_job: null,
+    last_job: null,
+  });
+  const [ingestionExtractions, setIngestionExtractions] = useState<Awaited<ReturnType<typeof getIngestionExtractions>>['items']>([]);
+  const [ingestionTotal, setIngestionTotal] = useState(0);
+  const [ingestionOffset, setIngestionOffset] = useState(0);
+  const ingestionPageSize = 20;
   const controllerRef = useRef<AbortController | null>(null);
   const startedAtRef = useRef<Map<string, number>>(new Map());
   const messagesRef = useRef<ThreadMessage[]>(state.messages);
@@ -197,6 +213,37 @@ export default function IndexRoute() {
     dispatch({ type: 'NEW_THREAD', id: newId });
   }, []);
 
+  const openAdminMode = useCallback(() => {
+    setAdminMode(true);
+    setIngestionOffset(0);
+    void Promise.all([getIngestionSnapshot(), getIngestionExtractions(0, ingestionPageSize)])
+      .then(([nextSnapshot, nextExtractions]) => {
+        setIngestionSnapshot(nextSnapshot);
+        setIngestionExtractions(nextExtractions.items);
+        setIngestionTotal(nextExtractions.total);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const handleIngestionPageChange = useCallback((nextOffset: number) => {
+    setIngestionOffset(nextOffset);
+    void getIngestionExtractions(nextOffset, ingestionPageSize)
+      .then((page) => { setIngestionExtractions(page.items); setIngestionTotal(page.total); })
+      .catch(() => undefined);
+  }, []);
+
+  const handleStartIngestion = useCallback(() => {
+    void startIngestion()
+      .then((job) => setIngestionSnapshot({ active_job: job, last_job: null }))
+      .then(() => {
+        const close = subscribeToIngestion(() => {
+          void getIngestionSnapshot().then(setIngestionSnapshot).catch(() => undefined);
+        }, () => undefined);
+        window.setTimeout(close, 30 * 60 * 1000);
+      })
+      .catch(() => undefined);
+  }, []);
+
   const handleSelectThread = useCallback(
     (id: string) => {
       controllerRef.current?.abort();
@@ -284,22 +331,21 @@ export default function IndexRoute() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={handleNewThread}
-                  aria-label="Nueva consulta"
-                  title="Nueva consulta"
+                  onClick={adminMode ? () => setAdminMode(false) : openAdminMode}
+                  aria-label={adminMode ? 'Volver al chat' : 'Modo administrador'}
+                  title={adminMode ? 'Volver al chat' : 'Modo administrador'}
                   className="h-7 gap-1 px-2 text-xs"
                 >
-                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">Nueva consulta</span>
+                  <span className="hidden sm:inline">{adminMode ? 'Volver al chat' : 'Modo administrador'}</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Nueva consulta</TooltipContent>
+              <TooltipContent>{adminMode ? 'Volver al chat' : 'Modo administrador'}</TooltipContent>
             </Tooltip>
           </div>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          {showSidebar && (
+          {showSidebar && !adminMode && (
             <ThreadSidebar
               threads={state.threads}
               activeThreadId={state.activeThreadId}
@@ -314,30 +360,42 @@ export default function IndexRoute() {
               <BannerSystem />
             </div>
 
-            <div className="flex-1 overflow-hidden">
-              {state.messages.length === 0 ? (
-                <EmptyState onSelect={handleSelectExample} />
-              ) : (
-                <Thread
-                  messages={state.messages}
-                  onOpenCitation={handleOpenCitation}
-                />
-              )}
-            </div>
-
-            <div className="border-t bg-background/80 p-3 backdrop-blur">
-              <div className="mx-auto w-full max-w-3xl">
-                <ComposerWithDraft
-                  busy={state.isStreaming}
-                  mode={state.mode}
-                  onModeChange={handleModeChange}
-                  onSubmit={handleSubmit}
-                  onCancel={handleCancel}
-                  draftPrompt={draftPrompt}
-                  onDraftConsumed={() => setDraftPrompt(null)}
+            {adminMode ? (
+              <div className="flex-1 overflow-hidden">
+                <IngestionPanel
+                  snapshot={ingestionSnapshot}
+                  extractions={ingestionExtractions}
+                  totalExtractions={ingestionTotal}
+                  offset={ingestionOffset}
+                  pageSize={ingestionPageSize}
+                  onPageChange={handleIngestionPageChange}
+                  onStart={handleStartIngestion}
                 />
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex-1 overflow-hidden">
+                  {state.messages.length === 0 ? (
+                    <EmptyState onSelect={handleSelectExample} />
+                  ) : (
+                    <Thread messages={state.messages} onOpenCitation={handleOpenCitation} />
+                  )}
+                </div>
+                <div className="border-t bg-background/80 p-3 backdrop-blur">
+                  <div className="mx-auto w-full max-w-3xl">
+                    <ComposerWithDraft
+                      busy={state.isStreaming}
+                      mode={state.mode}
+                      onModeChange={handleModeChange}
+                      onSubmit={handleSubmit}
+                      onCancel={handleCancel}
+                      draftPrompt={draftPrompt}
+                      onDraftConsumed={() => setDraftPrompt(null)}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </main>
         </div>
 

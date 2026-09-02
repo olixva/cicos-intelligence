@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Awaitable, Callable, Sequence
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, cast
 
 from application.models.query import QueryExecution, QueryInput
 
@@ -103,8 +103,9 @@ def serialize_execution(execution: QueryExecution) -> dict[str, object]:
 def _query_from_dataset_input(raw: object) -> QueryInput:
     if not isinstance(raw, dict):
         raise ValueError("Langfuse dataset input must be an object")
-    text = raw.get("text")
-    language = raw.get("language")
+    payload = cast(dict[str, object], raw)
+    text = payload.get("text")
+    language = payload.get("language")
     if not isinstance(text, str) or language not in ("es", "en"):
         raise ValueError("Langfuse dataset input requires text and language")
     return QueryInput(text=text, language=language)
@@ -173,5 +174,5 @@ def run_question_experiment(
 
 
 def _validate_identifier(name: str, value: str) -> None:
-    if not isinstance(value, str) or not value.strip():
+    if not value.strip():
         raise ValueError(f"{name} must be a nonblank string")

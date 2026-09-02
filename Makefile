@@ -4,8 +4,7 @@
         local-services-config local-services-up local-services-stop \
         doctor serve-backend serve-frontend provision-prompts
 
-ALLIANZ_DOCKER_CONTEXT ?= colima-allianz
-LOCAL_COMPOSE = docker --context $(ALLIANZ_DOCKER_CONTEXT) compose --env-file ops/local.env
+LOCAL_COMPOSE = docker compose --env-file ops/local.env
 PNPM ?= npm exec --yes pnpm@9.12.0 --
 # El host no tiene pnpm en PATH; el wrapper evita instalar una versión
 # global y respeta la política de antigüedad mínima de npm.
@@ -78,7 +77,7 @@ local-services-stop:
 	$(LOCAL_COMPOSE) stop
 
 doctor:
-	ALLIANZ_DOCKER_CONTEXT=$(ALLIANZ_DOCKER_CONTEXT) uv run --project backend allianz doctor
+	uv run --project backend allianz doctor
 
 # --- Servir en desarrollo ---------------------------------------------------
 # Carga `.env` y mapea las claves de Langfuse desde `ops/local.env`, donde

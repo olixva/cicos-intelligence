@@ -37,7 +37,7 @@ class ClaimAnalysisRequest(BaseModel):
             raise ValueError("claim text must be nonempty")
         if self.clarifications is not None:
             for item in self.clarifications:
-                if not isinstance(item, str) or not item.strip():
+                if not item.strip():
                     raise ValueError("claim clarifications must be nonempty strings")
         return self
 

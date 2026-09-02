@@ -1152,6 +1152,120 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/ingestion": {
+      "get": {
+        "operationId": "get_snapshot_api_v1_admin_ingestion_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Snapshot Api V1 Admin Ingestion Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Snapshot",
+        "tags": [
+          "admin-ingestion"
+        ]
+      },
+      "post": {
+        "operationId": "start_ingestion_api_v1_admin_ingestion_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Start Ingestion",
+        "tags": [
+          "admin-ingestion"
+        ]
+      }
+    },
+    "/api/v1/admin/ingestion/events": {
+      "get": {
+        "operationId": "ingestion_events_api_v1_admin_ingestion_events_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ingestion Events",
+        "tags": [
+          "admin-ingestion"
+        ]
+      }
+    },
+    "/api/v1/admin/ingestion/extractions": {
+      "get": {
+        "operationId": "get_extractions_api_v1_admin_ingestion_extractions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Extractions Api V1 Admin Ingestion Extractions Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Extractions",
+        "tags": [
+          "admin-ingestion"
+        ]
+      }
+    },
     "/api/v1/claims/analyze": {
       "post": {
         "operationId": "analyze_claim_route_api_v1_claims_analyze_post",

@@ -20,6 +20,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from typing import cast
 
 from bootstrap import build_api
 
@@ -42,11 +43,23 @@ def _qdrant_alias_is_published() -> bool:
     except urllib.error.URLError, TimeoutError, json.JSONDecodeError:
         return False
 
-    aliases = payload.get("result", {}).get("aliases", []) if isinstance(payload, dict) else []
-    active = next(
-        (alias for alias in aliases if alias.get("alias_name") == _ACTIVE_ALIAS),
-        None,
-    )
+    if not isinstance(payload, dict):
+        return False
+    payload_data = cast(dict[str, object], payload)
+    result_raw = payload_data.get("result", {})
+    result = cast(dict[str, object], result_raw) if isinstance(result_raw, dict) else {}
+    aliases = result.get("aliases", [])
+    if not isinstance(aliases, list):
+        return False
+    alias_entries = cast(list[object], aliases)
+    active: dict[str, object] | None = None
+    for raw_alias in alias_entries:
+        if not isinstance(raw_alias, dict):
+            continue
+        alias = cast(dict[str, object], raw_alias)
+        if alias.get("alias_name") == _ACTIVE_ALIAS:
+            active = alias
+            break
     if active is None:
         return False
 
@@ -60,9 +73,14 @@ def _qdrant_alias_is_published() -> bool:
     except urllib.error.URLError, TimeoutError, json.JSONDecodeError:
         return False
 
-    points_count = (
-        details.get("result", {}).get("points_count", 0) if isinstance(details, dict) else 0
+    if not isinstance(details, dict):
+        return False
+    details_data = cast(dict[str, object], details)
+    details_result_raw = details_data.get("result", {})
+    details_result = (
+        cast(dict[str, object], details_result_raw) if isinstance(details_result_raw, dict) else {}
     )
+    points_count = details_result.get("points_count", 0)
     return isinstance(points_count, int) and points_count > 0
 
 

@@ -14,7 +14,6 @@ DoctorOperation = Literal["services", "containers", "retrieval", "evaluation", "
 
 _QDRANT_HEALTH_URL: Final = "http://127.0.0.1:6333/readyz"
 _LANGFUSE_HEALTH_URL: Final = "http://127.0.0.1:3000/api/public/health"
-_DEFAULT_DOCKER_CONTEXT: Final = "colima-allianz"
 _OPERATIONS: Final = frozenset(
     {"services", "containers", "retrieval", "evaluation", "generation", "all"}
 )
@@ -38,7 +37,7 @@ def check_environment(
     check_containers = operation in {"services", "containers", "all"}
     check_qdrant = operation in {"services", "retrieval", "all"}
     check_langfuse = operation in {"services", "evaluation", "all"}
-    docker_context = environment.get("ALLIANZ_DOCKER_CONTEXT", _DEFAULT_DOCKER_CONTEXT)
+    docker_context = "active"
 
     containers_available: bool | str = "not_checked"
     if check_containers:
@@ -91,10 +90,11 @@ def check_environment(
 
 
 def _container_engine_is_available(*, context: str, timeout: float) -> bool:
-    """Check the selected engine without changing Docker's global context."""
+    """Check Docker's active context without changing global configuration."""
+    del context
     try:
         completed = subprocess.run(
-            ["docker", "--context", context, "info", "--format", "{{.ServerVersion}}"],
+            ["docker", "info", "--format", "{{.ServerVersion}}"],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

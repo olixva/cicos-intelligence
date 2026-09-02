@@ -1,7 +1,7 @@
 # Servicios locales: Qdrant y Langfuse
 
-El entorno de desarrollo es local y usa el proyecto Docker `allianz-rag` en el contexto
-`colima-allianz`. Sus únicos puertos publicados se enlazan a `127.0.0.1`:
+El entorno de desarrollo es local y usa el proyecto Docker `allianz-rag` en el contexto Docker
+activo (normalmente `desktop-linux`). Sus únicos puertos publicados se enlazan a `127.0.0.1`:
 
 | Servicio | Dirección | Uso |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ su commit y su checksum están en [SOURCE.md](../../ops/langfuse/SOURCE.md).
 
 ## Preparación y operación
 
-Se necesita Docker/Colima y el contexto `colima-allianz`. Crea el archivo privado una sola vez:
+Se necesita Docker Desktop o un daemon Docker activo. Crea el archivo privado una sola vez:
 
 ```bash
 cp ops/local.env.example ops/local.env

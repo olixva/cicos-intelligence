@@ -223,6 +223,15 @@ def test_validate_cide_matrix_missing_artifact_raises(tmp_path: Path) -> None:
         )
 
 
+def test_validate_ruleset_rejects_a_json_array(tmp_path: Path) -> None:
+    """A non-object artifact must fail at the JSON boundary, not during validation."""
+    path = tmp_path / "ruleset.v1.json"
+    path.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(RulesArtifactError, match="JSON object"):
+        validate_ruleset(path, expected_document_hash=DOCUMENT_HASH, evidence_pool=set())
+
+
 def test_evidence_pool_from_publications_reads_pages_jsonl(tmp_path: Path) -> None:
     """The helper must aggregate evidence IDs from every publication directory."""
     document_hash = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"

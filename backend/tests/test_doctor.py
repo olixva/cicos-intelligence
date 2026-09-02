@@ -118,6 +118,24 @@ def test_default_services_check_requires_engine_and_both_health_endpoints(
     assert status["ready"] is False
 
 
+def test_container_engine_check_uses_the_active_docker_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Doctor must not revive a retired named Docker context."""
+    from infrastructure.adapters.inbound.cli import doctor
+
+    calls: list[list[str]] = []
+
+    def run(command: list[str], **_kwargs: Any) -> object:
+        calls.append(command)
+        return type("Result", (), {"returncode": 0})()
+
+    monkeypatch.setattr(doctor.subprocess, "run", run)
+
+    assert doctor._container_engine_is_available(context="colima-allianz", timeout=1)
+    assert calls == [["docker", "info", "--format", "{{.ServerVersion}}"]]
+
+
 def test_service_health_treats_timeout_as_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
     """A stalled health endpoint must fail closed within the configured timeout."""
     from infrastructure.adapters.inbound.cli import doctor

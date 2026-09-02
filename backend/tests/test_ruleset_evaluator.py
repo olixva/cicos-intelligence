@@ -91,6 +91,14 @@ def test_an_unknown_operator_is_rejected_rather_than_silently_ignored() -> None:
         evaluate_ruleset((rule,), {"a": "x"})
 
 
+def test_a_non_object_condition_branch_is_rejected_at_the_ruleset_boundary() -> None:
+    """A malformed compound condition must not escape as an AttributeError."""
+    rule = _rule("r", {"all": ["not-a-condition"]})
+
+    with pytest.raises(RulesetError, match="condition branch"):
+        evaluate_ruleset((rule,), {"a": "x"})
+
+
 def test_the_rationale_names_the_rule_and_what_was_seen() -> None:
     rule = _rule(
         "cadena",

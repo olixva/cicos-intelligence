@@ -15,7 +15,7 @@ Two properties matter more than expressiveness:
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import cast
 
 from domain.models.rule_evaluation import RuleEvaluation
 
@@ -38,7 +38,7 @@ class LoadedRule:
     prerequisites: tuple[str, ...]
     outcome: str | None
     evidence_ids: tuple[str, ...]
-    applies_when: dict[str, Any] | None = None
+    applies_when: dict[str, object] | None = None
 
 
 def evaluate_ruleset(
@@ -89,11 +89,11 @@ def _evaluate(rule: LoadedRule, facts: Mapping[str, str]) -> RuleEvaluation:
     )
 
 
-def _fields(condition: Mapping[str, Any]) -> tuple[str, ...]:
+def _fields(condition: Mapping[str, object]) -> tuple[str, ...]:
     """Collect every fact name the condition reads, preserving order."""
     if "all" in condition or "any" in condition:
         names: list[str] = []
-        for branch in condition.get("all") or condition.get("any") or []:
+        for branch in _compound_branches(condition):
             for name in _fields(branch):
                 if name not in names:
                     names.append(name)
@@ -104,11 +104,11 @@ def _fields(condition: Mapping[str, Any]) -> tuple[str, ...]:
     return (field,)
 
 
-def _holds(condition: Mapping[str, Any], facts: Mapping[str, str]) -> bool:
+def _holds(condition: Mapping[str, object], facts: Mapping[str, str]) -> bool:
     if "all" in condition:
-        return all(_holds(branch, facts) for branch in condition["all"])
+        return all(_holds(branch, facts) for branch in _compound_branches(condition))
     if "any" in condition:
-        return any(_holds(branch, facts) for branch in condition["any"])
+        return any(_holds(branch, facts) for branch in _compound_branches(condition))
 
     field = str(condition["field"])
     op = condition.get("op")
@@ -135,6 +135,22 @@ def _number(value: str) -> float:
         return float(value)
     except ValueError as error:
         raise RulesetError(f"numeric comparison over a non-numeric value: {value!r}") from error
+
+
+def _compound_branches(condition: Mapping[str, object]) -> tuple[Mapping[str, object], ...]:
+    """Return validated branches for the closed ``all``/``any`` operators."""
+    value = condition.get("all") if "all" in condition else condition.get("any")
+    if not isinstance(value, list):
+        raise RulesetError(f"compound condition branches must be a list: {condition!r}")
+    branches: list[Mapping[str, object]] = []
+    for raw_branch in cast(list[object], value):
+        if not isinstance(raw_branch, dict):
+            raise RulesetError(f"condition branch must be an object: {raw_branch!r}")
+        branch = cast(dict[object, object], raw_branch)
+        if not all(isinstance(key, str) for key in branch):
+            raise RulesetError(f"condition branch must use string keys: {raw_branch!r}")
+        branches.append(cast(dict[str, object], branch))
+    return tuple(branches)
 
 
 def fact_names(rules: Sequence[LoadedRule]) -> tuple[str, ...]:

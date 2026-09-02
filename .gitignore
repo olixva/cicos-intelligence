@@ -12,6 +12,7 @@ dist/
 .worktrees/
 .idea/
 .playwright-mcp/
+.superpowers/
 .slim/deepwork/
 # Datos. Las fuentes y publicaciones son binarios grandes y quedan fuera;
 # los artefactos de reglas y el golden SÍ se versionan: son entregables con

@@ -3,7 +3,6 @@
 import json
 from pathlib import Path
 
-
 _REPO = Path(__file__).resolve().parents[2]
 _CATALOGUE = _REPO / "data" / "rules" / "daa-circumstances.v1.json"
 

@@ -1,6 +1,6 @@
 # Baseline ingestion review
 
-The approved source `/Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf` was ingested
+The approved source `data/raw/Manual-cide-ascide-y-cicos.pdf` was ingested
 with `pypdf-6.16.2` on 2026-08-31. Its SHA-256 is
 `b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344`; the published
 artifact contains all 111 physical PDF pages.

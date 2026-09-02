@@ -4,7 +4,7 @@ This repository starts with a reproducible inspection of the supplied source man
 
 ```bash
 uv run --project backend allianz inspect-manual \
-  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  data/raw/Manual-cide-ascide-y-cicos.pdf \
   --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
 ```
 
@@ -16,7 +16,7 @@ it does not extract tables or provide RAG answers.
 
 ```bash
 uv run --project backend allianz ingest \
-  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  data/raw/Manual-cide-ascide-y-cicos.pdf \
   --parser pypdf \
   --output data/extractions
 ```
@@ -37,7 +37,7 @@ uv run --project backend --group ingestion allianz prepare-ingestion-models \
   --output "$HOME/.cache/allianz-rag/docling-artifacts-v1"
 
 uv run --project backend --group ingestion allianz ingest \
-  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  data/raw/Manual-cide-ascide-y-cicos.pdf \
   --parser docling \
   --output data/extractions
 ```
@@ -72,12 +72,12 @@ make local-services-up       # docker compose up -d
 
 # 2. Inspect the source PDF
 uv run --project backend allianz inspect-manual \
-  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  data/raw/Manual-cide-ascide-y-cicos.pdf \
   --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
 
 # 3. Ingest with pypdf (baseline) and publish
 uv run --project backend --group ingestion --extra local-rag allianz ingest \
-  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  data/raw/Manual-cide-ascide-y-cicos.pdf \
   --parser pypdf \
   --output data/extractions
 
@@ -85,7 +85,7 @@ uv run --project backend --group ingestion --extra local-rag allianz ingest \
 uv run --project backend --group ingestion allianz prepare-ingestion-models \
   --output "$HOME/.cache/allianz-rag/docling-artifacts-v1"
 uv run --project backend --group ingestion allianz ingest \
-  /Users/aoc/Downloads/Manual-cide-ascide-y-cicos.pdf \
+  data/raw/Manual-cide-ascide-y-cicos.pdf \
   --parser docling \
   --output data/extractions
 
@@ -127,9 +127,8 @@ make doctor   # allianz doctor — checks Qdrant alias, Langfuse env, etc.
 
 ## Estado y limitaciones
 
-El estado verificado del proyecto, lo que falta y el plan vigente están en
-**[`docs/ESTADO.md`](docs/ESTADO.md)**. Es el punto de entrada único; los documentos
-superados viven en `docs/archive/` con su aviso.
+El estado verificado, las brechas y el plan vigente están en
+**[`docs/ESTADO.md`](docs/ESTADO.md)**. Es el punto de entrada único.
 
 Limitaciones de la fuente y del alcance:
 

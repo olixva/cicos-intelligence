@@ -27,19 +27,19 @@ function renderRoute() {
 }
 
 describe('IndexRoute header (Finding G1 #3)', () => {
-  it('muestra el botón "Nueva consulta" en el header', () => {
+  it('muestra el botón "Modo administrador" en el header', () => {
     renderRoute();
-    const btn = screen.getByRole('button', { name: 'Nueva consulta' });
+    const btn = screen.getByRole('button', { name: 'Modo administrador' });
     expect(btn).toBeInTheDocument();
   });
 
-  it('el botón "Nueva consulta" tiene title accesible', () => {
+  it('el botón "Modo administrador" tiene title accesible', () => {
     renderRoute();
-    const btn = screen.getByRole('button', { name: 'Nueva consulta' });
-    expect(btn).toHaveAttribute('title', 'Nueva consulta');
+    const btn = screen.getByRole('button', { name: 'Modo administrador' });
+    expect(btn).toHaveAttribute('title', 'Modo administrador');
   });
 
-  it('dispara NEW_THREAD al pulsar "Nueva consulta" (reset al empty state)', async () => {
+  it('abre el panel de administración al pulsar el modo administrador', async () => {
     const user = userEvent.setup();
     renderRoute();
     // Antes: el EmptyState muestra 5 ejemplos (5 buttons con aria-label "Probar ejemplo: …").
@@ -49,9 +49,11 @@ describe('IndexRoute header (Finding G1 #3)', () => {
     // Tras pulsar "Nueva consulta", el reducer NEW_THREAD debe dejar los
     // mensajes a []. Como ya estaban vacíos, el empty state sigue visible,
     // pero el thread debe seguir siendo funcional (no debe explotar).
-    await user.click(screen.getByRole('button', { name: 'Nueva consulta' }));
-    expect(
-      screen.getAllByRole('button', { name: /Probar ejemplo:/i }).length,
-    ).toBeGreaterThanOrEqual(1);
+    await user.click(screen.getByRole('button', { name: 'Modo administrador' }));
+    expect(screen.getByRole('heading', { name: 'Ingesta del manual' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Volver al chat' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modo administrador' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Volver al chat' }));
+    expect(screen.getByRole('button', { name: 'Modo administrador' })).toBeInTheDocument();
   });
 });

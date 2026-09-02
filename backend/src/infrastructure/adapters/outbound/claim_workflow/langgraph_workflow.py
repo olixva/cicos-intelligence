@@ -18,7 +18,7 @@ from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.evidence_reader import EvidenceReader
 from application.ports.outbound.retriever import RetrievalMode, RetrievalRequest, Retriever
 from application.services.claim_analysis import build_applicability_analysis
-from domain.models.claim import ClaimContradiction, ClaimEvidenceBlock, ClaimInput
+from domain.models.claim import ClaimContradiction, ClaimEvidenceBlock, ClaimFact, ClaimInput
 from domain.models.decision import ClaimAnalysis
 from domain.models.rule_evaluation import RuleEvaluation
 from domain.rules.applicability import ApplicabilityFacts, assess_applicability
@@ -228,7 +228,7 @@ class LangGraphClaimWorkflow:
         return _ClaimUpdate(result=analysis)
 
 
-def _applicability_facts(facts: tuple) -> ApplicabilityFacts:
+def _applicability_facts(facts: tuple[ClaimFact, ...]) -> ApplicabilityFacts:
     values = {fact.name: fact.value for fact in facts if fact.value is not None}
     return ApplicabilityFacts(
         vehicle_count=_integer(values.get("vehicle_count")),
@@ -251,8 +251,8 @@ def _boolean(value: str | None) -> bool | None:
     return {"true": True, "false": False}.get(value.strip().lower())
 
 
-def _contradictions(facts: tuple) -> tuple[ClaimContradiction, ...]:
-    by_name: dict[str, list] = defaultdict(list)
+def _contradictions(facts: tuple[ClaimFact, ...]) -> tuple[ClaimContradiction, ...]:
+    by_name: dict[str, list[ClaimFact]] = defaultdict(list)
     for fact in facts:
         if fact.value is not None:
             by_name[fact.name].append(fact)
