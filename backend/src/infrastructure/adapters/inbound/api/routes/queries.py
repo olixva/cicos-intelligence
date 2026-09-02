@@ -88,23 +88,32 @@ async def _execute_envelope(
     answer_question: AnswerQuestion,
     analyze_claim: AnalyzeClaim,
     resolve_query: ResolveQuery,
+    request_id: str | None = None,
 ) -> EnvelopeResponse:
     """Dispatch by mode and project into the envelope response.
 
     Explicit modes bypass the auto router entirely (Oracle Gate 1).
+
+    ``request_id`` is accepted as a parameter so the SSE generator can
+    pass the uuid it already emitted in the ``started`` event — Finding
+    G2 #2 (single uuid per request across ``started``, envelope and
+    ``failed``). When ``None`` (synchronous route) a fresh uuid4 is
+    generated here so the response still carries a server-side id.
     """
+
+    rid = request_id or str(uuid.uuid4())
 
     if request.mode == "question":
         execution = await answer_question.execute(_query_input_from_request(request))
         return EnvelopeResponse.from_question(
-            request_id=str(uuid.uuid4()),
+            request_id=rid,
             execution=execution,
             evidence=_evidence_items(execution.context),
         )
     if request.mode == "claim":
         execution = await analyze_claim.execute(_claim_input_from_request(request))
         return EnvelopeResponse.from_claim(
-            request_id=str(uuid.uuid4()),
+            request_id=rid,
             execution=execution,
             evidence=_evidence_items(execution.context),
         )
@@ -116,7 +125,7 @@ async def _execute_envelope(
     # carries no context, so we project an empty tuple there.
     context = _context_from_route_execution(execution)
     return EnvelopeResponse.from_route_execution(
-        request_id=str(uuid.uuid4()),
+        request_id=rid,
         execution=execution,
         evidence=_evidence_items(context),
     )
@@ -246,6 +255,7 @@ async def _streaming_event_loop(
             answer_question=answer_question,
             analyze_claim=analyze_claim,
             resolve_query=resolve_query,
+            request_id=request_id,
         )
         yield {"event": "completed", "data": response.model_dump_json()}
     except Exception as error:  # noqa: BLE001 — surface contract translates everything

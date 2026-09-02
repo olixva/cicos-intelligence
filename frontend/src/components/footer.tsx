@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { EnvelopeResponse } from '@/api/queries';
 import { newRequestId } from '@/lib/request-id';
 
@@ -12,10 +13,15 @@ export interface FooterProps {
  *
  * Decisión del spec UX: este footer debe ser siempre visible. Si no hay
  * respuesta todavía, mostramos el request_id que se enviará en el próximo
- * POST (uuid v4 generado en el cliente).
+ * POST (uuid v4 generado en el cliente). El id fallback se genera **una
+ * sola vez por montaje** del Footer (vía `useState` lazy init) para que
+ * re-renders del padre no produzcan un id distinto en cada frame
+ * (Finding G2 #1).
  */
 export function Footer({ requestId, traceId, response }: FooterProps) {
-  const resolvedRequestId = response?.request_id ?? requestId ?? newRequestId();
+  // Finding G2 #1 — el id fallback se memoiza al montar el Footer.
+  const [fallbackRequestId] = useState<string>(() => newRequestId());
+  const resolvedRequestId = response?.request_id ?? requestId ?? fallbackRequestId;
   const resolvedTraceId =
     response?.result && 'trace_id' in response.result
       ? (response.result.trace_id ?? null)

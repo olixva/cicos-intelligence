@@ -169,6 +169,66 @@ def test_stream_emits_failed_event_when_provider_raises() -> None:
     assert failed_payload["request_id"]
 
 
+def test_stream_uses_a_single_request_id_across_started_envelope_and_failed() -> None:
+    """Finding G2 #2 — ``started``, ``envelope`` and ``failed`` must share the same uuid.
+
+    Before the fix the SSE generator emitted its own uuid4 in the
+    ``started`` event while ``_execute_envelope`` generated a second
+    independent one for the envelope body, breaking the 1:1 correlation
+    the client expects. After the fix the same uuid travels through all
+    three events.
+    """
+
+    from infrastructure.adapters.inbound.api.routes.queries import (
+        _streaming_event_loop,
+    )
+
+    # Happy path: started → stage → completed all share one uuid.
+    happy_events = asyncio.run(
+        _consume(
+            _streaming_event_loop(
+                _envelope_request(mode="question"),
+                answer_question=_FakeAnswer(),
+                analyze_claim=_FakeClaim(),
+                resolve_query=_FakeResolve(),
+            )
+        )
+    )
+    started_payload = json.loads(str(happy_events[0]["data"]))
+    stage_payload = json.loads(str(happy_events[1]["data"]))
+    completed_payload = json.loads(str(happy_events[-1]["data"]))
+    shared_id = started_payload["request_id"]
+    assert shared_id, "started event must carry a request_id"
+    assert stage_payload["request_id"] == shared_id, (
+        "stage event must reuse started.request_id"
+    )
+    assert completed_payload["request_id"] == shared_id, (
+        "envelope (completed) request_id must match started.request_id"
+    )
+
+    # Error path: started → stage → failed all share one uuid.
+    error_events = asyncio.run(
+        _consume(
+            _streaming_event_loop(
+                _envelope_request(mode="question"),
+                answer_question=_BoomAnswer(),
+                analyze_claim=_FakeClaim(),
+                resolve_query=_FakeResolve(),
+            )
+        )
+    )
+    err_started_payload = json.loads(str(error_events[0]["data"]))
+    err_stage_payload = json.loads(str(error_events[1]["data"]))
+    err_failed_payload = json.loads(str(error_events[-1]["data"]))
+    err_shared_id = err_started_payload["request_id"]
+    assert err_stage_payload["request_id"] == err_shared_id, (
+        "stage event on error path must reuse started.request_id"
+    )
+    assert err_failed_payload["request_id"] == err_shared_id, (
+        "failed event must reuse started.request_id"
+    )
+
+
 def test_stream_does_not_invoke_automatic_retry_on_failure() -> None:
     from infrastructure.adapters.inbound.api.routes.queries import (
         _streaming_event_loop,

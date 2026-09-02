@@ -295,7 +295,10 @@ export default function IndexRoute() {
           </main>
         </div>
 
-        <Footer response={lastEnvelope ?? null} />
+        <Footer
+          requestId={state.pendingRequestId}
+          response={lastEnvelope ?? null}
+        />
 
         <PdfOverlay
           open={!!state.openPdf}
