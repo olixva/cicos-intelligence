@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Literal, NotRequired, Required, TypedDict, cast
 
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langfuse import get_client
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
@@ -105,7 +105,10 @@ class LangGraphClaimWorkflow:
         graph.add_edge("plan_interview", "needs_information")
         graph.add_conditional_edges(
             "needs_information",
-            self._route_after_information,
+            RunnableLambda(
+                self._route_after_information,
+                name="route_after_information",
+            ),
             {"extract_facts": "extract_facts", "explain": "explain"},
         )
         graph.add_edge("explain", "validate")
