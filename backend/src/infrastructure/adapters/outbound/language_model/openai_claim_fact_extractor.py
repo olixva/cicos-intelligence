@@ -96,6 +96,8 @@ class OpenAIClaimFactExtractor(ClaimFactExtractor):
     api_key: str | None = None
     transport: ClaimResponsesTransport | None = None
     timeout_seconds: float = 20.0
+    #: Nombres de hecho que el ruleset firmado consulta.
+    fact_names: tuple[str, ...] = ()
 
     async def extract(self, claim: ClaimInput) -> ExtractedClaimFacts:
         if not self.model.strip():
@@ -105,7 +107,7 @@ class OpenAIClaimFactExtractor(ClaimFactExtractor):
         try:
             response = await self._transport_for_request().parse(
                 model=self.model,
-                input=_messages(claim),
+                input=_messages(claim, self.fact_names),
                 text_format=ClaimExtractionSchema,
                 store=False,
                 timeout=self.timeout_seconds,
@@ -135,13 +137,32 @@ class OpenAIClaimFactExtractor(ClaimFactExtractor):
         return self.transport
 
 
-def _messages(claim: ClaimInput) -> ResponseInputParam:
+def _messages(claim: ClaimInput, fact_names: tuple[str, ...] = ()) -> ResponseInputParam:
+    # Los nombres estables se derivan del ruleset firmado, no se escriben aquí:
+    # una regla no puede depender de un hecho que nadie pidió extraer.
+    stable = (
+        ", ".join(fact_names)
+        if fact_names
+        else ("vehicle_count, direct_collision, third_vehicle_identified, chain_collision")
+    )
     developer = (
-        "Extrae únicamente hechos expresamente afirmados en el relato. Conserva la "
-        "atribución y el texto literal de cada afirmación. No resuelvas responsabilidad, "
-        "no inventes valores y no uses conocimiento externo. Usa nombres estables cuando "
-        "apliquen: vehicle_count, direct_collision, third_vehicle_identified, chain_collision. "
-        "Para booleanos usa los literales true o false."
+        "Extrae únicamente hechos contenidos en el relato. Conserva la atribución y el "
+        "texto literal de cada afirmación. No resuelvas responsabilidad, no inventes "
+        "valores y no uses conocimiento externo. "
+        f"Usa estos nombres estables cuando apliquen: {stable}. "
+        "Para booleanos usa los literales true o false.\n"
+        "Contar lo que el relato describe NO es inventar:\n"
+        "- vehicle_count: número de vehículos que el relato identifica como intervinientes. "
+        "Un relato que nombra al vehículo A y al vehículo B da vehicle_count=2. Un vehículo "
+        "no identificado que se da a la fuga no cuenta como interviniente identificado.\n"
+        "- direct_collision: true si el relato describe un choque entre los vehículos "
+        "intervinientes; false sólo si el relato dice que no lo hubo.\n"
+        "- chain_collision: true si el relato describe una secuencia de colisiones "
+        "encadenada sin interrupción.\n"
+        "- third_vehicle_identified: true sólo si el relato identifica un tercer vehículo.\n"
+        "- driver_under_influence: true si el relato menciona alcohol, drogas o "
+        "estupefacientes en alguno de los conductores.\n"
+        "Si el relato no permite establecer un hecho, omítelo: no lo supongas."
     )
     payload = json.dumps(
         {"claim": claim.text, "clarifications": claim.clarifications, "language": claim.language},

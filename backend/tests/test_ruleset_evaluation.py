@@ -131,3 +131,48 @@ def test_no_shipped_attestation_carries_a_placeholder_hash() -> None:
         for entry in attestation["transcriptions"]:
             assert entry["transcription_sha256"] != "0" * 64, artifact.name
         assert "pendiente" not in attestation["divergence_resolution"].lower()
+
+
+def test_a_resolved_decision_requires_a_matched_rule() -> None:
+    """The invariant that stops a conclusion with nothing deterministic behind it."""
+    from domain.models.decision import ClaimAnalysis, InvalidDecisionError
+
+    with pytest.raises(InvalidDecisionError, match="matched rule"):
+        ClaimAnalysis(
+            applicability="applicable",
+            convention="CIDE",
+            decision="resolved",
+            party_ids=("A", "B"),
+            facts=(),
+            contradictions=(),
+            conditions=(),
+            missing_information=(),
+            blocks=(),
+            rules_evaluated=(),
+        )
+
+
+def test_a_resolved_decision_is_allowed_when_a_rule_matched() -> None:
+    from domain.models.decision import ClaimAnalysis
+
+    analysis = ClaimAnalysis(
+        applicability="applicable",
+        convention="CIDE",
+        decision="resolved",
+        party_ids=("A", "B"),
+        facts=(),
+        contradictions=(),
+        conditions=(),
+        missing_information=(),
+        blocks=(),
+        rules_evaluated=(
+            RuleEvaluation(
+                rule_id="cide-requires-two-vehicles",
+                inputs=(("vehicle_count", "2"),),
+                result="matched",
+                evidence_ids=_EVIDENCE,
+                rationale="Dos vehículos.",
+            ),
+        ),
+    )
+    assert analysis.decision == "resolved"

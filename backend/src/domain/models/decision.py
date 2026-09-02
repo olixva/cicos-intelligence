@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from domain.models.claim import ClaimContradiction, ClaimEvidenceBlock, ClaimFact, MatrixCell
+from domain.models.rule_evaluation import RuleEvaluation
 
 
 class InvalidDecisionError(ValueError):
@@ -37,6 +38,10 @@ class ClaimAnalysis:
     conditions: tuple[str, ...]
     missing_information: tuple[str, ...]
     blocks: tuple[ClaimEvidenceBlock, ...]
+    #: Every rule the deterministic engine actually ran, with its inputs and
+    #: evidence. The audit forbids placeholders here: a rule that did not run
+    #: is absent, and one that could not be checked says so.
+    rules_evaluated: tuple[RuleEvaluation, ...] = ()
 
     def __post_init__(self) -> None:
         if len(set(self.party_ids)) != len(self.party_ids) or any(
@@ -47,3 +52,9 @@ class ClaimAnalysis:
             raise InvalidDecisionError("a conditional decision must name its conditions")
         if self.applicability == "not_applicable" and self.decision == "resolved":
             raise InvalidDecisionError("an inapplicable convention cannot resolve a claim")
+        if self.decision == "resolved" and not any(
+            evaluation.result == "matched" for evaluation in self.rules_evaluated
+        ):
+            # The last barrier against a generated conclusion with nothing
+            # deterministic behind it.
+            raise InvalidDecisionError("a resolved decision must cite at least one matched rule")

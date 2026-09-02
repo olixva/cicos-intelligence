@@ -18,6 +18,7 @@ from domain.models.routing import (
     ClarificationResult,
     RouteExecution,
 )
+from domain.models.rule_evaluation import RuleEvaluation
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +122,15 @@ def test_resolve_route_never_leaks_local_asset_paths() -> None:
                 conditions=(),
                 missing_information=(),
                 blocks=(),
+                rules_evaluated=(
+                    RuleEvaluation(
+                        rule_id="cide-requires-two-vehicles",
+                        inputs=(("vehicle_count", "2"),),
+                        result="matched",
+                        evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                        rationale="Dos vehículos con colisión directa.",
+                    ),
+                ),
             ),
             context=(),
             trace_id="trace-claim",

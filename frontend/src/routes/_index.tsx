@@ -485,9 +485,16 @@ function derivePayload(
           facts: envelope.result.facts ?? [],
           contradictions: envelope.result.contradictions ?? [],
           missing_information: envelope.result.missing_information ?? [],
+          rules_evaluated: envelope.result.rules_evaluated ?? [],
         };
       }
-      return { convention: null, facts: [], contradictions: [], missing_information: [] };
+      return {
+        convention: null,
+        facts: [],
+        contradictions: [],
+        missing_information: [],
+        rules_evaluated: [],
+      };
     case 'apply_decision':
       if (envelope.result && envelope.result.kind === 'claim') {
         return {

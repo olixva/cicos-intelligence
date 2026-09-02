@@ -30,7 +30,12 @@
       ],
       "outcome": "vehicle_count != 2 ⇒ Convenio no aplicable.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "applies_when": {
+        "field": "vehicle_count",
+        "op": "ne",
+        "value": "2"
+      }
     },
     {
       "rule_id": "cide-requires-direct-collision",
@@ -44,7 +49,11 @@
       ],
       "outcome": "direct_collision = false ⇒ Convenio no aplicable.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "applies_when": {
+        "field": "direct_collision",
+        "op": "is_false"
+      }
     },
     {
       "rule_id": "third-vehicle-identified-excludes-convention",
@@ -61,7 +70,11 @@
       "notes": [
         "Si ninguno de los dos implicados identifica la matrícula del tercero, a efectos de los Convenios se considera que no intervino y se aplica Convenio entre los otros dos (pág. 57)."
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "applies_when": {
+        "field": "third_vehicle_identified",
+        "op": "is_true"
+      }
     },
     {
       "rule_id": "chain-collision-excludes-convention",
@@ -75,7 +88,11 @@
       ],
       "outcome": "chain_collision = true ⇒ Convenio no aplicable.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "applies_when": {
+        "field": "chain_collision",
+        "op": "is_true"
+      }
     },
     {
       "rule_id": "alcohol-does-not-exclude-convention",
@@ -92,7 +109,11 @@
         "Regla de no-exclusión: existe para impedir que el sistema descarte el Convenio por presencia de alcohol.",
         "Las consecuencias penales y los daños personales quedan fuera del alcance convencional."
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "applies_when": {
+        "field": "driver_under_influence",
+        "op": "is_true"
+      }
     },
     {
       "rule_id": "ascide-b5-parked-vehicle",
@@ -238,10 +259,10 @@
         "transcribed_at": "2026-09-02T13:01:38+00:00"
       }
     ],
-    "divergence_resolution": "No hubo divergencias que adjudicar. Las 9 páginas que sostienen alguna regla (9, 10, 56, 57, 73, 75, 91, 97 y 100) se leyeron por dos vías sin ruta de extracción común: una lectura visual de cada página renderizada a 200 dpi y la capa de texto de pypdf. Para cada página se registró la frase normativa concreta de la que depende la regla, y se comprobó programáticamente que cada frase leída visualmente aparece literal en la capa de texto tras normalizar espacios: 9 de 9, cero divergencias. Cada regla cita únicamente las páginas cuya frase se verificó así; no hay regla derivada de una página no cotejada. Revisión humana y firma por el responsable del proyecto el 2026-09-02.",
+    "divergence_resolution": "No hubo divergencias que adjudicar. Las 9 páginas que sostienen alguna regla (9, 10, 56, 57, 73, 75, 91, 97 y 100) se leyeron por dos vías sin ruta de extracción común: una lectura visual de cada página renderizada a 200 dpi y la capa de texto de pypdf. Para cada página se registró la frase normativa concreta de la que depende la regla, y se comprobó programáticamente que cada frase leída visualmente aparece literal en la capa de texto tras normalizar espacios: 9 de 9, cero divergencias. Cada regla cita únicamente las páginas cuya frase se verificó así; no hay regla derivada de una página no cotejada. Revisión humana y firma por el responsable del proyecto el 2026-09-02. Revisión 2026-09-02: se añade `applies_when` a las cinco reglas cuya condición es comprobable sobre los hechos que el extractor produce (recuento de vehículos, colisión directa, tercero identificado, colisión en cadena y presencia de alcohol). Las normas subsidiarias ASCIDE y el lookup de la matriz se dejan deliberadamente sin condición automática: dependen de hechos que hoy no se extraen de forma fiable, y el evaluador las reporta como `insufficient_data` en lugar de darlas por aplicadas.",
     "signed_by": [
       "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
     ],
-    "signed_at": "2026-09-02T13:01:38+00:00"
+    "signed_at": "2026-09-02T14:04:59+00:00"
   }
 }

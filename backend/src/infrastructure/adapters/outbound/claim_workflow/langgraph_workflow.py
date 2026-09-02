@@ -18,9 +18,11 @@ from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.evidence_reader import EvidenceReader
 from application.ports.outbound.retriever import RetrievalMode, RetrievalRequest, Retriever
 from application.services.claim_analysis import build_applicability_analysis
-from domain.models.claim import ClaimContradiction, ClaimInput
+from domain.models.claim import ClaimContradiction, ClaimEvidenceBlock, ClaimInput
 from domain.models.decision import ClaimAnalysis
+from domain.models.rule_evaluation import RuleEvaluation
 from domain.rules.applicability import ApplicabilityFacts, assess_applicability
+from domain.rules.ruleset import LoadedRule, evaluate_ruleset
 
 
 class ClaimWorkflowTimeoutError(TimeoutError):
@@ -61,6 +63,7 @@ class LangGraphClaimWorkflow:
         retrieval_mode: RetrievalMode = "hybrid",
         retrieval_limit: int = 6,
         timeout_seconds: float = 30.0,
+        rules: tuple[LoadedRule, ...] = (),
         trace_id_factory: Callable[[], str | None] = lambda: None,
         trace_url_factory: Callable[[str], str | None] | None = None,
         callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
@@ -75,6 +78,7 @@ class LangGraphClaimWorkflow:
         self._retrieval_mode: RetrievalMode = retrieval_mode
         self._retrieval_limit = retrieval_limit
         self._timeout_seconds = timeout_seconds
+        self._rules = rules
         self._trace_id_factory = trace_id_factory
         self._callback_factory = callback_factory
         self._trace_url_factory = trace_url_factory
@@ -187,6 +191,13 @@ class LangGraphClaimWorkflow:
         analysis = build_applicability_analysis(
             parties=extracted.party_ids, facts=extracted.facts, assessment=assessment
         )
+        # Cada regla del corpus firmado se ejecuta y se reporta, incluidas las
+        # que no casan y las que no pueden comprobarse: la interfaz tiene que
+        # poder enseñar qué se evaluó, no sólo el veredicto.
+        evaluations = evaluate_ruleset(
+            self._rules, {fact.name: fact.value for fact in extracted.facts if fact.value}
+        )
+        blocks = analysis.blocks or _rule_blocks(evaluations)
         return _ClaimUpdate(
             analysis=ClaimAnalysis(
                 analysis.applicability,
@@ -197,7 +208,8 @@ class LangGraphClaimWorkflow:
                 _contradictions(extracted.facts),
                 analysis.conditions,
                 analysis.missing_information,
-                analysis.blocks,
+                blocks,
+                rules_evaluated=evaluations,
             )
         )
 
@@ -248,4 +260,19 @@ def _contradictions(facts: tuple) -> tuple[ClaimContradiction, ...]:
         ClaimContradiction(name, tuple(statements))
         for name, statements in by_name.items()
         if len({statement.value for statement in statements}) > 1 and len(statements) > 1
+    )
+
+
+def _rule_blocks(evaluations: tuple[RuleEvaluation, ...]) -> tuple[ClaimEvidenceBlock, ...]:
+    """Turn the rules that actually matched into cited explanation blocks.
+
+    Only matched rules become text: a rule that did not hold, or that could
+    not be checked, is reported in ``rules_evaluated`` but never narrated as
+    if it had driven the outcome.
+    """
+
+    return tuple(
+        ClaimEvidenceBlock(evaluation.rationale, evaluation.evidence_ids)
+        for evaluation in evaluations
+        if evaluation.result == "matched" and evaluation.evidence_ids
     )

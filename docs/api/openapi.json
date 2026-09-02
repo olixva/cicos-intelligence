@@ -362,6 +362,15 @@
             "title": "Party Ids",
             "type": "array"
           },
+          "rules_evaluated": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Rules Evaluated",
+            "type": "array"
+          },
           "trace_id": {
             "anyOf": [
               {

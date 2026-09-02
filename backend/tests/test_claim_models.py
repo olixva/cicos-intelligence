@@ -2,6 +2,8 @@
 
 import pytest
 
+from domain.models.rule_evaluation import RuleEvaluation
+
 
 def test_contradictory_statements_keep_their_respective_attribution() -> None:
     from domain.models.claim import ClaimContradiction, ClaimFact
@@ -28,6 +30,15 @@ def test_conditional_claim_requires_visible_conditions() -> None:
             conditions=(),
             missing_information=("Confirmar las circunstancias.",),
             blocks=(),
+            rules_evaluated=(
+                RuleEvaluation(
+                    rule_id="cide-requires-two-vehicles",
+                    inputs=(("vehicle_count", "2"),),
+                    result="matched",
+                    evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                    rationale="Dos vehículos con colisión directa.",
+                ),
+            ),
         )
 
 
@@ -45,4 +56,13 @@ def test_inapplicable_convention_cannot_return_a_resolved_decision() -> None:
             conditions=(),
             missing_information=(),
             blocks=(),
+            rules_evaluated=(
+                RuleEvaluation(
+                    rule_id="cide-requires-two-vehicles",
+                    inputs=(("vehicle_count", "2"),),
+                    result="matched",
+                    evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                    rationale="Dos vehículos con colisión directa.",
+                ),
+            ),
         )

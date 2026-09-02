@@ -33,6 +33,7 @@ from domain.models.routing import (
     RouteClassification,
     RouteExecution,
 )
+from domain.models.rule_evaluation import RuleEvaluation
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +62,15 @@ class _FakeClaim:
                 conditions=(),
                 missing_information=(),
                 blocks=(),
+                rules_evaluated=(
+                    RuleEvaluation(
+                        rule_id="cide-requires-two-vehicles",
+                        inputs=(("vehicle_count", "2"),),
+                        result="matched",
+                        evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                        rationale="Dos vehículos con colisión directa.",
+                    ),
+                ),
             ),
             context=(),
             trace_id="trace-c",

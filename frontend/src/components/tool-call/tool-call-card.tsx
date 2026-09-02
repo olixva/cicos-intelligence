@@ -247,6 +247,12 @@ function CheckRulesBody({ toolCall }: { toolCall: ToolCall }) {
         facts?: Array<{ name: string; value?: string | null; asserted_by?: string | null }>;
         contradictions?: Array<{ fact_name: string }>;
         missing_information?: string[];
+        rules_evaluated?: Array<{
+          rule_id: string;
+          result: 'matched' | 'not_matched' | 'insufficient_data';
+          rationale: string;
+          evidence_ids?: string[];
+        }>;
       }
     | undefined;
 
@@ -281,6 +287,40 @@ function CheckRulesBody({ toolCall }: { toolCall: ToolCall }) {
                   {f.asserted_by ? (
                     <span className="text-muted-foreground"> — según {f.asserted_by}</span>
                   ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(payload?.rules_evaluated ?? []).length > 0 && (
+        <div>
+          <p className="mb-0.5 font-medium">Reglas del convenio comprobadas</p>
+          <ul className="flex flex-col gap-1">
+            {(payload?.rules_evaluated ?? []).map((rule) => (
+              <li key={rule.rule_id} className="flex items-start gap-1.5">
+                {rule.result === 'matched' ? (
+                  <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-warning" aria-hidden="true" />
+                ) : rule.result === 'not_matched' ? (
+                  <CheckCircle2
+                    className="mt-0.5 h-3 w-3 shrink-0 text-success"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <span
+                    className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground/40"
+                    aria-hidden="true"
+                  />
+                )}
+                <span>
+                  <span className="font-mono text-[10px] opacity-70">{rule.rule_id}</span>
+                  <span className="text-muted-foreground">
+                    {' — '}
+                    {rule.result === 'insufficient_data'
+                      ? 'no comprobable con los datos aportados'
+                      : rule.rationale}
+                  </span>
                 </span>
               </li>
             ))}

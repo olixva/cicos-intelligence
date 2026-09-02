@@ -32,6 +32,7 @@ from domain.models.routing import (
     ClarificationResult,
     RouteClassification,
 )
+from domain.models.rule_evaluation import RuleEvaluation
 
 
 @dataclass
@@ -65,6 +66,15 @@ class _CounterAnalyzeClaim:
                 conditions=(),
                 missing_information=(),
                 blocks=(),
+                rules_evaluated=(
+                    RuleEvaluation(
+                        rule_id="cide-requires-two-vehicles",
+                        inputs=(("vehicle_count", "2"),),
+                        result="matched",
+                        evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                        rationale="Dos vehículos con colisión directa.",
+                    ),
+                ),
             ),
             context=(),
             trace_id="trace-c",

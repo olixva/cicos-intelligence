@@ -182,6 +182,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
     from langfuse.langchain import CallbackHandler
     from qdrant_client import AsyncQdrantClient
 
+    from domain.rules.ruleset import fact_names
     from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
         LangGraphClaimWorkflow,
     )
@@ -196,6 +197,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
         QdrantRetriever,
     )
     from infrastructure.config.profiles import load_profile
+    from infrastructure.config.rules_artifacts import load_rules_artifacts
 
     profile = load_profile(profile_name, profile_catalog_dir())
     _require_local_langfuse_environment()
@@ -206,6 +208,9 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
     evidence_root = Path(os.environ.get("ALLIANZ_EVIDENCE_ROOT", "data/extractions"))
     parser = _resolve_published_parser(evidence_root, document_hash, profile.parser)
     signature = profile.build_index_signature(document_hash, parser)
+    # El corpus firmado se valida aquí: si la attestation no está completa el
+    # arranque falla, en lugar de servir un flujo que decide sin reglas.
+    _rules = load_rules_artifacts(_rules_root())
 
     def callback_factory(trace_id: str) -> BaseCallbackHandler:
         return CallbackHandler(trace_context={"trace_id": trace_id})
@@ -213,7 +218,8 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
     return AnalyzeClaimUseCase(
         LangGraphClaimWorkflow(
             fact_extractor=OpenAIClaimFactExtractor(
-                model=os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-4.1-mini")
+                model=os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-5.6-terra"),
+                fact_names=fact_names(_rules.rules),
             ),
             retriever=QdrantRetriever(
                 client=AsyncQdrantClient(url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")),
@@ -225,11 +231,19 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
                 expected_signature=signature,
             ),
             evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
+            rules=_rules.rules,
             trace_id_factory=Langfuse().create_trace_id,
             callback_factory=callback_factory,
             trace_url_factory=lambda trace_id: Langfuse().get_trace_url(trace_id=trace_id),
         )
     )
+
+
+def _rules_root() -> Path:
+    """Return the directory holding the signed rules artifacts."""
+    import os
+
+    return Path(os.environ.get("ALLIANZ_RULES_ROOT", "data/rules"))
 
 
 def _resolve_published_parser(root: Path, document_hash: str, parser: str) -> str:

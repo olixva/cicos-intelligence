@@ -132,3 +132,49 @@ def test_auto_routed_claim_keeps_the_workflow_trace_url() -> None:
         ),
     )
     assert envelope.result.trace_url == "https://lf/x/traces/t-1"
+
+
+def test_claim_envelope_exposes_every_rule_that_ran() -> None:
+    """The interface has to be able to show what was checked, not just the verdict."""
+    from domain.models.rule_evaluation import RuleEvaluation
+
+    analysis = _analysis()
+    with_rules = ClaimAnalysis(
+        applicability=analysis.applicability,
+        convention=analysis.convention,
+        decision=analysis.decision,
+        party_ids=analysis.party_ids,
+        facts=analysis.facts,
+        contradictions=analysis.contradictions,
+        conditions=analysis.conditions,
+        missing_information=analysis.missing_information,
+        blocks=analysis.blocks,
+        rules_evaluated=(
+            RuleEvaluation(
+                rule_id="chain-collision-excludes-convention",
+                inputs=(("chain_collision", "true"),),
+                result="matched",
+                evidence_ids=(_EVIDENCE,),
+                rationale="La colisión en cadena no se tramita por Convenio.",
+            ),
+            RuleEvaluation(
+                rule_id="ascide-b10-lane-change",
+                inputs=(),
+                result="insufficient_data",
+                evidence_ids=(),
+                rationale="No se evalúa automáticamente.",
+            ),
+        ),
+    )
+    result = EnvelopeResponse.from_claim(
+        request_id="req-9",
+        execution=ClaimExecution(result=with_rules, context=(), trace_id="t"),
+    ).result
+    assert len(result.rules_evaluated) == 2
+    matched = result.rules_evaluated[0]
+    assert matched["rule_id"] == "chain-collision-excludes-convention"
+    assert matched["result"] == "matched"
+    assert matched["evidence_ids"] == (_EVIDENCE,)
+    # Una regla no comprobable se reporta, pero sin evidencia que la respalde.
+    assert result.rules_evaluated[1]["result"] == "insufficient_data"
+    assert result.rules_evaluated[1]["evidence_ids"] == ()

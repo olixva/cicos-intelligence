@@ -32,6 +32,7 @@ from domain.models.routing import (
     RouteClassification,
     RouteExecution,
 )
+from domain.models.rule_evaluation import RuleEvaluation
 from infrastructure.adapters.inbound.api.schemas.envelope import (
     EnvelopeResponse,
     _langfuse_trace_url,  # pyright: ignore[reportPrivateUsage]
@@ -144,6 +145,15 @@ def _build_envelope_claim() -> EnvelopeResponse:
                 conditions=(),
                 missing_information=(),
                 blocks=(),
+                rules_evaluated=(
+                    RuleEvaluation(
+                        rule_id="cide-requires-two-vehicles",
+                        inputs=(("vehicle_count", "2"),),
+                        result="matched",
+                        evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                        rationale="Dos vehículos con colisión directa.",
+                    ),
+                ),
             ),
             context=(),
             trace_id="trace-c",
@@ -196,6 +206,15 @@ def _build_envelope_auto_claim() -> EnvelopeResponse:
                     conditions=(),
                     missing_information=(),
                     blocks=(),
+                    rules_evaluated=(
+                        RuleEvaluation(
+                            rule_id="cide-requires-two-vehicles",
+                            inputs=(("vehicle_count", "2"),),
+                            result="matched",
+                            evidence_ids=("sha256:" + "b" * 64 + ":page:56",),
+                            rationale="Dos vehículos con colisión directa.",
+                        ),
+                    ),
                 ),
                 context=(),
                 trace_id="trace-ac",

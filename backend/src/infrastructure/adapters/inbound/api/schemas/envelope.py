@@ -103,6 +103,16 @@ def _claim_result(analysis: ClaimAnalysis, execution: ClaimExecution) -> ClaimRe
         blocks=tuple(
             {"text": block.text, "evidence_ids": block.evidence_ids} for block in analysis.blocks
         ),
+        rules_evaluated=tuple(
+            {
+                "rule_id": evaluation.rule_id,
+                "result": evaluation.result,
+                "inputs": tuple({"name": k, "value": v} for k, v in evaluation.inputs),
+                "evidence_ids": evaluation.evidence_ids,
+                "rationale": evaluation.rationale,
+            }
+            for evaluation in analysis.rules_evaluated
+        ),
         trace_id=execution.trace_id,
         trace_url=execution.trace_url or _langfuse_trace_url(execution.trace_id or ""),
     )
@@ -199,6 +209,9 @@ class ClaimResult(_ResponseModel):
     conditions: tuple[str, ...] = ()
     missing_information: tuple[str, ...] = ()
     blocks: tuple[dict[str, object], ...] = ()
+    #: Every rule the deterministic engine ran, with its inputs, its outcome
+    #: and the manual pages behind it. Never a placeholder.
+    rules_evaluated: tuple[dict[str, object], ...] = ()
     trace_id: str | None = None
     trace_url: str | None = None
 

@@ -50,14 +50,15 @@ En `docs/archive/`. Se conservan como registro del proceso; **no se siguen**.
 
 | Gate | Resultado medido |
 |---|---|
-| `make test-backend` | 331 passed, 1 skipped |
+| `make test-backend` | **394 passed**, 1 skipped |
 | `make lint-backend` | OK |
-| `make check-frontend` | lint + typecheck + **60 tests** + build, OK |
-| `make check-openapi` | **FALLA** — drift en `components` |
+| `make check-frontend` | lint + typecheck + **90 tests** + build, OK |
+| `make check-openapi` | OK |
 
-El único gate roto es OpenAPI: el commit `95800a2` añadió `trace_url` al sobre sin regenerar
-`docs/api/openapi.json`. Se cierra en la Task 0 del plan vigente con
-`uv run --project backend python backend/scripts/export_openapi.py`.
+Todos los gates en verde.
+
+`make serve-backend` arranca desde un entorno limpio: mapea las claves de Langfuse desde
+`ops/local.env` y aprovisiona los prompts numerados con `make provision-prompts`.
 
 Nota conocida y benigna: `make check-backend` puede terminar con `Error 134` por un teardown de torch (`libc++abi`). No es un fallo de test.
 
@@ -97,7 +98,7 @@ Compose `allianz-rag` sobre contexto `colima-allianz`: langfuse, langfuse-worker
 Ordenados por impacto sobre la entrega.
 
 1. **Los dos entregables documentales del enunciado no existen**: la presentación y el documento de arquitectura. El enunciado los exige explícitamente. → Tasks 11 y 12 del plan.
-2. **`data/rules/` sólo tiene los schemas.** No existen `cide-matrix.v1.json` ni `ruleset.v1.json`, así que el flujo de siniestros nunca sale de `undetermined`. → Tasks 1, 2, 3.
+2. ~~`data/rules/` sólo tiene los schemas.~~ **HECHO.** La matriz 18×18 y el ruleset de 14 reglas están transcritos por doble vía, adjudicados, firmados y cableados al flujo. El siniestro decide con `rules_evaluated` reales. Queda **una sola pieza**: mapear un relato a una celda de la matriz exige el catálogo de las 18 casillas de la D.A.A., pendiente de tu validación.
 3. **`data/evaluation/golden/` está vacío** (sólo `releases/`). Sin golden no hay comparativa de recuperación, ni métricas de router, ni holdout. → Tasks 4, 5.
 4. **`data/extractions/` sólo contiene `pypdf-6.16.2`.** Sin la publicación Docling no hay bounding boxes y el visor no puede resaltar región. → Task 10.
 5. **`session_id` existe en el frontend pero no en el backend.** `thread-store.ts` ya asigna uno estable por hilo (`df71fbe`), pero `backend/src` **no tiene ninguna ocurrencia** de `session_id`: no lo recibe ni lo propaga a Langfuse, así que las conversaciones siguen sin agruparse. Es media integración. → Task 8.

@@ -260,6 +260,7 @@ describe('threadReducer', () => {
           conditions: [],
           missing_information: [],
           blocks: [],
+          rules_evaluated: [],
         },
       },
       requested_mode: 'auto',
