@@ -4,8 +4,14 @@ from pathlib import Path
 
 from pypdf import __version__ as pypdf_version
 
-from domain.models.evidence import Extraction, PageEvidence
+from domain.models.evidence import BinaryAsset, Extraction, PageEvidence
 from infrastructure.adapters.outbound.pdf_source import open_pdf_source
+
+# Contrato unificado de publicación: cada parser publica el PDF original
+# bajo la ruta canónica `original.pdf`. El catálogo de fuente y la API
+# `/api/v1/manual/pdf` dependen de esta ruta; los tests de contrato
+# (T2) la verifican en ambos parsers.
+ORIGINAL_PDF_ASSET_PATH = "original.pdf"
 
 
 class PypdfDocumentParser:
@@ -33,9 +39,11 @@ class PypdfDocumentParser:
                     regions=(),
                 )
             )
+        original_asset = BinaryAsset(path=ORIGINAL_PDF_ASSET_PATH, data=opened.data)
         return Extraction(
             manifest=opened.manifest,
             pages=tuple(pages),
             parser=self.parser,
             warnings=tuple(warnings),
+            assets=(original_asset,),
         )
