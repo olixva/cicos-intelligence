@@ -2,7 +2,7 @@
         lint-backend format-check format-backend typecheck-backend test-backend \
         lint-frontend typecheck-frontend test-frontend build-frontend test-e2e \
         local-services-config local-services-up local-services-stop \
-        doctor serve-backend serve-frontend
+        doctor serve-backend serve-frontend provision-prompts
 
 ALLIANZ_DOCKER_CONTEXT ?= colima-allianz
 LOCAL_COMPOSE = docker --context $(ALLIANZ_DOCKER_CONTEXT) compose --env-file ops/local.env
@@ -81,8 +81,23 @@ doctor:
 	ALLIANZ_DOCKER_CONTEXT=$(ALLIANZ_DOCKER_CONTEXT) uv run --project backend allianz doctor
 
 # --- Servir en desarrollo ---------------------------------------------------
-serve-backend:
-	uv run --project backend uvicorn bootstrap:build_api --factory --host 127.0.0.1 --port 8000
+# Carga `.env` y mapea las claves de Langfuse desde `ops/local.env`, donde
+# compose las define con prefijo ALLIANZ_. Sin este mapeo el arranque falla con
+# "missing Langfuse configuration", que era el estado previo: `make
+# serve-backend` no funcionaba desde un entorno limpio.
+BACKEND_ENV = set -a; . ./.env; . ./ops/local.env; \
+	: "$${LANGFUSE_PUBLIC_KEY:=$$ALLIANZ_LANGFUSE_PUBLIC_KEY}"; \
+	: "$${LANGFUSE_SECRET_KEY:=$$ALLIANZ_LANGFUSE_SECRET_KEY}"; \
+	: "$${LANGFUSE_BASE_URL:=http://127.0.0.1:3000}"; \
+	: "$${LANGFUSE_PROJECT_ID:=allianz-rag}"; set +a;
+
+provision-prompts:
+	@$(BACKEND_ENV) uv run --project backend --extra local-rag \
+		python backend/scripts/provision_langfuse_prompts.py
+
+serve-backend: provision-prompts
+	@$(BACKEND_ENV) uv run --project backend --extra local-rag \
+		uvicorn asgi_local:app --factory --host 127.0.0.1 --port 8000
 
 serve-frontend:
 	$(PNPM) --dir frontend dev

@@ -270,7 +270,7 @@
       },
       "ClaimResult": {
         "additionalProperties": false,
-        "description": "The synchronous claim branch (subset, no asset paths).",
+        "description": "The synchronous claim branch, without asset paths.\n\nThe three enum fields alone are unreadable: \"applicability=undetermined,\ndecision=conditional\" tells a user nothing about what was established,\nwhat is missing or which page supports it. The reasoning the domain\nalready computed travels with them.",
         "properties": {
           "applicability": {
             "enum": [
@@ -280,6 +280,32 @@
             ],
             "title": "Applicability",
             "type": "string"
+          },
+          "blocks": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "conditions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "contradictions": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Contradictions",
+            "type": "array"
           },
           "convention": {
             "anyOf": [
@@ -306,10 +332,35 @@
             "title": "Decision",
             "type": "string"
           },
+          "facts": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
           "kind": {
             "const": "claim",
             "title": "Kind",
             "type": "string"
+          },
+          "missing_information": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Information",
+            "type": "array"
+          },
+          "party_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Party Ids",
+            "type": "array"
           },
           "trace_id": {
             "anyOf": [
@@ -570,7 +621,14 @@
           },
           "metadata": {
             "additionalProperties": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "default": {},
             "title": "Metadata",

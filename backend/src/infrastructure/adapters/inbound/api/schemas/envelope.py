@@ -44,24 +44,48 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from application.models.claim import ClaimExecution
 from application.models.query import QueryExecution
+from domain.models.claim import ClaimFact
 from domain.models.decision import ClaimAnalysis
 from domain.models.routing import ClarificationResult, RouteExecution
 
 
-def _langfuse_trace_url(trace_id: str) -> str:
-    """Build the public Langfuse URL for ``trace_id`` from env-driven config.
+def _langfuse_trace_url(trace_id: str) -> str | None:
+    """Build a Langfuse trace URL from env config, or return ``None``.
 
-    ``LANGFUSE_PUBLIC_URL`` (preferred) is the URL the browser opens;
-    ``LANGFUSE_BASE_URL`` is the SDK-internal endpoint and may differ.
-    Falls back to a relative ``/trace/<id>`` link when neither is set so
-    the field is always present in the envelope payload.
+    A Langfuse trace lives at ``{base}/project/{project_id}/traces/{trace_id}``.
+    The older shape ``{base}/trace/{trace_id}`` is not a real route and lands
+    the user on "trace not found", so it is never emitted: a link that
+    reliably 404s is worse than no link at all.
+
+    This helper is only the fallback. The canonical URL comes from the SDK's
+    ``get_trace_url()``, carried on the execution, which knows the project
+    without any extra configuration.
+
+    ``LANGFUSE_PUBLIC_URL`` (what the browser opens) is preferred over
+    ``LANGFUSE_BASE_URL`` (the SDK endpoint), since the two may differ.
     """
 
     base = os.environ.get("LANGFUSE_PUBLIC_URL") or os.environ.get("LANGFUSE_BASE_URL", "")
     base = base.strip().rstrip("/")
-    if not base:
-        return f"/trace/{trace_id}"
-    return f"{base}/trace/{trace_id}"
+    project_id = os.environ.get("LANGFUSE_PROJECT_ID", "").strip()
+    if not base or not project_id or not trace_id.strip():
+        return None
+    return f"{base}/project/{project_id}/traces/{trace_id}"
+
+
+def _claim_fact(fact: ClaimFact) -> dict[str, object]:
+    """Serialize one extracted fact, keeping who asserted it and its literal origin.
+
+    ``asserted_by`` is what separates a claim made by one driver from a fact
+    both accept, so it never gets flattened away.
+    """
+
+    return {
+        "name": fact.name,
+        "value": fact.value,
+        "asserted_by": fact.asserted_by,
+        "source_text": fact.source_text,
+    }
 
 
 class _ResponseModel(BaseModel):
@@ -122,12 +146,24 @@ class QuestionResult(_ResponseModel):
 
 
 class ClaimResult(_ResponseModel):
-    """The synchronous claim branch (subset, no asset paths)."""
+    """The synchronous claim branch, without asset paths.
+
+    The three enum fields alone are unreadable: "applicability=undetermined,
+    decision=conditional" tells a user nothing about what was established,
+    what is missing or which page supports it. The reasoning the domain
+    already computed travels with them.
+    """
 
     kind: Literal["claim"]
     applicability: Literal["applicable", "not_applicable", "undetermined"]
     convention: Literal["CIDE", "ASCIDE"] | None
     decision: Literal["resolved", "conditional", "undetermined", "not_assessed"]
+    party_ids: tuple[str, ...] = ()
+    facts: tuple[dict[str, object], ...] = ()
+    contradictions: tuple[dict[str, object], ...] = ()
+    conditions: tuple[str, ...] = ()
+    missing_information: tuple[str, ...] = ()
+    blocks: tuple[dict[str, object], ...] = ()
     trace_id: str | None = None
     trace_url: str | None = None
 
@@ -148,7 +184,9 @@ class EnvelopeResponse(_ResponseModel):
     resolved_mode: Literal["question", "claim", "clarification"]
     result: QuestionResult | ClaimResult | ClarificationResultBody
     evidence: tuple[EvidenceItem, ...] = ()
-    metadata: dict[str, str] = {}
+    # ``langfuse_url`` is None whenever no real trace URL can be built; the
+    # frontend hides the link rather than offering one that 404s.
+    metadata: dict[str, str | None] = {}
 
     @classmethod
     def from_question(
@@ -203,6 +241,23 @@ class EnvelopeResponse(_ResponseModel):
                 applicability=analysis.applicability,
                 convention=analysis.convention,
                 decision=analysis.decision,
+                party_ids=analysis.party_ids,
+                facts=tuple(_claim_fact(fact) for fact in analysis.facts),
+                contradictions=tuple(
+                    {
+                        "fact_name": contradiction.fact_name,
+                        "statements": tuple(
+                            _claim_fact(statement) for statement in contradiction.statements
+                        ),
+                    }
+                    for contradiction in analysis.contradictions
+                ),
+                conditions=analysis.conditions,
+                missing_information=analysis.missing_information,
+                blocks=tuple(
+                    {"text": block.text, "evidence_ids": block.evidence_ids}
+                    for block in analysis.blocks
+                ),
                 trace_id=execution.trace_id,
                 trace_url=trace_url,
             ),
