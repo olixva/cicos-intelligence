@@ -176,7 +176,9 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
     """Compose the source-grounded claim flow with the same active local index as questions."""
     import os
 
+    from langchain_core.callbacks import BaseCallbackHandler
     from langfuse import Langfuse
+    from langfuse.langchain import CallbackHandler
     from qdrant_client import AsyncQdrantClient
 
     from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
@@ -203,6 +205,10 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
     evidence_root = Path(os.environ.get("ALLIANZ_EVIDENCE_ROOT", "data/extractions"))
     parser = _resolve_published_parser(evidence_root, document_hash, profile.parser)
     signature = profile.build_index_signature(document_hash, parser)
+
+    def callback_factory(trace_id: str) -> BaseCallbackHandler:
+        return CallbackHandler(trace_context={"trace_id": trace_id})
+
     return AnalyzeClaimUseCase(
         LangGraphClaimWorkflow(
             fact_extractor=OpenAIClaimFactExtractor(
@@ -221,6 +227,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
             ),
             evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
             trace_id_factory=Langfuse().create_trace_id,
+            callback_factory=callback_factory,
         )
     )
 
@@ -383,7 +390,9 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
 
     import os
 
+    from langchain_core.callbacks import BaseCallbackHandler
     from langfuse import Langfuse
+    from langfuse.langchain import CallbackHandler
 
     from infrastructure.adapters.outbound.language_model.openai_language_model import (
         LangfuseTextPrompt,
@@ -410,10 +419,15 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
     )
     answer_question = build_answer_question(profile_name)
     analyze_claim = build_analyze_claim(profile_name)
+
+    def callback_factory(trace_id: str) -> BaseCallbackHandler:
+        return CallbackHandler(trace_context={"trace_id": trace_id})
+
     return build_resolve_query_workflow(
         classifier=classifier,
         answer_question=answer_question,
         analyze_claim=analyze_claim,
+        callback_factory=callback_factory,
     )
 
 

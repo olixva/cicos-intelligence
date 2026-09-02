@@ -5,6 +5,8 @@ from collections import defaultdict
 from collections.abc import Callable
 from typing import NotRequired, Required, TypedDict, cast
 
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
 from application.models.claim import ClaimExecution, ExtractedClaimFacts
@@ -50,6 +52,7 @@ class LangGraphClaimWorkflow:
         retrieval_limit: int = 6,
         timeout_seconds: float = 30.0,
         trace_id_factory: Callable[[], str | None] = lambda: None,
+        callback_factory: Callable[[str], BaseCallbackHandler] | None = None,
     ) -> None:
         if type(retrieval_limit) is not int or retrieval_limit <= 0:
             raise ValueError("retrieval_limit must be a positive integer")
@@ -62,6 +65,7 @@ class LangGraphClaimWorkflow:
         self._retrieval_limit = retrieval_limit
         self._timeout_seconds = timeout_seconds
         self._trace_id_factory = trace_id_factory
+        self._callback_factory = callback_factory
         graph = StateGraph(_ClaimState)
         graph.add_node("extract_facts", self._extract_facts)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("retrieve_criteria", self._retrieve_criteria)  # pyright: ignore[reportUnknownMemberType]
@@ -78,9 +82,14 @@ class LangGraphClaimWorkflow:
 
     async def run(self, claim: ClaimInput) -> ClaimExecution:
         trace_id = self._trace_id_factory()
+        config = RunnableConfig(recursion_limit=8)
+        if trace_id is not None and self._callback_factory is not None:
+            config["callbacks"] = [self._callback_factory(trace_id)]  # type: ignore[arg-type]
         try:
             async with asyncio.timeout(self._timeout_seconds):
-                raw = await self._graph.ainvoke(_ClaimState(claim=claim))  # pyright: ignore[reportUnknownMemberType]
+                raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+                    _ClaimState(claim=claim), config=config  # type: ignore[arg-type]
+                )
         except TimeoutError as error:
             raise ClaimWorkflowTimeoutError("claim workflow timed out") from error
         state = cast(_ClaimState, raw)

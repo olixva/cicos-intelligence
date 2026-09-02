@@ -37,6 +37,7 @@ the auto router; ``auto`` invokes ``ResolveQuery`` and the response's
 
 from __future__ import annotations
 
+import os
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -45,6 +46,22 @@ from application.models.claim import ClaimExecution
 from application.models.query import QueryExecution
 from domain.models.decision import ClaimAnalysis
 from domain.models.routing import ClarificationResult, RouteExecution
+
+
+def _langfuse_trace_url(trace_id: str) -> str:
+    """Build the public Langfuse URL for ``trace_id`` from env-driven config.
+
+    ``LANGFUSE_PUBLIC_URL`` (preferred) is the URL the browser opens;
+    ``LANGFUSE_BASE_URL`` is the SDK-internal endpoint and may differ.
+    Falls back to a relative ``/trace/<id>`` link when neither is set so
+    the field is always present in the envelope payload.
+    """
+
+    base = os.environ.get("LANGFUSE_PUBLIC_URL") or os.environ.get("LANGFUSE_BASE_URL", "")
+    base = base.strip().rstrip("/")
+    if not base:
+        return f"/trace/{trace_id}"
+    return f"{base}/trace/{trace_id}"
 
 
 class _ResponseModel(BaseModel):
@@ -139,6 +156,7 @@ class EnvelopeResponse(_ResponseModel):
         execution: QueryExecution,
         evidence: tuple[EvidenceItem, ...] = (),
     ) -> EnvelopeResponse:
+        trace_id = execution.trace_id or ""
         return cls(
             request_id=request_id,
             requested_mode="question",
@@ -153,7 +171,10 @@ class EnvelopeResponse(_ResponseModel):
                 trace_id=execution.trace_id,
             ),
             evidence=evidence,
-            metadata={"trace_id": execution.trace_id or ""},
+            metadata={
+                "trace_id": trace_id,
+                "langfuse_url": _langfuse_trace_url(trace_id),
+            },
         )
 
     @classmethod
@@ -167,6 +188,7 @@ class EnvelopeResponse(_ResponseModel):
         analysis = execution.result
         if not isinstance(analysis, ClaimAnalysis):
             raise TypeError("envelope.from_claim requires a ClaimAnalysis result")
+        trace_id = execution.trace_id or ""
         return cls(
             request_id=request_id,
             requested_mode="claim",
@@ -179,7 +201,10 @@ class EnvelopeResponse(_ResponseModel):
                 trace_id=execution.trace_id,
             ),
             evidence=evidence,
-            metadata={"trace_id": execution.trace_id or ""},
+            metadata={
+                "trace_id": trace_id,
+                "langfuse_url": _langfuse_trace_url(trace_id),
+            },
         )
 
     @classmethod
@@ -192,6 +217,7 @@ class EnvelopeResponse(_ResponseModel):
         dispatch = execution.dispatch
         if not isinstance(dispatch, ClarificationResult):
             raise TypeError("envelope.from_clarification requires a ClarificationResult dispatch")
+        trace_id = execution.trace_id or ""
         return cls(
             request_id=request_id,
             requested_mode="auto",
@@ -203,7 +229,8 @@ class EnvelopeResponse(_ResponseModel):
             ),
             evidence=(),
             metadata={
-                "trace_id": execution.trace_id or "",
+                "trace_id": trace_id,
+                "langfuse_url": _langfuse_trace_url(trace_id),
                 "decision": execution.classification.decision,
             },
         )
@@ -242,7 +269,10 @@ class EnvelopeResponse(_ResponseModel):
                     trace_id=dispatch.trace_id,
                 ),
                 evidence=evidence,
-                metadata={"trace_id": trace_id},
+                metadata={
+                    "trace_id": trace_id,
+                    "langfuse_url": _langfuse_trace_url(trace_id),
+                },
             )
         if isinstance(dispatch, ClaimExecution):
             analysis = dispatch.result
@@ -260,7 +290,10 @@ class EnvelopeResponse(_ResponseModel):
                     trace_id=dispatch.trace_id,
                 ),
                 evidence=evidence,
-                metadata={"trace_id": trace_id},
+                metadata={
+                    "trace_id": trace_id,
+                    "langfuse_url": _langfuse_trace_url(trace_id),
+                },
             )
         if isinstance(dispatch, ClarificationResult):
             return cls(
@@ -275,6 +308,7 @@ class EnvelopeResponse(_ResponseModel):
                 evidence=(),
                 metadata={
                     "trace_id": trace_id,
+                    "langfuse_url": _langfuse_trace_url(trace_id),
                     "decision": execution.classification.decision,
                 },
             )

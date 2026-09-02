@@ -8,7 +8,8 @@ from collections.abc import Awaitable, Sequence
 from dataclasses import dataclass
 from typing import Literal, Protocol, cast
 
-from openai import APIError, APITimeoutError, AsyncOpenAI
+from langfuse.openai import AsyncOpenAI  # pyright: ignore[reportPrivateImportUsage]
+from openai import APIError, APITimeoutError
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 

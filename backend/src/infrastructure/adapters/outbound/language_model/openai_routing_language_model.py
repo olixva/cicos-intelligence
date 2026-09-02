@@ -17,7 +17,8 @@ from collections.abc import Awaitable
 from dataclasses import dataclass
 from typing import Protocol, cast
 
-from openai import APIError, APITimeoutError, AsyncOpenAI
+from langfuse.openai import AsyncOpenAI  # pyright: ignore[reportPrivateImportUsage]
+from openai import APIError, APITimeoutError
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel, ConfigDict, ValidationError
 
