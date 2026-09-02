@@ -268,7 +268,10 @@ class LangGraphClaimWorkflow:
         if analysis is None:
             raise RuntimeError("claim workflow reached information gate without analysis")
         if not analysis.missing_information:
-            return _ClaimUpdate(result=analysis)
+            # ``resumed`` is a routing marker for the current interruption
+            # only. Clear it once the resumed extraction is complete, or the
+            # conditional edge would restart extraction indefinitely.
+            return _ClaimUpdate(result=analysis, resumed=False)
         response = interrupt({"missing_information": analysis.missing_information})
         clarifications = (
             tuple(response.get("clarifications", ())) if isinstance(response, dict) else ()
