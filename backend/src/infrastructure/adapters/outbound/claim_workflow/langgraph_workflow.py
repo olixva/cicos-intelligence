@@ -5,7 +5,7 @@ import contextlib
 import re
 from collections import defaultdict
 from collections.abc import Callable
-from typing import NotRequired, Required, TypedDict, cast
+from typing import Literal, NotRequired, Required, TypedDict, cast
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.runnables import RunnableConfig
@@ -79,6 +79,7 @@ class LangGraphClaimWorkflow:
         self._retrieval_limit = retrieval_limit
         self._timeout_seconds = timeout_seconds
         self._rules = rules
+        self._rules_by_id = {rule.rule_id: rule for rule in rules}
         self._trace_id_factory = trace_id_factory
         self._callback_factory = callback_factory
         self._trace_url_factory = trace_url_factory
@@ -194,14 +195,28 @@ class LangGraphClaimWorkflow:
         assessment = assess_applicability(
             _applicability_facts(extracted.facts), evidence_ids=evidence_ids
         )
-        analysis = build_applicability_analysis(
-            parties=extracted.party_ids, facts=extracted.facts, assessment=assessment
-        )
         # Cada regla del corpus firmado se ejecuta y se reporta, incluidas las
         # que no casan y las que no pueden comprobarse: la interfaz tiene que
         # poder enseñar qué se evaluó, no sólo el veredicto.
         evaluations = evaluate_ruleset(
             self._rules, {fact.name: fact.value for fact in extracted.facts if fact.value}
+        )
+        matched_manoeuvre_rules = tuple(
+            evaluation
+            for evaluation in evaluations
+            if evaluation.result == "matched"
+            and self._kind_of(evaluation.rule_id) == "manoeuvre"
+        )
+        analysis = build_applicability_analysis(
+            parties=extracted.party_ids,
+            facts=extracted.facts,
+            assessment=assessment,
+            matched_manoeuvre_rules=matched_manoeuvre_rules,
+            manoeuvre_convention=(
+                self._convention_of(matched_manoeuvre_rules[0].rule_id)
+                if len(matched_manoeuvre_rules) == 1
+                else None
+            ),
         )
         blocks = analysis.blocks or _rule_blocks(evaluations)
         return _ClaimUpdate(
@@ -218,6 +233,15 @@ class LangGraphClaimWorkflow:
                 rules_evaluated=evaluations,
             )
         )
+
+    def _kind_of(self, rule_id: str) -> str | None:
+        rule = self._rules_by_id.get(rule_id)
+        return rule.kind if rule is not None else None
+
+    def _convention_of(self, rule_id: str) -> Literal["CIDE", "ASCIDE"] | None:
+        """Read the convention from the signed artifact; never infer it from ``kind``."""
+        rule = self._rules_by_id.get(rule_id)
+        return rule.convention if rule is not None else None
 
     def _explain(self, state: _ClaimState) -> _ClaimUpdate:
         """Keep deterministic result; this node is the future explanation extension seam."""

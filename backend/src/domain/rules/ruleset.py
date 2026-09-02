@@ -15,7 +15,7 @@ Two properties matter more than expressiveness:
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import cast
+from typing import Literal, cast
 
 from domain.models.rule_evaluation import RuleEvaluation
 
@@ -39,6 +39,12 @@ class LoadedRule:
     outcome: str | None
     evidence_ids: tuple[str, ...]
     applies_when: dict[str, object] | None = None
+    #: Which convention the rule belongs to, when the artifact states it. A rule
+    #: that does not declare one leaves this ``None``: the claim result then
+    #: resolves without naming a convention rather than assuming one. The rule's
+    #: ``kind`` must never be used as a proxy — ``manoeuvre`` holds both the
+    #: ASCIDE subsidiary norms and the CIDE door-opening criterion.
+    convention: Literal["CIDE", "ASCIDE"] | None = None
 
 
 def evaluate_ruleset(
@@ -82,11 +88,26 @@ def _evaluate(rule: LoadedRule, facts: Mapping[str, str]) -> RuleEvaluation:
         inputs=inputs,
         result="matched" if holds else "not_matched",
         evidence_ids=rule.evidence_ids if holds else (),
-        rationale=(
-            f"{rule.description} {'Se cumple' if holds else 'No se cumple'} con "
-            f"{', '.join(f'{k}={v}' for k, v in inputs)}."
-        ),
+        rationale=_rationale(rule, holds, inputs),
     )
+
+
+def _rationale(rule: LoadedRule, holds: bool, inputs: tuple[tuple[str, str], ...]) -> str:
+    """Explain the outcome without inverting the sense of an exclusion rule.
+
+    The previous wording said "Se cumple / No se cumple", which reads as whether
+    the rule's *requirement* is satisfied. Most gates here are exclusions —
+    ``cide-requires-two-vehicles`` triggers when ``vehicle_count != 2`` — so
+    "No se cumple con vehicle_count=2" told the reader the opposite of the truth:
+    that there were not two vehicles. "Se activa / No se activa" describes the
+    rule firing, which is what actually happened, and a rule that fires also
+    states the consequence the reviewer signed off in ``outcome``.
+    """
+    observed = ", ".join(f"{name}={value}" for name, value in inputs)
+    if not holds:
+        return f"{rule.description} No se activa con {observed}."
+    consequence = f" {rule.outcome}" if rule.outcome else ""
+    return f"{rule.description} Se activa con {observed}.{consequence}"
 
 
 def _fields(condition: Mapping[str, object]) -> tuple[str, ...]:

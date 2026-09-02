@@ -34,6 +34,38 @@ def test_a_rule_whose_condition_holds_is_matched_with_its_evidence() -> None:
     assert ("vehicle_count", "5") in result.inputs
 
 
+def test_an_exclusion_rule_that_does_not_fire_is_not_described_as_unmet() -> None:
+    """Regresión de legibilidad: la mayoría de puertas son reglas de exclusión.
+
+    `cide-requires-two-vehicles` se activa cuando `vehicle_count != 2`. El texto
+    anterior decía «No se cumple con vehicle_count=2», que el lector interpreta
+    como «no hay dos vehículos» —justo lo contrario de lo ocurrido—.
+    """
+    rule = _rule(
+        "cide-requires-two-vehicles",
+        {"field": "vehicle_count", "op": "ne", "value": "2"},
+        description="Los Convenios exigen la intervención de sólo dos vehículos.",
+    )
+    (result,) = evaluate_ruleset((rule,), {"vehicle_count": "2"})
+
+    assert result.result == "not_matched"
+    assert "No se activa con vehicle_count=2" in result.rationale
+    assert "No se cumple" not in result.rationale
+
+
+def test_a_rule_that_fires_states_the_consequence_its_reviewer_signed() -> None:
+    rule = _rule(
+        "cide-requires-two-vehicles",
+        {"field": "vehicle_count", "op": "ne", "value": "2"},
+        outcome="vehicle_count != 2 ⇒ Convenio no aplicable.",
+    )
+    (result,) = evaluate_ruleset((rule,), {"vehicle_count": "5"})
+
+    assert result.result == "matched"
+    assert "Se activa con vehicle_count=5" in result.rationale
+    assert "Convenio no aplicable" in result.rationale
+
+
 def test_a_rule_whose_condition_fails_is_reported_as_not_matched() -> None:
     rule = _rule("dos-vehiculos", {"field": "vehicle_count", "op": "ne", "value": "2"})
     (result,) = evaluate_ruleset((rule,), {"vehicle_count": "2"})

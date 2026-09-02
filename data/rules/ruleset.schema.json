@@ -54,7 +54,9 @@
           },
           "prerequisites": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "outcome": {
             "type": "string",
@@ -78,30 +80,61 @@
           },
           "notes": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
+          },
+          "convention": {
+            "type": "string",
+            "enum": [
+              "CIDE",
+              "ASCIDE"
+            ],
+            "description": "Convention the rule belongs to, when the manual states it. Optional: a rule that does not declare one must not have it inferred from `kind` (manoeuvre covers both ASCIDE subsidiary norms and the CIDE door-opening criterion)."
           }
         }
       }
     },
     "attestation": {
       "type": "object",
-      "required": ["transcriptions", "divergence_resolution", "signed_by"],
+      "required": [
+        "transcriptions",
+        "divergence_resolution",
+        "signed_by"
+      ],
       "properties": {
         "transcriptions": {
           "type": "array",
           "minItems": 2,
           "items": {
             "type": "object",
-            "required": ["reviewer_id", "independent", "pdf_page_checked", "transcription_sha256"],
+            "required": [
+              "reviewer_id",
+              "independent",
+              "pdf_page_checked",
+              "transcription_sha256"
+            ],
             "properties": {
-              "reviewer_id": { "type": "string", "minLength": 1 },
-              "independent": { "type": "boolean", "const": true },
-              "pdf_page_checked": { "type": "boolean", "const": true },
+              "reviewer_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "independent": {
+                "type": "boolean",
+                "const": true
+              },
+              "pdf_page_checked": {
+                "type": "boolean",
+                "const": true
+              },
               "transcription_sha256": {
                 "type": "string",
                 "pattern": "^[0-9a-f]{64}$"
               },
-              "transcribed_at": { "type": "string", "format": "date-time" }
+              "transcribed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
             }
           }
         },
@@ -112,9 +145,15 @@
         "signed_by": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "signed_at": { "type": "string", "format": "date-time" }
+        "signed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     }
   }

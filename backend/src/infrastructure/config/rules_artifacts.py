@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from domain.models.claim import MatrixCell
 from domain.rules.artifact_validation import (
@@ -114,7 +114,15 @@ def _rule(raw: JsonObject) -> LoadedRule:
         applies_when=cast(dict[str, object], applies_when)
         if isinstance(applies_when, dict)
         else None,
+        convention=_convention(raw.get("convention")),
     )
+
+
+def _convention(value: object) -> Literal["CIDE", "ASCIDE"] | None:
+    """Only the two conventions the manual defines; anything else stays unknown."""
+    if value == "CIDE" or value == "ASCIDE":
+        return cast(Literal["CIDE", "ASCIDE"], value)
+    return None
 
 
 def _object_list(value: object) -> tuple[JsonObject, ...]:

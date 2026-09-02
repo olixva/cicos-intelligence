@@ -8,6 +8,7 @@ which manual page supports it.
 import pytest
 
 from domain.models.rule_evaluation import RuleEvaluation
+from domain.rules.ruleset import evaluate_ruleset
 
 _EVIDENCE = ("sha256:" + "0" * 64 + ":page:56",)
 
@@ -176,3 +177,43 @@ def test_a_resolved_decision_is_allowed_when_a_rule_matched() -> None:
         ),
     )
     assert analysis.decision == "resolved"
+
+
+def test_shipped_lane_change_rule_matches_on_acknowledged_lane_change() -> None:
+    """Regression for accident-04: b.10 must be machine-checkable, not just documented."""
+    from infrastructure.config.rules_artifacts import load_rules_artifacts
+
+    artifacts = load_rules_artifacts(
+        _REPO / "data" / "rules",
+        expected_document_hash=_DOCUMENT_HASH,
+        evidence_roots=(_REPO / "data" / "extractions",),
+    )
+    (evaluation,) = [
+        result
+        for result in evaluate_ruleset(
+            artifacts.rules,
+            {"lane_change_acknowledged_by_both": "true", "contradictory_versions": "true"},
+        )
+        if result.rule_id == "ascide-b10-lane-change"
+    ]
+    assert evaluation.result == "matched"
+    assert evaluation.evidence_ids
+
+
+def test_shipped_lane_change_rule_does_not_match_without_disparity() -> None:
+    from infrastructure.config.rules_artifacts import load_rules_artifacts
+
+    artifacts = load_rules_artifacts(
+        _REPO / "data" / "rules",
+        expected_document_hash=_DOCUMENT_HASH,
+        evidence_roots=(_REPO / "data" / "extractions",),
+    )
+    (evaluation,) = [
+        result
+        for result in evaluate_ruleset(
+            artifacts.rules,
+            {"lane_change_acknowledged_by_both": "true", "contradictory_versions": "false"},
+        )
+        if result.rule_id == "ascide-b10-lane-change"
+    ]
+    assert evaluation.result == "not_matched"

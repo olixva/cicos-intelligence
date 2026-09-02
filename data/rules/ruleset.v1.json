@@ -128,7 +128,8 @@
       ],
       "outcome": "Culpable el vehículo que colisiona con el aparcado.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "convention": "ASCIDE"
     },
     {
       "rule_id": "ascide-b6-exit-from-parking",
@@ -144,7 +145,8 @@
       "notes": [
         "Excepción: ver «Incorporación a la circulación» (pág. 46)."
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "convention": "ASCIDE"
     },
     {
       "rule_id": "ascide-b9-reverse-vs-rear-impact",
@@ -159,7 +161,8 @@
       ],
       "outcome": "Responsable quien presenta daños en la parte delantera.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "convention": "ASCIDE"
     },
     {
       "rule_id": "ascide-b10-lane-change",
@@ -170,11 +173,25 @@
       "description": "Norma subsidiaria b.10, cambio de carril/alcance trasero: cuando ambos implicados reconozcan el cambio de carril por parte de uno de los dos y exista discrepancia sobre la responsabilidad, se considera culpable el que cambia de carril, aunque alegue que estaba parado, con independencia de la ubicación de los daños.",
       "prerequisites": [
         "lane_change_acknowledged_by_both",
-        "contradictory_versions"
+        "contradictory_versions",
+        "lane_change_vehicle"
       ],
       "outcome": "Culpable quien cambia de carril.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "applies_when": {
+        "all": [
+          {
+            "field": "lane_change_acknowledged_by_both",
+            "op": "is_true"
+          },
+          {
+            "field": "contradictory_versions",
+            "op": "is_true"
+          }
+        ]
+      },
+      "convention": "ASCIDE"
     },
     {
       "rule_id": "ascide-b11-roundabout",
@@ -191,7 +208,8 @@
       "notes": [
         "Daños angulares son los localizados en los vértices traseros o delanteros del vehículo."
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "convention": "ASCIDE"
     },
     {
       "rule_id": "ascide-traffic-light-amber",
@@ -206,7 +224,8 @@
       ],
       "outcome": "Culpable quien admite pasar en ámbar no intermitente.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "convention": "ASCIDE"
     },
     {
       "rule_id": "cide-door-opening",
@@ -220,7 +239,8 @@
       ],
       "outcome": "Deudora la aseguradora del vehículo que pudiera estar abriendo la puerta.",
       "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
-      "notes": []
+      "notes": [],
+      "convention": "CIDE"
     },
     {
       "rule_id": "cide-matrix-lookup",
@@ -239,7 +259,8 @@
       "notes": [
         "El manual NO define qué maniobra representa cada casilla A0-A17: proceden del apartado 12 de la D.A.A., externo al manual. Ver data/rules/daa-circumstances.v1.json."
       ],
-      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>"
+      "reviewer_id": "Antonio Oliva Carceles <antonio.oliva.carceles@gmail.com>",
+      "convention": "CIDE"
     }
   ],
   "attestation": {
