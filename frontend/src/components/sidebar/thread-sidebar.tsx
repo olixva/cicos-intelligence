@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { MessageSquare, Plus, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
@@ -8,26 +8,28 @@ import type { ThreadSummary } from '@/lib/thread-state';
 export interface ThreadSidebarProps {
   threads: ThreadSummary[];
   activeThreadId: string;
-  collapsed: boolean;
+  /** Se conserva por compatibilidad de tipos; hoy siempre es false. */
+  collapsed?: boolean;
   onSelect: (id: string) => void;
   onNewThread: () => void;
-  onToggleCollapse: () => void;
 }
 
 /**
- * ThreadSidebar — colapsable 240 ↔ 56 px. Lista de hilos mock (5 hardcoded).
+ * ThreadSidebar — lista los hilos reales persistidos por `thread-store`.
  *
- * Spec UX v2: solo se muestra con width >= 1280px (controlado por el padre).
- * Animación de ancho via framer-motion.
+ * Ancho fijo de 240 px y altura completa. La variante contraída se retiró:
+ * a 56 px sólo quedaban iconos de chat idénticos, sin manera de saber qué
+ * conversación era cada uno.
+ *
+ * Spec UX v2: sólo se muestra con width >= 1280px (lo controla el padre).
  */
 export function ThreadSidebar({
   threads,
   activeThreadId,
-  collapsed,
   onSelect,
   onNewThread,
-  onToggleCollapse,
 }: ThreadSidebarProps) {
+  const collapsed = false;
   return (
     <TooltipProvider delayDuration={200}>
       <motion.aside
@@ -37,31 +39,10 @@ export function ThreadSidebar({
         className="flex h-full shrink-0 flex-col border-r bg-card"
         aria-label="Hilos"
       >
-        <div className="flex items-center justify-between gap-1 border-b px-3 py-3">
-          {!collapsed && (
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Hilos
-            </span>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleCollapse}
-                aria-label={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
-              >
-                {collapsed ? (
-                  <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {collapsed ? 'Expandir' : 'Colapsar'}
-            </TooltipContent>
-          </Tooltip>
+        <div className="flex items-center gap-1 border-b px-3 py-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Hilos
+          </span>
         </div>
 
         <div className="px-2 py-2">

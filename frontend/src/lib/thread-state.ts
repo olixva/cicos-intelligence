@@ -1,3 +1,4 @@
+import { claimSummaryText, type ClaimResultView } from '@/lib/claim-format';
 import type {
   EnvelopeRequest,
   EnvelopeResponse,
@@ -160,7 +161,7 @@ export type ThreadAction =
   | { type: 'SUBMIT'; messageId: string; assistantId: string; text: string; mode: UiMode; createdAt: number }
   | { type: 'STREAM_STARTED'; requestId: string; mode: UiMode }
   | { type: 'TOOL_CALL_PENDING'; kind: ToolCallKind; label: string; createdAt: number }
-  | { type: 'TOOL_CALL_DONE'; id: string; durationMs: number; payload?: unknown }
+  | { type: 'TOOL_CALL_DONE'; id: string; durationMs?: number; payload?: unknown }
   | { type: 'TOOL_CALL_ERROR'; id: string; message: string }
   | { type: 'STREAM_TEXT'; delta: string }
   | { type: 'STREAM_COMPLETED'; response: EnvelopeResponse; requestId: string }
@@ -267,6 +268,12 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
     }
 
     case 'NEW_THREAD': {
+      // Abrir "nuevo chat" sobre un hilo que todavía no tiene mensajes no crea
+      // nada: reutilizamos el hilo vacío en vez de acumular entradas idénticas
+      // en la barra lateral.
+      if (state.messages.length === 0 && state.activeThreadId) {
+        return state;
+      }
       const id = action.id;
       const summary: ThreadSummary = {
         id,
@@ -319,14 +326,17 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
       };
       const assistant = freshActiveAssistant();
       assistant.id = action.assistantId;
-      // tool calls plan: classify (siempre), retrieve (question), check_rules + apply_decision (claim).
-      // En modo 'auto' sólo añadimos classify; el resto se completa al recibir el envelope final
-      // vía RESOLVE_TOOL_PLAN (Finding G1 #2).
+      // `classify` sólo existe en modo 'auto': es la única situación en la que
+      // el backend clasifica la intención, y la única en la que emite el stage
+      // `dispatch`. En modos explícitos el usuario ya declaró el recorrido, así
+      // que mostrar "Clasificando consulta…" afirmaba un trabajo inexistente.
+      // En 'auto' el resto del plan se completa al recibir el envelope final
+      // vía RESOLVE_TOOL_PLAN.
       const plan: ToolCallKind[] =
         action.mode === 'claim'
-          ? ['classify', 'check_rules', 'apply_decision']
+          ? ['check_rules', 'apply_decision']
           : action.mode === 'question'
-            ? ['classify', 'retrieve']
+            ? ['retrieve']
             : ['classify'];
       assistant.toolCalls = plan.map((kind) => ({
         id: uuid(),
@@ -382,7 +392,17 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
                 ...m,
                 toolCalls: m.toolCalls.map((tc) =>
                   tc.id === action.id
-                    ? { ...tc, status: 'done', durationMs: action.durationMs, payload: action.payload }
+                    ? {
+                        ...tc,
+                        status: 'done' as const,
+                        // Sólo se registra una duración cuando procede de una
+                        // medición real del backend. Antes se escribía 0 ms o
+                        // se repetía el total en cada tarjeta.
+                        ...(action.durationMs === undefined
+                          ? {}
+                          : { durationMs: action.durationMs }),
+                        payload: action.payload,
+                      }
                     : tc,
                 ),
               }
@@ -502,7 +522,6 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
           return {
             ...tc,
             status: 'done' as const,
-            durationMs: 0,
             payload: derivePayloadForKind(tc.kind, envelope),
           };
         });
@@ -513,7 +532,6 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
             kind,
             label: labels[kind].done,
             status: 'done',
-            durationMs: 0,
             payload: derivePayloadForKind(kind, envelope),
             startedAt: m.createdAt,
           });
@@ -632,11 +650,9 @@ function mergeStreamedText(streamed: string, envelope: EnvelopeResponse): string
   }
   if (result.kind === 'clarification') return result.message;
   if (result.kind === 'claim') {
-    const parts: string[] = [];
-    if (result.convention) parts.push(`Convenio ${result.convention}.`);
-    parts.push(`Aplicabilidad: ${result.applicability}.`);
-    parts.push(`Decisión: ${result.decision}.`);
-    return parts.join(' ');
+    // Redactado en castellano con las condiciones, lo que falta y las
+    // contradicciones. Antes devolvía los enums crudos del backend.
+    return claimSummaryText(result as unknown as ClaimResultView);
   }
   return '';
 }

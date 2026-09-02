@@ -1,7 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { FileText } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { BorderBeam } from '@/components/ui/border-beam';
 
 export interface CitationChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   evidenceId: string;
@@ -16,8 +15,11 @@ export interface CitationChipProps extends ButtonHTMLAttributes<HTMLButtonElemen
  * CitationChip — Origin UI comp-265-inspired (spec UX v2).
  *
  * Botón pequeño que muestra el ID de evidencia en monospace, la página y
- * opcionalmente un label legible. Al pasar el cursor, un BorderBeam
- * recorre el borde. Click → abre PDF overlay vía `onClick`.
+ * opcionalmente un label legible. Click → abre PDF overlay vía `onClick`.
+ *
+ * El hover es un realce sobrio del borde y del fondo. Antes recorría el borde
+ * un BorderBeam azul animado que distraía de la propia cita y no comunicaba
+ * nada: no indicaba estado, ni carga, ni selección. Se retiró.
  */
 export const CitationChip = forwardRef<HTMLButtonElement, CitationChipProps>(
   function CitationChip({ evidenceId, pdfPage, label, active, className, ...props }, ref) {
@@ -34,7 +36,8 @@ export const CitationChip = forwardRef<HTMLButtonElement, CitationChipProps>(
         data-active={active ? 'true' : undefined}
         className={cn(
           'group relative isolate inline-flex items-center gap-1.5 overflow-hidden rounded-full border bg-background px-2.5 py-1 text-xs',
-          'transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          'transition-colors hover:border-primary/60 hover:bg-accent',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           active
             ? 'border-primary bg-primary/10 text-primary'
             : 'border-border text-foreground',
@@ -42,12 +45,6 @@ export const CitationChip = forwardRef<HTMLButtonElement, CitationChipProps>(
         )}
         {...props}
       >
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-        >
-          <BorderBeam size={60} duration={5} />
-        </span>
         <FileText className="h-3 w-3" aria-hidden="true" />
         <span className="font-mono text-[10px] opacity-70">p.{pdfPage}</span>
         <span className="max-w-[200px] truncate">{label ?? evidenceId}</span>

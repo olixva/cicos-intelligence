@@ -42,7 +42,10 @@ import type { EnvelopeResponse, EvidenceItem } from '@/api/queries';
 export default function IndexRoute() {
   const [state, dispatch] = useReducer(threadReducer, undefined, () => initialState('auto'));
   const hydratedRef = useRef(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  // La barra lateral ya no se contrae. Contraída sólo mostraba iconos de chat
+  // idénticos entre sí, sin forma de distinguir un hilo de otro, así que el
+  // control ocupaba sitio sin aportar información.
+  const sidebarCollapsed = false;
   const [showSidebar, setShowSidebar] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -138,23 +141,10 @@ export default function IndexRoute() {
             return;
           }
           case 'stage': {
-            // Mapeo simple de stage → tool call done. Si en el futuro el
-            // backend emite más stages (retrieve, check_rules, apply_decision)
-            // podemos mapearlos aquí.
-            const stageToKind: Record<string, 'classify' | 'retrieve' | 'check_rules' | 'apply_decision'> = {
-              dispatch: 'classify',
-              retrieve: 'retrieve',
-              check_rules: 'check_rules',
-              apply_decision: 'apply_decision',
-            };
-            const kind = stageToKind[event.stage];
-            if (kind) {
-              // El reducer actualiza por id; necesitamos el id concreto del tool call.
-              // Como el reducer no expone los ids, lo hacemos via dispatch
-              // TOOL_CALL_DONE inline. Pero el reducer espera el id…
-              // Hack controlado: dispatch TOOL_CALL_PENDING? No, mejor lo
-              // delegamos a STREAM_COMPLETED que cierra todos los pending.
-            }
+            // El backend sólo emite un stage hoy (`dispatch`, y sólo en modo
+            // auto), que STREAM_COMPLETED ya cierra junto al resto del plan.
+            // Cuando el backend emita un stage por etapa con su `timestamp`,
+            // aquí es donde se calculará la duración real de cada una.
             return;
           }
           case 'completed': {
@@ -316,7 +306,6 @@ export default function IndexRoute() {
               collapsed={sidebarCollapsed}
               onSelect={handleSelectThread}
               onNewThread={handleNewThread}
-              onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
             />
           )}
 
@@ -455,15 +444,16 @@ function dispatchToolCallsFromEnvelope(
     requested_mode: envelope.requested_mode,
   });
 
-  const started = Date.now();
+  // Sin `durationMs`: el backend no emite todavía un stage por etapa, así que
+  // no sabemos cuánto tardó cada una. Antes se enviaba `Date.now() - startedAt`,
+  // idéntico para las tres tarjetas porque comparten `startedAt`, lo que
+  // presentaba el total como si fuera el tiempo de cada etapa.
   for (const tc of lastAssistant.toolCalls) {
     if (tc.status !== 'pending') continue;
-    const payload = derivePayload(tc.kind, envelope);
     dispatch({
       type: 'TOOL_CALL_DONE',
       id: tc.id,
-      durationMs: started - tc.startedAt,
-      payload,
+      payload: derivePayload(tc.kind, envelope),
     });
   }
 }
@@ -486,15 +476,25 @@ function derivePayload(
       };
     case 'check_rules':
       if (envelope.result && envelope.result.kind === 'claim') {
-        return { convention: envelope.result.convention, rules: [] };
+        // Antes esta tarjeta recibía siempre `rules: []`, así que sólo
+        // enseñaba "Convenio: —" y no explicaba nada. Ahora lleva lo que el
+        // backend evaluó de verdad: hechos atribuidos y qué falta.
+        return {
+          convention: envelope.result.convention,
+          applicability: envelope.result.applicability,
+          facts: envelope.result.facts ?? [],
+          contradictions: envelope.result.contradictions ?? [],
+          missing_information: envelope.result.missing_information ?? [],
+        };
       }
-      return { convention: null, rules: [] };
+      return { convention: null, facts: [], contradictions: [], missing_information: [] };
     case 'apply_decision':
       if (envelope.result && envelope.result.kind === 'claim') {
         return {
           convention: envelope.result.convention,
           applicability: envelope.result.applicability,
           decision: envelope.result.decision,
+          conditions: envelope.result.conditions ?? [],
         };
       }
       if (envelope.result && envelope.result.kind === 'clarification') {

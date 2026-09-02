@@ -14,6 +14,12 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import {
+  applicabilityLabel,
+  decisionLabel,
+  type Applicability,
+  type Decision,
+} from '@/lib/claim-format';
 import type { ToolCall, ToolCallKind } from '@/lib/thread-state';
 
 const ICONS: Record<ToolCallKind, LucideIcon> = {
@@ -235,27 +241,78 @@ function RetrieveBody({ toolCall }: { toolCall: ToolCall }) {
 
 function CheckRulesBody({ toolCall }: { toolCall: ToolCall }) {
   const payload = toolCall.payload as
-    | { convention?: string; rules?: Array<{ name: string; satisfied: boolean; note?: string }> }
+    | {
+        convention?: string | null;
+        applicability?: Applicability;
+        facts?: Array<{ name: string; value?: string | null; asserted_by?: string | null }>;
+        contradictions?: Array<{ fact_name: string }>;
+        missing_information?: string[];
+      }
     | undefined;
+
+  const facts = payload?.facts ?? [];
+  const contradictions = payload?.contradictions ?? [];
+  const missing = payload?.missing_information ?? [];
+  const contradicted = new Set(contradictions.map((c) => c.fact_name));
+
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       <p className="text-muted-foreground">
-        Convenio: {payload?.convention ?? '—'}
+        {payload?.applicability
+          ? applicabilityLabel(payload.applicability)
+          : 'Aplicabilidad sin determinar'}
+        {payload?.convention ? ` · ${payload.convention}` : ''}
       </p>
-      {payload?.rules && payload.rules.length > 0 && (
-        <ul className="mt-1 flex flex-col gap-0.5">
-          {payload.rules.map((r, i) => (
-            <li key={i} className="flex items-start gap-1.5">
-              {r.satisfied ? (
-                <CheckCircle2 className="mt-0.5 h-3 w-3 text-success" aria-hidden="true" />
-              ) : (
-                <AlertCircle className="mt-0.5 h-3 w-3 text-warning" aria-hidden="true" />
-              )}
-              <span>{r.name}</span>
-              {r.note && <span className="text-muted-foreground">— {r.note}</span>}
-            </li>
-          ))}
-        </ul>
+
+      {facts.length > 0 && (
+        <div>
+          <p className="mb-0.5 font-medium">Hechos extraídos del relato</p>
+          <ul className="flex flex-col gap-0.5">
+            {facts.map((f, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                {contradicted.has(f.name) ? (
+                  <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-warning" aria-hidden="true" />
+                ) : (
+                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-success" aria-hidden="true" />
+                )}
+                <span>
+                  <span className="font-mono text-[10px] opacity-70">{f.name}</span>
+                  {f.value ? `: ${f.value}` : ''}
+                  {f.asserted_by ? (
+                    <span className="text-muted-foreground"> — según {f.asserted_by}</span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {contradictions.length > 0 && (
+        <p className="text-warning">
+          {contradictions.length === 1
+            ? '1 contradicción sin resolver entre las partes.'
+            : `${contradictions.length} contradicciones sin resolver entre las partes.`}
+        </p>
+      )}
+
+      {missing.length > 0 && (
+        <div>
+          <p className="mb-0.5 font-medium">Falta por confirmar</p>
+          <ul className="flex flex-col gap-0.5">
+            {missing.map((m, i) => (
+              <li key={i} className="text-muted-foreground">
+                — {m}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {facts.length === 0 && missing.length === 0 && (
+        <p className="text-muted-foreground">
+          No se extrajo ningún hecho aplicable del relato.
+        </p>
       )}
     </div>
   );
@@ -263,28 +320,55 @@ function CheckRulesBody({ toolCall }: { toolCall: ToolCall }) {
 
 function ApplyDecisionBody({ toolCall }: { toolCall: ToolCall }) {
   const payload = toolCall.payload as
-    | { convention?: string | null; applicability?: string; decision?: string }
+    | {
+        convention?: string | null;
+        applicability?: Applicability;
+        decision?: Decision;
+        conditions?: string[];
+      }
     | undefined;
+
+  const decision = payload?.decision;
+  // Una indeterminación no se pinta como éxito: sólo `resolved` va en verde.
   const decisionTone =
-    payload?.decision === 'resolved'
+    decision === 'resolved'
       ? 'bg-success/10 text-success border-success/30'
-      : payload?.decision === 'conditional'
+      : decision === 'conditional'
         ? 'bg-warning/10 text-warning border-warning/30'
-        : payload?.decision === 'not_assessed'
-          ? 'bg-muted text-muted-foreground border-border'
-          : 'bg-muted text-muted-foreground border-border';
+        : 'bg-muted text-muted-foreground border-border';
+
+  const conditions = payload?.conditions ?? [];
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="rounded border bg-muted px-2 py-0.5 text-[10px] uppercase">
-        {payload?.convention ?? 'Convenio'}
-      </span>
-      <span className="rounded border bg-muted px-2 py-0.5 text-[10px] uppercase">
-        {payload?.applicability ?? '—'}
-      </span>
-      <span className={cn('rounded border px-2 py-0.5 text-[10px] uppercase', decisionTone)}>
-        {payload?.decision ?? '—'}
-      </span>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {payload?.convention && (
+          <span className="rounded border bg-muted px-2 py-0.5 text-[10px] uppercase">
+            {payload.convention}
+          </span>
+        )}
+        <span className="rounded border bg-muted px-2 py-0.5 text-[11px]">
+          {payload?.applicability
+            ? applicabilityLabel(payload.applicability)
+            : 'Aplicabilidad sin determinar'}
+        </span>
+        <span className={cn('rounded border px-2 py-0.5 text-[11px]', decisionTone)}>
+          {decision ? decisionLabel(decision) : 'Sin determinar'}
+        </span>
+      </div>
+
+      {conditions.length > 0 && (
+        <div>
+          <p className="mb-0.5 font-medium">Condiciones para poder concluir</p>
+          <ul className="flex flex-col gap-0.5">
+            {conditions.map((c, i) => (
+              <li key={i} className="text-muted-foreground">
+                — {c}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

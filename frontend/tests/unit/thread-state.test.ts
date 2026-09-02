@@ -22,7 +22,8 @@ describe('threadReducer', () => {
     expect(next.messages[1]?.role).toBe('assistant');
     if (next.messages[1]?.role === 'assistant') {
       const kinds = next.messages[1].toolCalls.map((t: ToolCall) => t.kind as ToolCallKind);
-      expect(kinds).toEqual(['classify', 'retrieve']);
+      // Sin `classify`: en modo explícito el backend no clasifica nada.
+      expect(kinds).toEqual(['retrieve']);
     }
     expect(next.isStreaming).toBe(true);
   });
@@ -39,7 +40,8 @@ describe('threadReducer', () => {
     });
     if (next.messages[1]?.role === 'assistant') {
       const kinds = next.messages[1].toolCalls.map((t: ToolCall) => t.kind);
-      expect(kinds).toEqual(['classify', 'check_rules', 'apply_decision']);
+      // Sin `classify`: el usuario ya declaró que es un siniestro.
+      expect(kinds).toEqual(['check_rules', 'apply_decision']);
     }
   });
 
@@ -152,8 +154,10 @@ describe('threadReducer', () => {
       title: 'Hilo de prueba',
     });
     expect(next.messages).toEqual([]);
-    expect(next.activeThreadId).toBe('t-1');
-    expect(next.threads[0]?.id).toBe('t-1');
+    // Partiendo de un hilo vacío, NEW_THREAD reutiliza el hilo actual en vez de
+    // acumular una entrada idéntica en la barra lateral.
+    expect(next.activeThreadId).toBe(state.activeThreadId);
+    expect(next.threads.length).toBe(state.threads.length);
   });
 
   it('SUBMIT en modo auto planifica sólo classify (el resto lo añade RESOLVE_TOOL_PLAN)', () => {
@@ -250,6 +254,12 @@ describe('threadReducer', () => {
           convention: 'CIDE',
           applicability: 'applicable',
           decision: 'resolved',
+          party_ids: [],
+          facts: [],
+          contradictions: [],
+          conditions: [],
+          missing_information: [],
+          blocks: [],
         },
       },
       requested_mode: 'auto',
@@ -262,8 +272,9 @@ describe('threadReducer', () => {
     expect(kinds).toEqual(['classify', 'check_rules', 'apply_decision']);
     for (const tc of assistant.toolCalls) {
       expect(tc.status).toBe('done');
-      expect(typeof tc.durationMs).toBe('number');
-      expect(tc.durationMs as number).toBeGreaterThanOrEqual(0);
+      // El backend todavía no emite un stage por etapa, así que no hay
+      // duración que mostrar. Antes se escribía 0 ms, que era falso.
+      expect(tc.durationMs).toBeUndefined();
     }
   });
 

@@ -13,6 +13,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type * as pdfUtils from '@/lib/pdf-utils';
 import { cleanup, render, screen } from '@testing-library/react';
 
 const getDocumentMock = vi.fn();
@@ -29,8 +30,7 @@ vi.mock(
 );
 
 vi.mock('@/lib/pdf-utils', async () => {
-  const actual =
-    await vi.importActual<typeof import('@/lib/pdf-utils')>('@/lib/pdf-utils');
+  const actual = await vi.importActual<typeof pdfUtils>('@/lib/pdf-utils');
   return actual;
 });
 
@@ -132,4 +132,4 @@ describe('PdfOverlay T12 contract', () => {
 });
 
 // declared above; alias the symbol used in beforeEach
-let numPages = 1;
+const numPages = 1;

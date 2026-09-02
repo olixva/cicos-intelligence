@@ -179,7 +179,10 @@ export function PdfOverlay({
                 {evidence.document_hash} · página {evidence.pdf_page}
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-1">
+            {/* `pr-9` reserva el hueco de la X de cierre del DialogContent, que
+                va posicionada arriba a la derecha: sin él, el botón de zoom «+»
+                queda pegado al cierre y se confunden. */}
+            <div className="flex items-center gap-1 pr-9">
               <Button
                 variant="ghost"
                 size="icon"

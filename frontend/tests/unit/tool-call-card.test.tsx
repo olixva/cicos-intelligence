@@ -84,8 +84,11 @@ describe('ToolCallCard', () => {
     };
     render(<ToolCallCard toolCall={tc} defaultExpanded />);
     expect(screen.getByText('CIDE')).toBeInTheDocument();
-    expect(screen.getByText('applicable')).toBeInTheDocument();
-    expect(screen.getByText('resolved')).toBeInTheDocument();
+    // En castellano y explicado: el usuario no debe leer los enums del backend.
+    expect(screen.getByText('El Convenio es aplicable')).toBeInTheDocument();
+    expect(screen.getByText('Resuelto')).toBeInTheDocument();
+    expect(screen.queryByText('applicable')).not.toBeInTheDocument();
+    expect(screen.queryByText('resolved')).not.toBeInTheDocument();
   });
 
   it('expandir/contraer con click en el header', async () => {
