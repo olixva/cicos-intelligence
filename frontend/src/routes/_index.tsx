@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThreadSidebar } from '@/components/sidebar/thread-sidebar';
 import { Thread } from '@/components/thread/thread';
@@ -224,9 +227,28 @@ export default function IndexRoute() {
               Allianz CICOS · Claims Intelligence
             </h1>
           </div>
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Chat agéntico
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Chat agéntico
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleNewThread}
+                  aria-label="Nueva consulta"
+                  title="Nueva consulta"
+                  className="h-7 gap-1 px-2 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="hidden sm:inline">Nueva consulta</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Nueva consulta</TooltipContent>
+            </Tooltip>
+          </div>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
@@ -359,6 +381,17 @@ function dispatchToolCallsFromEnvelope(
     }
   }
   if (!lastAssistant) return;
+
+  // Finding G1 #2: en modo 'auto' el plan inicial sólo tenía 'classify'.
+  // Aquí reescribimos el plan para que refleje el resolved_mode del
+  // envelope (claim → check_rules + apply_decision; question → retrieve;
+  // clarification → sólo classify). El reducer cierra el classify
+  // pendiente y añade los cards que faltan.
+  dispatch({
+    type: 'RESOLVE_TOOL_PLAN',
+    envelope,
+    requested_mode: envelope.requested_mode,
+  });
 
   const started = Date.now();
   for (const tc of lastAssistant.toolCalls) {

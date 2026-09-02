@@ -155,4 +155,214 @@ describe('threadReducer', () => {
     expect(next.activeThreadId).toBe('t-1');
     expect(next.threads[0]?.id).toBe('t-1');
   });
+
+  it('SUBMIT en modo auto planifica sólo classify (el resto lo añade RESOLVE_TOOL_PLAN)', () => {
+    const state = initialState();
+    const next = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-auto',
+      assistantId: 'a-auto',
+      text: 'auto',
+      mode: 'auto',
+      createdAt: Date.now(),
+    });
+    if (next.messages[1]?.role === 'assistant') {
+      const kinds = next.messages[1].toolCalls.map((t: ToolCall) => t.kind);
+      expect(kinds).toEqual(['classify']);
+    }
+  });
+
+  // Finding G1 #1 — dedupe de citations por (evidenceId, pdfPage).
+  it('STREAM_COMPLETED dedupa citations por (evidenceId, pdfPage) con orden estable', () => {
+    let state = initialState();
+    state = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-cite',
+      assistantId: 'a-cite',
+      text: 'cita',
+      mode: 'question',
+      createdAt: Date.now(),
+    });
+    const next = threadReducer(state, {
+      type: 'STREAM_COMPLETED',
+      response: {
+        request_id: 'r-cite',
+        requested_mode: 'question',
+        resolved_mode: 'question',
+        evidence: [
+          { evidence_id: 'ev-1', document_hash: 'hash-1', pdf_page: 18, delivery: 'text' },
+          { evidence_id: 'ev-2', document_hash: 'hash-2', pdf_page: 26, delivery: 'text' },
+        ],
+        metadata: {},
+        result: {
+          kind: 'question',
+          status: 'answered',
+          blocks: [
+            { text: 'Bloque A', evidence_ids: ['ev-1', 'ev-2'] },
+            { text: 'Bloque B', evidence_ids: ['ev-1'] },
+          ],
+          trace_id: null,
+        },
+      },
+      requestId: 'r-cite',
+    });
+    const assistant = next.messages[1];
+    if (!assistant || assistant.role !== 'assistant') {
+      throw new Error('assistant missing');
+    }
+    // 2 bloques citan ev-1/p.18 y 1 bloque cita ev-2/p.26. Tras dedupe,
+    // debe haber exactamente 2 entries, una por par, en orden de primera
+    // aparición (ev-1 antes que ev-2).
+    expect(assistant.citations).toHaveLength(2);
+    expect(assistant.citations[0]?.evidenceId).toBe('ev-1');
+    expect(assistant.citations[0]?.pdfPage).toBe(18);
+    expect(assistant.citations[1]?.evidenceId).toBe('ev-2');
+    expect(assistant.citations[1]?.pdfPage).toBe(26);
+    // El snippet debe ser el del primer bloque que cita cada par.
+    expect(assistant.citations[0]?.snippet).toBe('Bloque A');
+    expect(assistant.citations[1]?.snippet).toBe('Bloque A');
+    // Las keys que usará el render no se duplican (defensa contra el bug original).
+    const keys = assistant.citations.map((c) => `${c.evidenceId}-${c.pdfPage}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  // Finding G1 #2 — RESOLVE_TOOL_PLAN para modo auto con envelope claim.
+  it('RESOLVE_TOOL_PLAN en auto añade check_rules + apply_decision y cierra classify', () => {
+    let state = initialState();
+    state = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-rtp',
+      assistantId: 'a-rtp',
+      text: 'auto',
+      mode: 'auto',
+      createdAt: Date.now(),
+    });
+    const next = threadReducer(state, {
+      type: 'RESOLVE_TOOL_PLAN',
+      envelope: {
+        request_id: 'r-rtp',
+        requested_mode: 'auto',
+        resolved_mode: 'claim',
+        evidence: [],
+        metadata: {},
+        result: {
+          kind: 'claim',
+          convention: 'CIDE',
+          applicability: 'applicable',
+          decision: 'resolved',
+        },
+      },
+      requested_mode: 'auto',
+    });
+    const assistant = next.messages[1];
+    if (!assistant || assistant.role !== 'assistant') {
+      throw new Error('assistant missing');
+    }
+    const kinds = assistant.toolCalls.map((tc) => tc.kind);
+    expect(kinds).toEqual(['classify', 'check_rules', 'apply_decision']);
+    for (const tc of assistant.toolCalls) {
+      expect(tc.status).toBe('done');
+      expect(typeof tc.durationMs).toBe('number');
+      expect(tc.durationMs as number).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('RESOLVE_TOOL_PLAN en auto con question añade retrieve', () => {
+    let state = initialState();
+    state = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-q',
+      assistantId: 'a-q',
+      text: 'auto',
+      mode: 'auto',
+      createdAt: Date.now(),
+    });
+    const next = threadReducer(state, {
+      type: 'RESOLVE_TOOL_PLAN',
+      envelope: {
+        request_id: 'r-q',
+        requested_mode: 'auto',
+        resolved_mode: 'question',
+        evidence: [{ evidence_id: 'ev-1', document_hash: 'h', pdf_page: 1, delivery: 'text' }],
+        metadata: {},
+        result: {
+          kind: 'question',
+          status: 'answered',
+          blocks: [{ text: 't', evidence_ids: ['ev-1'] }],
+          trace_id: null,
+        },
+      },
+      requested_mode: 'auto',
+    });
+    const assistant = next.messages[1];
+    if (!assistant || assistant.role !== 'assistant') {
+      throw new Error('assistant missing');
+    }
+    expect(assistant.toolCalls.map((tc) => tc.kind)).toEqual(['classify', 'retrieve']);
+  });
+
+  it('RESOLVE_TOOL_PLAN en auto con clarification sólo cierra classify', () => {
+    let state = initialState();
+    state = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-cl',
+      assistantId: 'a-cl',
+      text: 'auto',
+      mode: 'auto',
+      createdAt: Date.now(),
+    });
+    const next = threadReducer(state, {
+      type: 'RESOLVE_TOOL_PLAN',
+      envelope: {
+        request_id: 'r-cl',
+        requested_mode: 'auto',
+        resolved_mode: 'clarification',
+        evidence: [],
+        metadata: {},
+        result: {
+          kind: 'clarification',
+          message: 'Necesito más contexto.',
+          missing_fields: ['convention'],
+        },
+      },
+      requested_mode: 'auto',
+    });
+    const assistant = next.messages[1];
+    if (!assistant || assistant.role !== 'assistant') {
+      throw new Error('assistant missing');
+    }
+    expect(assistant.toolCalls.map((tc) => tc.kind)).toEqual(['classify']);
+    expect(assistant.toolCalls[0]?.status).toBe('done');
+  });
+
+  it('RESOLVE_TOOL_PLAN no muta nada si requested_mode no es auto', () => {
+    let state = initialState();
+    state = threadReducer(state, {
+      type: 'SUBMIT',
+      messageId: 'u-n',
+      assistantId: 'a-n',
+      text: 'q',
+      mode: 'question',
+      createdAt: Date.now(),
+    });
+    const before = state.messages[1];
+    const next = threadReducer(state, {
+      type: 'RESOLVE_TOOL_PLAN',
+      envelope: {
+        request_id: 'r-n',
+        requested_mode: 'question',
+        resolved_mode: 'question',
+        evidence: [],
+        metadata: {},
+        result: {
+          kind: 'question',
+          status: 'answered',
+          blocks: [{ text: 't', evidence_ids: [] }],
+          trace_id: null,
+        },
+      },
+      requested_mode: 'question',
+    });
+    expect(next.messages[1]).toBe(before);
+  });
 });

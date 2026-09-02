@@ -154,7 +154,8 @@ export type ThreadAction =
   | { type: 'STREAM_ABORTED' }
   | { type: 'OPEN_PDF'; target: OpenPdfTarget }
   | { type: 'CLOSE_PDF' }
-  | { type: 'CANCEL' };
+  | { type: 'CANCEL' }
+  | { type: 'RESOLVE_TOOL_PLAN'; envelope: EnvelopeResponse; requested_mode: UiMode };
 
 // =====================================================================
 //  Helpers
@@ -257,12 +258,14 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
       const assistant = freshActiveAssistant();
       assistant.id = action.assistantId;
       // tool calls plan: classify (siempre), retrieve (question), check_rules + apply_decision (claim).
+      // En modo 'auto' sólo añadimos classify; el resto se completa al recibir el envelope final
+      // vía RESOLVE_TOOL_PLAN (Finding G1 #2).
       const plan: ToolCallKind[] =
         action.mode === 'claim'
           ? ['classify', 'check_rules', 'apply_decision']
           : action.mode === 'question'
             ? ['classify', 'retrieve']
-            : ['classify', 'retrieve'];
+            : ['classify'];
       assistant.toolCalls = plan.map((kind) => ({
         id: uuid(),
         kind,
@@ -409,6 +412,56 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
         pendingToolCalls: [],
         messages: state.messages.filter((m) => m.id !== state.activeAssistantId),
       };
+
+    case 'RESOLVE_TOOL_PLAN': {
+      // Sólo aplica a modo 'auto': reescribe el plan de tool calls del
+      // assistant activo para que refleje el resolved_mode del envelope.
+      // Finding G1 #2 — cerrar el classify pendiente y añadir los cards
+      // que faltan (claim → check_rules + apply_decision, question →
+      // retrieve, clarification → sólo classify).
+      if (action.requested_mode !== 'auto') return state;
+      if (!state.activeAssistantId) return state;
+
+      const envelope = action.envelope;
+      const resolved = envelope.resolved_mode;
+      const required: ToolCallKind[] = ['classify'];
+      if (resolved === 'claim') {
+        required.push('check_rules', 'apply_decision');
+      } else if (resolved === 'question') {
+        required.push('retrieve');
+      }
+
+      const updatedMessages = state.messages.map((m) => {
+        if (m.role !== 'assistant' || m.id !== state.activeAssistantId) return m;
+        const existingKinds = new Set(m.toolCalls.map((tc) => tc.kind));
+        const updated: ToolCall[] = m.toolCalls.map((tc) => {
+          if (tc.status !== 'pending') return tc;
+          if (!required.includes(tc.kind)) return tc;
+          return {
+            ...tc,
+            status: 'done' as const,
+            durationMs: 0,
+            payload: derivePayloadForKind(tc.kind, envelope),
+          };
+        });
+        for (const kind of required) {
+          if (existingKinds.has(kind)) continue;
+          updated.push({
+            id: uuid(),
+            kind,
+            label: labels[kind].done,
+            status: 'done',
+            durationMs: 0,
+            payload: derivePayloadForKind(kind, envelope),
+            startedAt: m.createdAt,
+          });
+        }
+        updated.sort((a, b) => required.indexOf(a.kind) - required.indexOf(b.kind));
+        return { ...m, toolCalls: updated };
+      });
+
+      return { ...state, messages: updatedMessages };
+    }
   }
 }
 
@@ -427,19 +480,74 @@ export const labels: Record<ToolCallKind, { pending: string; done: string }> = {
 //  Utilidades
 // =====================================================================
 
+/**
+ * Deriva el payload que se asocia a un tool call cerrado por
+ * `RESOLVE_TOOL_PLAN`. Réplica de `derivePayload` en `routes/_index.tsx`
+ * para mantener el reducer puro (no cruza con código del route).
+ */
+function derivePayloadForKind(kind: ToolCallKind, envelope: EnvelopeResponse): unknown {
+  switch (kind) {
+    case 'classify':
+      return { mode: envelope.resolved_mode };
+    case 'retrieve':
+      return {
+        chunks: (envelope.evidence ?? []).map((e) => ({
+          evidenceId: e.evidence_id,
+          pdfPage: e.pdf_page,
+          preview: '',
+          score: undefined,
+        })),
+      };
+    case 'check_rules':
+      if (envelope.result && envelope.result.kind === 'claim') {
+        return { convention: envelope.result.convention, rules: [] };
+      }
+      return { convention: null, rules: [] };
+    case 'apply_decision':
+      if (envelope.result && envelope.result.kind === 'claim') {
+        return {
+          convention: envelope.result.convention,
+          applicability: envelope.result.applicability,
+          decision: envelope.result.decision,
+        };
+      }
+      if (envelope.result && envelope.result.kind === 'clarification') {
+        return {
+          convention: null,
+          applicability: 'undetermined',
+          decision: 'undetermined',
+        };
+      }
+      return { convention: null, applicability: null, decision: null };
+    default: {
+      const exhaustive: never = kind;
+      void exhaustive;
+      return null;
+    }
+  }
+}
+
 function extractCitations(envelope: EnvelopeResponse): CitationRef[] {
   const result = envelope.result;
   if (!result || result.kind !== 'question') return [];
   const blocks = (result.blocks ?? []) as Array<{ text?: string; evidence_ids?: string[] }>;
   const evidence = envelope.evidence ?? [];
   const byId = new Map(evidence.map((e) => [e.evidence_id, e]));
-  const citations: CitationRef[] = [];
+  // Dedupe por tupla (evidenceId, pdfPage) — varios bloques pueden citar
+  // el mismo chunk y el render usa `${evidenceId}-${pdfPage}` como React
+  // key (assistant-message.tsx), así que duplicados provocaban
+  // "Encountered two children with the same key". El Map preserva el
+  // orden de inserción, así que mantenemos el primer bloque que cita
+  // cada par (Finding G1 #1).
+  const byKey = new Map<string, CitationRef>();
   for (const block of blocks) {
     const ids = Array.isArray(block.evidence_ids) ? block.evidence_ids : [];
     for (const id of ids) {
       const ev = byId.get(id);
       if (!ev) continue;
-      citations.push({
+      const key = `${ev.evidence_id}-${ev.pdf_page}`;
+      if (byKey.has(key)) continue;
+      byKey.set(key, {
         evidenceId: ev.evidence_id,
         documentHash: ev.document_hash,
         pdfPage: ev.pdf_page,
@@ -447,7 +555,7 @@ function extractCitations(envelope: EnvelopeResponse): CitationRef[] {
       });
     }
   }
-  return citations;
+  return Array.from(byKey.values());
 }
 
 /** Combina el texto streamed con el envelope final cuando llega. */
