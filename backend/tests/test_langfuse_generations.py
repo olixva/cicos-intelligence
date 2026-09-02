@@ -22,6 +22,9 @@ These tests pin:
 from __future__ import annotations
 
 import asyncio
+import sys
+from contextlib import contextmanager
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Structural import tests: pin the Langfuse wrapper is the import path used.
@@ -194,3 +197,246 @@ def test_question_adapter_transport_unchanged_after_langfuse_import() -> None:
     )
     assert transport.calls[0]["model"] == "fixture-model"
     assert transport.calls[0]["store"] is False
+
+
+# ---------------------------------------------------------------------------
+# Behavioural test: when the workflow graph is invoked, the Langfuse client
+# must wrap the dispatch in ``start_as_current_observation`` with the
+# ``trace_id`` produced by the workflow's ``trace_id_factory``. Without
+# that span context the ``langfuse.openai`` wrapper sees a fresh OTEL
+# context and orphans its GENERATION spans to a new root trace (Oracle
+# G4 residual finding from ``aa81cb0``).
+# ---------------------------------------------------------------------------
+
+
+class _RecordingSpan:
+    """Minimal stand-in for ``LangfuseSpan`` (records __exit__ args)."""
+
+    def __init__(self) -> None:
+        self.exited = False
+
+    def __enter__(self) -> _RecordingSpan:
+        return self
+
+    def __exit__(self, *_: Any) -> bool:
+        self.exited = True
+        return False
+
+
+class _RecordingLangfuseClient:
+    """Captures the kwargs passed to ``start_as_current_observation``."""
+
+    instances: list[tuple[str, dict[str, Any], _RecordingSpan]] = []
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+        self._spans: list[_RecordingSpan] = []
+
+    @contextmanager
+    def start_as_current_observation(  # noqa: ANN202 - test double
+        self, *, name: str, **kwargs: Any
+    ):
+        span = _RecordingSpan()
+        self.calls.append({"name": name, **kwargs})
+        self._spans.append(span)
+        try:
+            yield span
+        finally:
+            span.exited = True
+
+
+def _install_recording_langfuse(
+    monkeypatch: Any, target_module: Any
+) -> _RecordingLangfuseClient:
+    """Swap ``get_client`` inside ``target_module`` with the recorder."""
+
+    recorder = _RecordingLangfuseClient()
+    monkeypatch.setattr(target_module, "get_client", lambda: recorder)
+    return recorder
+
+
+def test_question_workflow_opens_langfuse_span_around_graph_dispatch(
+    monkeypatch: Any,
+) -> None:
+    """The question workflow must wrap ``ainvoke`` in a Langfuse span context.
+
+    The ``trace_id`` passed via ``trace_context`` is the one returned by
+    the workflow's ``trace_id_factory`` (mirrors production wiring where
+    ``bootstrap.build_answer_question`` passes
+    ``langfuse.create_trace_id``).
+    """
+
+    from fakes import FakeEvidenceRepository, FakeLanguageModel, FakeRetriever
+
+    import infrastructure.adapters.outbound.question_workflow.langgraph_workflow as q_mod
+
+    recorder = _install_recording_langfuse(monkeypatch, q_mod)
+
+    from application.models.query import AnswerBlock, QueryInput, QuestionAnswer
+    from application.models.retrieval import Chunk
+    from domain.models.evidence import PageEvidence
+
+    page = PageEvidence(
+        evidence_id="manual:page:7",
+        document_hash="a" * 64,
+        pdf_page=7,
+        text="Texto completo que no debe enviarse al modelo.",
+        printed_label="7",
+        image_path="pages/7.png",
+        regions=(),
+    )
+    retriever = FakeRetriever((Chunk("chunk-7", "Fragmento entregado.", (page.evidence_id,)),))
+    evidence = FakeEvidenceRepository((page,))
+    model = FakeLanguageModel(
+        QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
+    )
+
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    trace_id_hex = "a" * 32  # valid 32 lowercase hex chars (Langfuse format)
+    workflow = LangGraphQuestionWorkflow(
+        retriever=retriever,
+        evidence_repository=evidence,
+        language_model=model,
+        trace_id_factory=lambda: trace_id_hex,
+        callback_factory=None,
+    )
+
+    execution = asyncio.run(workflow.run(QueryInput("¿Qué indica el manual?", "es")))
+
+    assert execution.trace_id == trace_id_hex
+    assert len(recorder.calls) == 1, (
+        "the workflow must open exactly one Langfuse observation"
+    )
+    call = recorder.calls[0]
+    assert call["name"] == "question_workflow"
+    assert call["trace_context"] == {"trace_id": trace_id_hex}
+    assert call["as_type"] == "span"
+
+
+def test_question_workflow_skips_span_when_trace_id_is_none(monkeypatch: Any) -> None:
+    """When ``trace_id_factory`` returns ``None`` no span context is opened."""
+
+    from fakes import FakeEvidenceRepository, FakeLanguageModel, FakeRetriever
+
+    import infrastructure.adapters.outbound.question_workflow.langgraph_workflow as q_mod
+
+    recorder = _install_recording_langfuse(monkeypatch, q_mod)
+
+    from application.models.query import AnswerBlock, QueryInput, QuestionAnswer
+    from application.models.retrieval import Chunk
+    from domain.models.evidence import PageEvidence
+
+    page = PageEvidence(
+        evidence_id="manual:page:7",
+        document_hash="a" * 64,
+        pdf_page=7,
+        text="Texto completo.",
+        printed_label="7",
+        image_path="pages/7.png",
+        regions=(),
+    )
+    retriever = FakeRetriever((Chunk("chunk-7", "Fragmento.", (page.evidence_id,)),))
+    evidence = FakeEvidenceRepository((page,))
+    model = FakeLanguageModel(
+        QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
+    )
+
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    workflow = LangGraphQuestionWorkflow(
+        retriever=retriever,
+        evidence_repository=evidence,
+        language_model=model,
+        trace_id_factory=lambda: None,
+        callback_factory=None,
+    )
+
+    execution = asyncio.run(workflow.run(QueryInput("Pregunta", "es")))
+
+    assert execution.trace_id is None
+    assert recorder.calls == [], (
+        "no trace_id must mean no span opened (avoids orphan root traces)"
+    )
+
+
+def test_claim_workflow_opens_langfuse_span_around_graph_dispatch(
+    monkeypatch: Any,
+) -> None:
+    """The claim workflow must wrap ``ainvoke`` in a Langfuse span context.
+
+    Mirrors the question workflow: ``trace_id_factory`` controls the
+    ``trace_context`` passed to ``start_as_current_observation``.
+    """
+
+    from dataclasses import dataclass
+
+    import infrastructure.adapters.outbound.claim_workflow.langgraph_workflow as c_mod
+
+    recorder = _install_recording_langfuse(monkeypatch, c_mod)
+
+    from application.models.claim import ExtractedClaimFacts
+    from application.models.retrieval import Chunk
+    from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
+    from application.ports.outbound.evidence_reader import EvidenceReader
+    from application.ports.outbound.retriever import RetrievalRequest, Retriever
+    from domain.models.claim import ClaimInput
+    from domain.models.evidence import PageEvidence
+
+    @dataclass
+    class _Extractor(ClaimFactExtractor):
+        async def extract(self, claim: ClaimInput) -> ExtractedClaimFacts:
+            del claim
+            return ExtractedClaimFacts(("A", "B"), ())
+
+    class _Retriever(Retriever):
+        async def retrieve(self, request: RetrievalRequest) -> tuple[Chunk, ...]:
+            del request
+            return (Chunk("criteria", "CIDE exige dos vehículos.", ("manual:page:56",)),)
+
+    @dataclass
+    class _Evidence(EvidenceReader):
+        page: PageEvidence
+
+        def __post_init__(self) -> None:
+            self._pages = {self.page.evidence_id: self.page}
+
+        def get(self, evidence_id: str) -> PageEvidence:
+            return self._pages[evidence_id]
+
+    from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
+        LangGraphClaimWorkflow,
+    )
+
+    trace_id_hex = "b" * 32
+    workflow = LangGraphClaimWorkflow(
+        fact_extractor=_Extractor(),
+        retriever=_Retriever(),
+        evidence_repository=_Evidence(
+            PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())
+        ),
+        trace_id_factory=lambda: trace_id_hex,
+        callback_factory=None,
+    )
+
+    execution = asyncio.run(
+        workflow.run(ClaimInput("Hubo un accidente entre A y B."))
+    )
+
+    assert execution.trace_id == trace_id_hex
+    assert len(recorder.calls) == 1, (
+        "the claim workflow must open exactly one Langfuse observation"
+    )
+    call = recorder.calls[0]
+    assert call["name"] == "claim_workflow"
+    assert call["trace_context"] == {"trace_id": trace_id_hex}
+    assert call["as_type"] == "span"
+
+
+# Keep ``sys`` import in scope for future monkeypatching hooks (matches the
+# other ``from __future__ import annotations`` style).
+_ = sys

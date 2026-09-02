@@ -1,12 +1,15 @@
 """Bounded LangGraph orchestration for source-grounded claim applicability."""
 
 import asyncio
+import contextlib
+import re
 from collections import defaultdict
 from collections.abc import Callable
 from typing import NotRequired, Required, TypedDict, cast
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.runnables import RunnableConfig
+from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 
 from application.models.claim import ClaimExecution, ExtractedClaimFacts
@@ -22,6 +25,12 @@ from domain.rules.applicability import ApplicabilityFacts, assess_applicability
 
 class ClaimWorkflowTimeoutError(TimeoutError):
     """The claim graph exceeded its local execution budget."""
+
+# Langfuse trace IDs are 32 lowercase hex characters; the SDK raises
+# ``ValueError`` (after only logging a warning) when an invalid ID is
+# passed to ``start_as_current_observation``. Guard the workflow so
+# non-Langfuse traces (e.g. local tests with synthetic IDs) keep working.
+_LANGFUSE_TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
 
 class _ClaimState(TypedDict, total=False):
@@ -85,11 +94,28 @@ class LangGraphClaimWorkflow:
         config = RunnableConfig(recursion_limit=8)
         if trace_id is not None and self._callback_factory is not None:
             config["callbacks"] = [self._callback_factory(trace_id)]  # type: ignore[arg-type]
+        # Wrap the graph dispatch in a Langfuse span so the OpenTelemetry
+        # context is attached to the asyncio task before any awaited
+        # ``responses.parse`` call fires inside ``_extract_facts``. The
+        # ``langfuse.openai`` wrapper reads this OTEL context to nest its
+        # ``GENERATION`` spans under the workflow's trace (Oracle G4
+        # residual finding: orphan spans when only ``CallbackHandler`` is
+        # used because it dispatches via ``run_in_executor``).
+        span_cm: contextlib.AbstractContextManager[object] = (
+            get_client().start_as_current_observation(
+                name="claim_workflow",
+                as_type="span",
+                trace_context={"trace_id": trace_id},
+            )
+            if trace_id is not None and _LANGFUSE_TRACE_ID_RE.match(trace_id)
+            else contextlib.nullcontext()
+        )
         try:
-            async with asyncio.timeout(self._timeout_seconds):
-                raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                    _ClaimState(claim=claim), config=config  # type: ignore[arg-type]
-                )
+            with span_cm:
+                async with asyncio.timeout(self._timeout_seconds):
+                    raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+                        _ClaimState(claim=claim), config=config  # type: ignore[arg-type]
+                    )
         except TimeoutError as error:
             raise ClaimWorkflowTimeoutError("claim workflow timed out") from error
         state = cast(_ClaimState, raw)
