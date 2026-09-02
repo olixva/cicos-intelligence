@@ -217,3 +217,68 @@ def test_index_runs_the_operational_composition_and_prints_safe_metadata(
         "profile_name": "structured",
         "qdrant_url": "http://127.0.0.1:6333",
     }
+
+
+def test_compare_parsers_writes_a_report_with_timings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    """The CLI must emit a JSON comparison report and persist it under --output."""
+    from pypdf import PdfWriter
+
+    from infrastructure.adapters.inbound.cli.main import main
+
+    source = tmp_path / "manual.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.write(str(source))
+
+    class _FakeExtraction:
+        def __init__(self, parser: str, text: str = "hola") -> None:
+            self.parser = parser
+            self.warnings: tuple[str, ...] = ()
+            self.assets: tuple[object, ...] = ()
+            self.pages: tuple[object, ...] = ()
+            self.manifest = type(
+                "_M",
+                (),
+                {"sha256": "a" * 64, "document_id": "sha256:" + "a" * 64, "page_count": 1},
+            )()
+            self._text = text
+
+        @property
+        def page_count(self) -> int:
+            return 1
+
+        def text(self) -> str:
+            return self._text
+
+    def fake_pypdf_parse(_self: object, _path: Path) -> object:
+        return _FakeExtraction("pypdf-6.16.2", "a b c")
+
+    def fake_docling_parse(_self: object, _path: Path) -> object:
+        return _FakeExtraction("docling-2.124.0-test", "a b")
+
+    monkeypatch.setattr(
+        "infrastructure.adapters.outbound.document_parser.pypdf_parser.PypdfDocumentParser.parse",
+        fake_pypdf_parse,
+    )
+    monkeypatch.setattr(
+        "infrastructure.adapters.outbound.document_parser.docling_parser.DoclingParser.parse",
+        fake_docling_parse,
+    )
+
+    out = tmp_path / "reports"
+    result = main(["compare-parsers", str(source), "--output", str(out)])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    report_file = out / ("a" * 64 + ".comparison.json")
+    assert report_file.exists()
+    body = json.loads(report_file.read_text(encoding="utf-8"))
+    assert body["page_count"] == 1
+    assert "timings_seconds" in body
+    assert body["timings_seconds"]["pypdf"] >= 0
+    assert body["timings_seconds"]["docling"] >= 0
+    assert body["parsers"] == ["docling-2.124.0-test", "pypdf-6.16.2"]
+    parsed_stdout = json.loads(captured.out)
+    assert parsed_stdout["report"] == str(report_file)

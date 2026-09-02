@@ -49,6 +49,9 @@ def _build_parser() -> argparse.ArgumentParser:
     answer.add_argument("--language", choices=("es", "en"), default="es")
     prepare = subcommands.add_parser("prepare-ingestion-models")
     prepare.add_argument("--output", type=Path, required=True)
+    compare_parsers = subcommands.add_parser("compare-parsers")
+    compare_parsers.add_argument("source", type=Path)
+    compare_parsers.add_argument("--output", type=Path, required=True)
     doctor = subcommands.add_parser("doctor")
     doctor.add_argument(
         "--operation",
@@ -119,6 +122,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return 0
+        elif arguments.command == "compare-parsers":
+            return _run_parser_comparison(arguments)
         elif arguments.command == "doctor":
             from infrastructure.adapters.inbound.cli import doctor
 
@@ -140,6 +145,51 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     payload = _extraction_metadata(result) if isinstance(result, Extraction) else asdict(result)
     print(json.dumps(payload, sort_keys=True))
+    return 0
+
+
+def _run_parser_comparison(arguments: argparse.Namespace) -> int:
+    """Run both parsers over the source and emit a JSON comparison report."""
+    import time
+
+    from infrastructure.adapters.outbound.document_parser.pypdf_parser import (
+        PypdfDocumentParser,
+    )
+
+    output_root: Path = arguments.output
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    started = time.perf_counter()
+    pypdf_extraction = PypdfDocumentParser().parse(arguments.source)
+    pypdf_elapsed = time.perf_counter() - started
+
+    started = time.perf_counter()
+    from infrastructure.adapters.outbound.document_parser.docling_parser import (
+        DoclingParser,
+    )
+
+    docling_extraction = DoclingParser().parse(arguments.source)
+    docling_elapsed = time.perf_counter() - started
+
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[5] / "scripts"))
+    from compare_parsers import compare_extractions  # type: ignore[import-not-found]
+
+    report = compare_extractions(pypdf_extraction, docling_extraction)
+    report["timings_seconds"] = {
+        "pypdf": pypdf_elapsed,
+        "docling": docling_elapsed,
+    }
+    report["bytes"] = {
+        "pypdf": sum(len(asset.data) for asset in pypdf_extraction.assets),
+        "docling": sum(len(asset.data) for asset in docling_extraction.assets),
+    }
+    report_path = output_root / f"{pypdf_extraction.manifest.sha256}.comparison.json"
+    report_path.write_text(
+        json.dumps(report, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(json.dumps({"report": str(report_path), **report}, sort_keys=True, ensure_ascii=False))
     return 0
 
 
