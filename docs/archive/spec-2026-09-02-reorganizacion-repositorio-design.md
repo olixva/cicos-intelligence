@@ -1,3 +1,10 @@
+> [!WARNING]
+> **DOCUMENTO ARCHIVADO — NO SEGUIR.** Archivado el 2026-09-02.
+> Diseño de la reorganización, completada en `ce2d942`.
+>
+> Fuente de verdad actual: [`docs/ESTADO.md`](../ESTADO.md).
+> Plan vigente: [`docs/superpowers/plans/2026-09-02-cierre-entrega-final.md`](../superpowers/plans/2026-09-02-cierre-entrega-final.md).
+
 # Diseño — Reorganización del repositorio Allianz RAG
 
 ## Objetivo

@@ -1,3 +1,10 @@
+> [!WARNING]
+> **DOCUMENTO ARCHIVADO — NO SEGUIR.** Archivado el 2026-09-02.
+> Plan original de 21 tareas. Subsumido por el plan vigente.
+>
+> Fuente de verdad actual: [`docs/ESTADO.md`](../ESTADO.md).
+> Plan vigente: [`docs/superpowers/plans/2026-09-02-cierre-entrega-final.md`](../superpowers/plans/2026-09-02-cierre-entrega-final.md).
+
 # Allianz RAG Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

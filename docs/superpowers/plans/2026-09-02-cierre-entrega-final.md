@@ -10,8 +10,9 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-31-allianz-rag-design.md`
 **Enunciado original:** `docs/enunciado/GenAI_Interview_Instructions.docx` (se copia en Task 0)
-**Plan anterior (vigente, se subsume aquí):** `docs/superpowers/plans/2026-09-02-remediacion-ux-observabilidad.md`
-**Auditoría de referencia:** `docs/audit/2026-09-02-auditoria-integral-specs.md`
+**Estado del proyecto:** `docs/ESTADO.md` — punto de entrada único.
+**Plan anterior (subsumido, archivado):** `docs/archive/plan-2026-09-02-remediacion-ux-observabilidad.md`
+**Auditoría de referencia (vigencia parcial):** `docs/audit/2026-09-02-auditoria-integral-specs.md`
 
 ---
 
@@ -23,17 +24,25 @@ No repetir esta verificación a ciegas; son cifras ejecutadas, no citadas de han
 |---|---|
 | `make test-backend` | 331 passed, 1 skipped, exit 0 |
 | `make check-frontend` | lint + typecheck + 51 tests + build, exit 0 |
-| `make lint-backend` | **FALLA**: F821 `LangGraphQuestionWorkflow` en `backend/tests/test_question_workflow.py:210` |
+| `make lint-backend` | OK |
 | `make check-openapi` | **FALLA**: drift en `components` |
 | `origin/main` | `88d93cb` — **10 commits locales sin pushear** |
 
-Trabajo sin commitear (7 ficheros): propagación de `trace_url_factory` desde `bootstrap` hasta el envelope, usando `Langfuse.get_trace_url()` en lugar de concatenar `/trace/{id}`. Es correcto y trae tests; sólo rompe los dos gates de arriba.
+> [!IMPORTANT]
+> **Otra sesión de agente está commiteando en este repositorio.** Durante la redacción de este plan
+> entraron tres commits: `95800a2` (trace_url), `df71fbe` (historial real, T11) y `bb6c1a5` (visor
+> PDF, T12 parcial). **Antes de empezar cualquier tarea, ejecutar `git log --oneline -5`** y
+> comprobar el HEAD; este plan se verificó contra `bb6c1a5`. Coordinar con el usuario antes de
+> tocar frontend, que es donde está trabajando la otra sesión.
+
+Efecto de esos commits sobre este plan: **Task 9 (historial real) queda hecha**; Task 0 se reduce a
+regenerar el snapshot de OpenAPI, que `95800a2` dejó desincronizado; Task 10 pierde sus pasos 1 y 3.
 
 Artefactos ausentes verificados: `data/rules/` contiene sólo los dos `*.schema.json`; `data/evaluation/golden/` contiene sólo `releases/` vacío; `data/extractions/` contiene sólo la publicación `pypdf-6.16.2`.
 
 ### Correcciones a los handoffs heredados
 
-Los documentos de traspaso (`.slim/deepwork/*`, `docs/handoff-2026-09-01.md`) contienen afirmaciones que **no** se sostienen contra el código actual. Verificado en este arranque:
+Los documentos de traspaso (hoy en `docs/archive/`) contienen afirmaciones que **no** se sostienen contra el código actual. Verificado en este arranque:
 
 - **T10 no está "pendiente de re-añadir en backend".** El handoff `.slim` describe un revert de `queries.py`; el commit `73516e1` ya lo cerró y los eventos SSE llevan `event_id` y `timestamp`, con `dispatch` sólo en modo `auto`. Lo que falta de T10 es **el lado frontend**: `frontend/src/lib/thread-state.ts` ignora esos campos, genera sus propios instantes con `Date.now()` (líneas 181 y 186) y **escribe `durationMs: 0` a mano** en las líneas 505 y 516. Las duraciones que ve el usuario siguen siendo fabricadas.
 - **`GET /api/v1/demo/cases` no existe.** La spec lo lista en su tabla de capacidades HTTP (sección 8) y ninguna auditoría previa lo señaló. Las otras nueve rutas de la spec sí están registradas y responden.
@@ -57,13 +66,15 @@ Además: exposición en vivo de **30-45 min** respondiendo preguntas de siniestr
 
 Este es el guion de la demo. Cuatro de los cinco caen **fuera** del Convenio, y ese es precisamente el punto fuerte del sistema: la arquitectura ya está construida para abstenerse con criterio.
 
-| # | Relato | Tratamiento correcto | Evidencia en el manual |
+| # | Relato | Tratamiento correcto | Evidencia en el manual (páginas físicas verificadas) |
 |---|---|---|---|
-| 1 | A parado en semáforo, B le alcanza por detrás; B alega frenada brusca | **CIDE aplica**: dos vehículos, colisión directa. Resolver por tabla de culpabilidad. | pág. 56, pág. 101-102 (tabla) |
-| 2 | Colisión múltiple de cinco coches bajo lluvia, con heridos | **No aplica Convenio**: más de dos vehículos y colisión en cadena. | pág. 56-57 |
-| 3 | Coche aparcado dañado en parking, autor huido no identificado | **No aplica Convenio**: no hay segundo vehículo identificado ni D.A.A. | pág. 57 |
-| 4 | Cambio de carril con roce, versiones contradictorias | **ASCIDE, norma subsidiaria b.10**: culpable el que cambia de carril, con independencia de la ubicación de los daños. | pág. 75 |
-| 5 | B colisiona a A bajo influencia del alcohol, heridos graves, detención | Convenio se evalúa por las circunstancias de la colisión; lo penal y los daños personales quedan **fuera del alcance del Convenio**. | pág. 56 + alcance del manual |
+| 1 | A parado en semáforo, B le alcanza por detrás; B alega frenada brusca | **Convenio aplica**: dos vehículos, colisión directa. En ASCIDE prevalecen las normas genéricas de prioridad y la señalización semafórica. Distinguir una admisión de ámbar frente a verde de un mero relato de atención o frenada brusca. | p. 10 (ámbito), p. 56 (dos vehículos), p. 97 («54. Semáforos»), pp. 100-101 (tabla) |
+| 2 | Colisión múltiple de cinco coches bajo lluvia, con heridos | **No aplica Convenio**: más de dos vehículos y colisión en cadena. Separar la no aplicación en cadena de la vía ASCIDE cuando un tercer vehículo no esté identificado. Las lesiones no alteran por sí mismas esta regla convencional. | pp. 56-57 («26. Intervención de más de dos vehículos») |
+| 3 | Coche aparcado dañado en parking, autor huido no identificado | **No aplica Convenio**: no hay segundo vehículo identificado ni D.A.A. No confundir un vehículo aparcado con una salida de estacionamiento; el testigo y la ausencia de nota exigen información adicional sobre identificación y colisión. | p. 57, p. 73 (normas subsidiarias ASCIDE B.5 y B.6) |
+| 4 | Cambio de carril con roce, versiones contradictorias | **ASCIDE, norma subsidiaria B.10**: culpable quien cambia de carril, con independencia de la ubicación de los daños. Distinguir cambio de carril reconocido, circulación en paralelo, giro e incorporación: no son intercambiables. | p. 16 («8. Circulación y Arrancadas en paralelo/Invasión carril»), p. 75 (norma B.10) |
+| 5 | B colisiona a A bajo influencia del alcohol, heridos graves, detención | **La alcoholemia NO excluye el Convenio.** La página 9 lo dice expresamente: no se considera motivo de exclusión. El Convenio se evalúa por las circunstancias de la colisión; las consecuencias penales y los daños personales se mantienen separados de la responsabilidad convencional. | p. 9 («3. Alcoholemia o conducción bajo la influencia de estupefacientes»), p. 10 (ámbito) |
+
+> Estas referencias proceden de `docs/evaluation/golden-set-source-map.md`, que sigue vigente, y **cada página fue releída en `pages.jsonl` durante la redacción de este plan**. La versión inicial de esta tabla, escrita antes de esa comprobación, atribuía mal el siniestro 1 (sólo p. 56), el 3 (sólo p. 57) y sobre todo el 5, donde daba a entender que el alcohol sacaba el caso del Convenio. No es así.
 
 ## Global Constraints
 
@@ -87,7 +98,7 @@ El plazo real es de 1-2 días. Las tareas están ordenadas para que cualquier co
 
 - **Imprescindible para entregar** (sin esto no hay entrega válida): Tasks 0, 1, 2, 3, 4, 11, 12.
 - **Muy alto valor si hay tiempo**: Tasks 5, 6, 8.
-- **Deseable**: Tasks 7, 9, 10.
+- **Deseable**: Tasks 7 y 10. (Task 9 ya está hecha.)
 - **Sólo con margen holgado**: Task 13.
 
 Si se agota el tiempo, lo que queda fuera se documenta como limitación explícita en el documento de arquitectura (Task 11). No se maquilla.
@@ -849,7 +860,7 @@ Reducida deliberadamente frente al plan anterior: con 1-2 días, la rejilla comp
 
 `trace_url` ya está resuelto en Task 0. Falta lo demás.
 
-- [ ] **Step 1:** Propagar un `session_id` estable por conversación desde el frontend hasta la traza. Hoy **no existe ninguna ocurrencia de `session_id` en `backend/src`**.
+- [ ] **Step 1:** Cerrar la mitad que falta del `session_id`. El frontend **ya** lo genera y persiste por hilo desde `df71fbe`; `backend/src` **no tiene ninguna ocurrencia** de `session_id`, así que no lo recibe en el sobre ni lo adjunta a la traza de Langfuse. Añadirlo a la petición, propagarlo al workflow y fijarlo en la traza.
 - [ ] **Step 2:** Una única root trace por request con spans hijos coherentes.
 - [ ] **Step 3:** Registrar profile, release, prompts, modelos, latencias, costes, input/output saneados y errores.
 - [ ] **Step 4:** Publicar los scores de los evaluadores y verificar Sessions/Experiments/Scores en la UI real.
@@ -857,22 +868,23 @@ Reducida deliberadamente frente al plan anterior: con 1-2 días, la rejilla comp
 
 ---
 
-### Task 9: Historial de conversaciones real
+### Task 9: Historial de conversaciones real — ✅ HECHA por `df71fbe`
 
-`frontend/src/components/sidebar/thread-sidebar.tsx:18` documenta hoy "Lista de hilos mock (5 hardcoded)". En una demo en vivo, una barra lateral con hilos falsos es un riesgo innecesario.
+Cerrada por otra sesión mientras se redactaba este plan. `frontend/src/lib/thread-store.ts`
+persiste hilos versionados en localStorage (`cicos.threads.v1`) con tolerancia a datos corruptos,
+cuota y sandbox, y asigna un `session_id` estable por hilo. Los tests del frontend pasaron de 51 a 60.
 
-- [ ] **Step 1:** Sustituir los fixtures por threads reales con `id`, título, timestamps, `mode` y `session_id`, persistidos con `frontend/src/lib/storage.ts`.
-- [ ] **Step 2:** Persistir, listar, seleccionar, recargar y eliminar.
-- [ ] **Step 3:** Tests de hilo vacío, streaming activo, error, dos pestañas y storage corrupto.
-- [ ] **Alternativa aceptable si aprieta el tiempo:** ocultar la barra lateral por completo. Ausencia honesta antes que presencia falsa.
+Queda un residuo cosmético:
+
+- [ ] **Step 1:** Actualizar el docstring de `frontend/src/components/sidebar/thread-sidebar.tsx:18`, que todavía dice «Lista de hilos mock (5 hardcoded)» y ya no describe el comportamiento.
 
 ---
 
 ### Task 10: Visor de evidencia y pulido de UX
 
-- [ ] **Step 1:** Un único control de cierre, con foco, Escape y retorno de foco.
+`bb6c1a5` ya resolvió el cierre único del visor y el fallback explícito a página. Queda:
+
 - [ ] **Step 2:** Materializar la publicación Docling (`allianz ingest --parser docling`) para tener bounding boxes, y propagarlas hasta la API. **Hoy `data/extractions/` sólo contiene `pypdf-6.16.2`**, por eso el visor no puede resaltar región.
-- [ ] **Step 3:** Sin región verificada, mostrar fallback explícito a página. Nunca resaltar una región inventada.
 - [ ] **Step 4:** Sustituir el BorderBeam azul por feedback sobrio compatible con `prefers-reduced-motion`.
 - [ ] **Step 5: Dejar de fabricar duraciones — el resto real de T10.** El backend ya emite `event_id` y `timestamp` por evento desde `73516e1`; el frontend los ignora. Sustituir el `Date.now()` local de `frontend/src/lib/thread-state.ts:181` y los `durationMs: 0` codificados a mano en las líneas 505 y 516 por la diferencia entre los `timestamp` de los eventos SSE recibidos. Añadir un test unitario que falle si un `durationMs` no procede de dos timestamps del backend.
 - [ ] **Step 6:** No presentar `undetermined` como éxito — es central, porque cuatro de los cinco siniestros de la demo terminan sin resolución del Convenio y la interfaz tiene que comunicarlo como respuesta correcta y razonada.

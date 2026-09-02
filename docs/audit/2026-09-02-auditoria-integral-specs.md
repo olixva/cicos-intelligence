@@ -1,3 +1,19 @@
+> [!NOTE]
+> **Vigencia parcial (revisado el 2026-09-02).** Los dictámenes cualitativos de esta auditoría
+> —ausencia de golden, matriz sin transcribir, evaluación sin ejecutar, cobertura E2E
+> insuficiente— **siguen siendo correctos**. Sus cifras de ejecución **no**: dice 292 tests y
+> `ruff format` fallando en 25 ficheros; hoy son 331 passed y `format-check` pasa. La tarea 17
+> señala que el frontend fabrica duraciones, lo que sigue siendo cierto en el frontend aunque el
+> backend ya emita `event_id` y `timestamp` desde `73516e1`.
+>
+> Correcciones puntuales a la matriz de 21 tareas: la fila 2 afirma que «una ejecución nueva
+> baseline no copia `original.pdf`»; el commit `9b52b5e` lo corrigió y `pypdf_parser.py` lo
+> publica como `BinaryAsset`. La fila 4 da los perfiles por incompletos; `1290c1a` extendió
+> `IndexSignature` a 13 campos. La fila 9 y la 13 describen scaffolding, que sigue siendo cierto
+> en cuanto a **contenido** (no hay casos ni matriz transcrita) aunque los CLI ya existen.
+>
+> Estado actual: [`docs/ESTADO.md`](../ESTADO.md).
+
 # Auditoría integral contra las specs — 2026-09-02
 
 ## Dictamen

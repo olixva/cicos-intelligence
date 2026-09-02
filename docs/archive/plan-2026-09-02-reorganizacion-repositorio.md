@@ -1,3 +1,10 @@
+> [!WARNING]
+> **DOCUMENTO ARCHIVADO — NO SEGUIR.** Archivado el 2026-09-02.
+> Completado en el commit `ce2d942`.
+>
+> Fuente de verdad actual: [`docs/ESTADO.md`](../ESTADO.md).
+> Plan vigente: [`docs/superpowers/plans/2026-09-02-cierre-entrega-final.md`](../superpowers/plans/2026-09-02-cierre-entrega-final.md).
+
 # Repository Reorganization Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

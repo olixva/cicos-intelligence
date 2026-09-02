@@ -125,8 +125,22 @@ docker run --rm -p 5173:5173 allianz-frontend
 make doctor   # allianz doctor — checks Qdrant alias, Langfuse env, etc.
 ```
 
-## Limitations
+## Estado y limitaciones
 
-- **Manual catalog requires `original.pdf` in the publication directory** (post-fix commit `0cd56ed`). The pypdf baseline does not persist the source PDF by design; copy or symlink the original into `data/extractions/{sha256}/pypdf-6.16.2/original.pdf` before starting the backend, or re-ingest with `--parser docling` to get it automatically.
-- **PDF catalog 404 on first start**: the `data/extractions/{sha256}/pypdf-6.16.2/` directory must exist with `manifest.json`, `pages.jsonl`, AND `original.pdf`. See bootstrap step 3.
-- **The 2004 manual is the source scope**; do not state it is current law.
+El estado verificado del proyecto, lo que falta y el plan vigente están en
+**[`docs/ESTADO.md`](docs/ESTADO.md)**. Es el punto de entrada único; los documentos
+superados viven en `docs/archive/` con su aviso.
+
+Limitaciones de la fuente y del alcance:
+
+- **El manual es la edición de noviembre de 2004.** Es la fuente evaluada; no es derecho vigente
+  ni una decisión operativa de Allianz.
+- **El manual no define qué maniobra representa cada casilla `A0`-`A17`** de la tabla de
+  culpabilidad. Son casillas del apartado 12 del parte amistoso europeo (D.A.A.), externo al
+  manual. Ningún catálogo que las traduzca puede citar el manual como fuente.
+- **El alcance del Convenio no es responsabilidad civil general.** El sistema evalúa
+  aplicabilidad y criterios convencionales; no emite una opinión general de responsabilidad.
+- **La tabla CIDE 18×18 exige doble transcripción independiente y attestation firmada** antes de
+  usarse para decidir. Ver `docs/rules/transcription-protocol.md`.
+- Extracción: la página 32 tiene una limitación de OCR y la matriz de la página 101 requiere
+  revisión visual. Ver [la comparativa de parsers](docs/ingestion/parser-comparison.md).
