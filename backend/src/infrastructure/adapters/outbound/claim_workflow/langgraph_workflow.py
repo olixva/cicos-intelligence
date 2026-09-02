@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import re
+import uuid
 from collections import defaultdict
 from collections.abc import Callable
 from typing import Literal, NotRequired, Required, TypedDict, cast
@@ -10,7 +11,9 @@ from typing import Literal, NotRequired, Required, TypedDict, cast
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.runnables import RunnableConfig
 from langfuse import get_client
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Command, interrupt
 
 from application.models.claim import ClaimExecution, ExtractedClaimFacts
 from application.models.query import ContextEvidence
@@ -42,6 +45,7 @@ class _ClaimState(TypedDict, total=False):
     context: NotRequired[tuple[ContextEvidence, ...]]
     analysis: NotRequired[ClaimAnalysis]
     result: NotRequired[ClaimAnalysis]
+    resumed: NotRequired[bool]
 
 
 class _ClaimUpdate(TypedDict, total=False):
@@ -87,19 +91,26 @@ class LangGraphClaimWorkflow:
         graph.add_node("extract_facts", self._extract_facts)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("retrieve_criteria", self._retrieve_criteria)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("apply_rules", self._apply_rules)  # pyright: ignore[reportUnknownMemberType]
+        graph.add_node("needs_information", self._needs_information)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("explain", self._explain)  # pyright: ignore[reportUnknownMemberType]
         graph.add_node("validate", self._validate)  # pyright: ignore[reportUnknownMemberType]
         graph.add_edge(START, "extract_facts")
         graph.add_edge("extract_facts", "retrieve_criteria")
         graph.add_edge("retrieve_criteria", "apply_rules")
-        graph.add_edge("apply_rules", "explain")
+        graph.add_edge("apply_rules", "needs_information")
+        graph.add_conditional_edges(
+            "needs_information",
+            lambda state: "extract_facts" if state.get("resumed") else "explain",
+            {"extract_facts": "extract_facts", "explain": "explain"},
+        )
         graph.add_edge("explain", "validate")
         graph.add_edge("validate", END)
-        self._graph = graph.compile()  # pyright: ignore[reportUnknownMemberType]
+        self._graph = graph.compile(checkpointer=MemorySaver())  # pyright: ignore[reportUnknownMemberType]
 
     async def run(self, claim: ClaimInput) -> ClaimExecution:
         trace_id = self._trace_id_factory()
-        config = RunnableConfig(recursion_limit=8)
+        thread_id = claim.thread_id or str(uuid.uuid4())
+        config = RunnableConfig(recursion_limit=12, configurable={"thread_id": thread_id})
         if claim.session_id:
             config["metadata"] = {
                 "langfuse_session_id": claim.session_id,
@@ -128,7 +139,9 @@ class LangGraphClaimWorkflow:
             with span_cm:
                 async with asyncio.timeout(self._timeout_seconds):
                     raw = await self._graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                        _ClaimState(claim=claim),
+                        Command(resume={"clarifications": claim.clarifications})
+                        if claim.resume
+                        else _ClaimState(claim=claim),
                         config=config,  # type: ignore[arg-type]
                     )
         except TimeoutError as error:
@@ -146,6 +159,9 @@ class LangGraphClaimWorkflow:
                 if trace_id is not None and self._trace_url_factory is not None
                 else None
             ),
+            needs_input=bool(state.get("__interrupt__")),
+            thread_id=thread_id,
+            missing_information=result.missing_information if state.get("__interrupt__") else (),
         )
 
     async def _extract_facts(self, state: _ClaimState) -> _ClaimUpdate:
@@ -179,19 +195,18 @@ class LangGraphClaimWorkflow:
             dict.fromkeys(item for group in context for item in group.evidence_ids)
         )
         if not evidence_ids:
-            return _ClaimUpdate(
-                analysis=ClaimAnalysis(
-                    "undetermined",
-                    None,
-                    "conditional",
-                    extracted.party_ids,
-                    extracted.facts,
-                    _contradictions(extracted.facts),
-                    ("Recuperar el criterio del manual antes de aplicar el Convenio.",),
-                    ("No se recuperó evidencia documental aplicable.",),
-                    (),
-                )
+            analysis = ClaimAnalysis(
+                "undetermined",
+                None,
+                "conditional",
+                extracted.party_ids,
+                extracted.facts,
+                _contradictions(extracted.facts),
+                ("Recuperar el criterio del manual antes de aplicar el Convenio.",),
+                ("No se recuperó evidencia documental aplicable.",),
+                (),
             )
+            return _ClaimUpdate(analysis=analysis, result=analysis)
         assessment = assess_applicability(
             _applicability_facts(extracted.facts), evidence_ids=evidence_ids
         )
@@ -204,8 +219,7 @@ class LangGraphClaimWorkflow:
         matched_manoeuvre_rules = tuple(
             evaluation
             for evaluation in evaluations
-            if evaluation.result == "matched"
-            and self._kind_of(evaluation.rule_id) == "manoeuvre"
+            if evaluation.result == "matched" and self._kind_of(evaluation.rule_id) == "manoeuvre"
         )
         analysis = build_applicability_analysis(
             parties=extracted.party_ids,
@@ -219,20 +233,19 @@ class LangGraphClaimWorkflow:
             ),
         )
         blocks = analysis.blocks or _rule_blocks(evaluations)
-        return _ClaimUpdate(
-            analysis=ClaimAnalysis(
-                analysis.applicability,
-                analysis.convention,
-                analysis.decision,
-                analysis.party_ids,
-                analysis.facts,
-                _contradictions(extracted.facts),
-                analysis.conditions,
-                analysis.missing_information,
-                blocks,
-                rules_evaluated=evaluations,
-            )
+        analysis = ClaimAnalysis(
+            analysis.applicability,
+            analysis.convention,
+            analysis.decision,
+            analysis.party_ids,
+            analysis.facts,
+            _contradictions(extracted.facts),
+            analysis.conditions,
+            analysis.missing_information,
+            blocks,
+            rules_evaluated=evaluations,
         )
+        return _ClaimUpdate(analysis=analysis, result=analysis)
 
     def _kind_of(self, rule_id: str) -> str | None:
         rule = self._rules_by_id.get(rule_id)
@@ -249,6 +262,27 @@ class LangGraphClaimWorkflow:
         if analysis is None:
             raise RuntimeError("claim workflow reached explanation without analysis")
         return _ClaimUpdate(result=analysis)
+
+    def _needs_information(self, state: _ClaimState) -> _ClaimUpdate:
+        analysis = state.get("analysis")
+        if analysis is None:
+            raise RuntimeError("claim workflow reached information gate without analysis")
+        if not analysis.missing_information:
+            return _ClaimUpdate(result=analysis)
+        response = interrupt({"missing_information": analysis.missing_information})
+        clarifications = (
+            tuple(response.get("clarifications", ())) if isinstance(response, dict) else ()
+        )
+        claim = state["claim"]
+        resumed_claim = ClaimInput(
+            claim.text,
+            claim.language,
+            clarifications,
+            session_id=claim.session_id,
+            thread_id=claim.thread_id,
+            resume=True,
+        )
+        return {"claim": resumed_claim, "resumed": True, "result": analysis}  # type: ignore[return-value]
 
     def _validate(self, state: _ClaimState) -> _ClaimUpdate:
         analysis = state.get("result")

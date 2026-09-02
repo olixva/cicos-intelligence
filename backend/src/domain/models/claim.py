@@ -12,6 +12,8 @@ class ClaimInput:
     language: Literal["es", "en"] = "es"
     clarifications: tuple[str, ...] = ()
     session_id: str | None = None
+    thread_id: str | None = None
+    resume: bool = False
 
     def __post_init__(self) -> None:
         if not self.text.strip():

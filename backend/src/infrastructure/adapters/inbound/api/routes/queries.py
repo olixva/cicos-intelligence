@@ -89,6 +89,8 @@ def _claim_input_from_request(request: EnvelopeRequest) -> ClaimInput:
         language=request.language,
         clarifications=clarifications,
         session_id=request.session_id,
+        thread_id=request.thread_id,
+        resume=request.resume,
     )
 
 

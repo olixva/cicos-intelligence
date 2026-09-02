@@ -133,7 +133,7 @@ export default function IndexRoute() {
   }, []);
 
   const handleSubmit = useCallback(
-    (text: string, clarifications: string[] = []) => {
+    (text: string, clarifications: string[] = [], continuation: { threadId?: string | null; resume?: boolean } = {}) => {
       if (state.isStreaming) return;
       const messageId = crypto.randomUUID?.() ?? `${Date.now()}-u`;
       const assistantId = crypto.randomUUID?.() ?? `${Date.now()}-a`;
@@ -200,7 +200,7 @@ export default function IndexRoute() {
         }
       };
 
-      controllerRef.current = streamQuery(buildRequest(text, state.mode, 'es', state.threadSessionIds[state.activeThreadId] ?? null, clarifications), {
+      controllerRef.current = streamQuery(buildRequest(text, state.mode, 'es', state.threadSessionIds[state.activeThreadId] ?? null, clarifications, continuation), {
         signal: new AbortController().signal,
         onEvent: handleEvent,
       }).controller;
@@ -390,7 +390,14 @@ export default function IndexRoute() {
                       onOpenCitation={handleOpenCitation}
                       onSubmitClarification={(clarifications) => {
                         const lastUser = [...state.messages].reverse().find((message) => message.role === 'user');
-                        if (lastUser?.role === 'user') handleSubmit(lastUser.text, clarifications);
+                        const lastAssistant = [...state.messages].reverse().find((message) => message.role === 'assistant');
+                        const threadId = lastAssistant?.role === 'assistant'
+                          ? lastAssistant.envelope?.metadata?.thread_id
+                          : null;
+                        if (lastUser?.role === 'user') {
+                          dispatch({ type: 'HYDRATE_MODE', mode: 'claim' });
+                          handleSubmit(lastUser.text, clarifications, { threadId, resume: Boolean(threadId) });
+                        }
                       }}
                     />
                   )}

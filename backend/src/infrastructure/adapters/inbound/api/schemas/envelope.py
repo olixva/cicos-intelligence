@@ -152,6 +152,8 @@ class EnvelopeRequest(_ResponseModel):
     clarifications: tuple[str, ...] | None = None
     stream: bool = False
     session_id: str | None = Field(default=None, min_length=1)
+    thread_id: str | None = Field(default=None, min_length=1)
+    resume: bool = False
 
     @model_validator(mode="after")
     def _require_nonblank_text(self) -> EnvelopeRequest:
@@ -279,6 +281,19 @@ class EnvelopeResponse(_ResponseModel):
         analysis = execution.result
         trace_id = execution.trace_id or ""
         trace_url = execution.trace_url or _langfuse_trace_url(trace_id)
+        if execution.needs_input:
+            return cls(
+                request_id=request_id,
+                requested_mode="claim",
+                resolved_mode="clarification",
+                result=ClarificationResultBody(
+                    kind="clarification",
+                    message="Necesito información adicional para poder resolver el siniestro.",
+                    missing_fields=execution.missing_information,
+                ),
+                evidence=evidence,
+                metadata={"thread_id": execution.thread_id},
+            )
         return cls(
             request_id=request_id,
             requested_mode="claim",

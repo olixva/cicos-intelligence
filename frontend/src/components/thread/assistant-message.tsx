@@ -53,8 +53,11 @@ export function AssistantMessage({
       ? envelope.result.trace_id
       : null;
   const langfuseUrl = envelope?.metadata?.langfuse_url ?? envelope?.metadata?.trace_url ?? null;
-  const missingInformation =
-    envelope?.result?.kind === 'claim' ? envelope.result.missing_information : [];
+  const missingInformation = envelope?.result?.kind === 'claim'
+    ? envelope.result.missing_information
+    : envelope?.result?.kind === 'clarification'
+      ? envelope.result.missing_fields
+      : [];
 
   return (
     <article

@@ -682,6 +682,7 @@ export function buildRequest(
   language: 'es' | 'en' = 'es',
   sessionId: string | null = null,
   clarifications: string[] = [],
+  continuation: { threadId?: string | null; resume?: boolean } = {},
 ): EnvelopeRequest {
   return {
     text: text.trim(),
@@ -692,5 +693,7 @@ export function buildRequest(
     ...(clarifications.length > 0
       ? { clarifications: clarifications as EnvelopeRequest['clarifications'] }
       : {}),
-  };
+    ...(continuation.threadId ? { thread_id: continuation.threadId } : {}),
+    ...(continuation.resume ? { resume: true } : {}),
+  } as EnvelopeRequest;
 }

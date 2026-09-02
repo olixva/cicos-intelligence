@@ -1,7 +1,12 @@
 import type { components } from '@/types/api.gen';
 import { env } from '@/env';
 
-export type EnvelopeRequest = components['schemas']['EnvelopeRequest'];
+// The OpenAPI generator currently marks boolean defaults as required even
+// though FastAPI declares them optional. Keep the transport type compatible
+// with existing callers while retaining the new continuation fields.
+export type EnvelopeRequest = Omit<components['schemas']['EnvelopeRequest'], 'resume'> & {
+  resume?: boolean;
+};
 export type EnvelopeResponse = components['schemas']['EnvelopeResponse'];
 export type EvidenceItem = components['schemas']['EvidenceItem'];
 export type DemoCase = components['schemas']['DemoCase'];

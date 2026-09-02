@@ -635,6 +635,11 @@
             ],
             "title": "Profile"
           },
+          "resume": {
+            "default": false,
+            "title": "Resume",
+            "type": "boolean"
+          },
           "session_id": {
             "anyOf": [
               {
@@ -656,6 +661,18 @@
             "minLength": 1,
             "title": "Text",
             "type": "string"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
           }
         },
         "required": [

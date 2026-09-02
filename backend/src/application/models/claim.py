@@ -29,3 +29,6 @@ class ClaimExecution:
     context: tuple[ContextEvidence, ...]
     trace_id: str | None = None
     trace_url: str | None = None
+    needs_input: bool = False
+    thread_id: str | None = None
+    missing_information: tuple[str, ...] = ()

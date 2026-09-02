@@ -81,6 +81,9 @@ def test_claim_graph_requests_missing_prerequisites_without_inventing_a_conclusi
 
     execution = asyncio.run(workflow.run(ClaimInput("Hubo un accidente entre A y B.")))
 
+    assert execution.needs_input is True
+    assert execution.thread_id
+    assert execution.missing_information
     assert execution.result.applicability == "undetermined"
     assert execution.result.decision == "conditional"
     assert "cuántos vehículos" in execution.result.conditions[0]
