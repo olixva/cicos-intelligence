@@ -19,7 +19,10 @@ import os
 from collections.abc import Awaitable, Callable, Sequence
 from typing import TYPE_CHECKING, Protocol, cast
 
+from application.models.claim import ClaimExecution
 from application.models.query import QueryExecution, QueryInput
+from domain.models.claim import ClaimInput
+from domain.models.routing import ClarificationResult, RouteExecution
 
 if TYPE_CHECKING:
     from langfuse import Langfuse
@@ -176,3 +179,219 @@ def run_question_experiment(
 def _validate_identifier(name: str, value: str) -> None:
     if not value.strip():
         raise ValueError(f"{name} must be a nonblank string")
+
+
+# ---------------------------------------------------------------------------
+# Claim experiment adapter
+# ---------------------------------------------------------------------------
+
+
+class AnalyzeClaim(Protocol):
+    """Inbound capability shared by API and native claim evaluation tasks."""
+
+    def execute(self, claim: ClaimInput) -> Awaitable[ClaimExecution]: ...
+
+
+def build_claim_task(
+    analyze_claim: AnalyzeClaim,
+) -> Callable[..., Awaitable[dict[str, object]]]:
+    """Build a task that only reads the user-provided dataset input."""
+
+    async def task(*, item: DatasetItem, **_: object) -> dict[str, object]:
+        claim = _claim_input_from_dataset_input(item.input)
+        execution = await analyze_claim.execute(claim)
+        return serialize_claim_execution(execution)
+
+    return task
+
+
+def serialize_claim_execution(execution: ClaimExecution) -> dict[str, object]:
+    """Project a claim execution onto the schema consumed by Langfuse evaluators."""
+
+    return {
+        "result": {
+            "applicability": execution.result.applicability,
+            "convention": execution.result.convention,
+            "decision": execution.result.decision,
+            "conditions": list(execution.result.conditions),
+            "missing_information": list(execution.result.missing_information),
+            "needs_input": execution.needs_input,
+            "interview_missing": list(execution.missing_information),
+        },
+        "facts": [
+            {"name": fact.name, "value": fact.value, "asserted_by": fact.asserted_by}
+            for fact in execution.result.facts
+        ],
+        "blocks": [
+            {"text": block.text, "evidence_ids": list(block.evidence_ids)}
+            for block in execution.result.blocks
+        ],
+        "context": [
+            {
+                "evidence_ids": list(item.evidence_ids),
+                "delivery": item.delivery,
+            }
+            for item in execution.context
+        ],
+        "trace_id": execution.trace_id,
+    }
+
+
+def _claim_input_from_dataset_input(raw: object) -> ClaimInput:
+    """Parse a Langfuse dataset item input into a validated ``ClaimInput``."""
+
+    if not isinstance(raw, dict):
+        raise ValueError("Langfuse dataset input must be an object")
+    payload = cast(dict[str, object], raw)
+    text = payload.get("text")
+    language = payload.get("language")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Langfuse dataset input requires text")
+    if language not in ("es", "en"):
+        raise ValueError("Langfuse dataset input requires language in {es, en}")
+    clarifications = payload.get("clarifications", ())
+    if not isinstance(clarifications, (list, tuple)):
+        raise ValueError("Langfuse dataset input clarifications must be a sequence")
+    clarifications_tuple: tuple[str, ...] = tuple(cast(Sequence[str], clarifications))
+    session_id_raw = payload.get("session_id")
+    thread_id_raw = payload.get("thread_id")
+    resume_raw = payload.get("resume", False)
+    return ClaimInput(
+        text=text,
+        language=language,
+        clarifications=clarifications_tuple,
+        session_id=session_id_raw if isinstance(session_id_raw, str) else None,
+        thread_id=thread_id_raw if isinstance(thread_id_raw, str) else None,
+        resume=bool(resume_raw),
+    )
+
+
+def run_claim_experiment(
+    profile_name: str,
+    dataset_name: str,
+    dataset_version: str,
+    evaluators: Sequence[EvaluatorFunction],
+    *,
+    langfuse_client: Langfuse | None = None,
+) -> ExperimentResult:
+    """Run a native Langfuse claim experiment against an injected dataset client."""
+
+    _validate_identifier("dataset_name", dataset_name)
+    _validate_identifier("dataset_version", dataset_version)
+    _validate_identifier("profile_name", profile_name)
+
+    client = langfuse_client if langfuse_client is not None else _default_langfuse_client()
+    from bootstrap import build_analyze_claim  # lazy import: avoid cycles
+
+    dataset_client = client.get_dataset(dataset_name)
+    analyze_claim = build_analyze_claim(profile_name)
+    task = build_claim_task(analyze_claim)
+    return dataset_client.run_experiment(
+        name=dataset_name,
+        run_name=f"{profile_name}-{dataset_version}",
+        task=task,
+        evaluators=list(evaluators),
+        max_concurrency=_resolve_max_concurrency(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Router experiment adapter
+# ---------------------------------------------------------------------------
+
+
+class ResolveQuery(Protocol):
+    """Inbound capability shared by API and native router evaluation tasks."""
+
+    def execute(self, query: QueryInput) -> Awaitable[RouteExecution]: ...
+
+
+def build_router_task(
+    resolve_query: ResolveQuery,
+) -> Callable[..., Awaitable[dict[str, object]]]:
+    """Build a task that only reads the user-provided dataset input."""
+
+    async def task(*, item: DatasetItem, **_: object) -> dict[str, object]:
+        query = _query_from_dataset_input(item.input)
+        execution = await resolve_query.execute(query)
+        return serialize_route_execution(execution)
+
+    return task
+
+
+def serialize_route_execution(execution: RouteExecution) -> dict[str, object]:
+    """Project a route execution onto the schema consumed by Langfuse evaluators."""
+
+    dispatch_kind, result = _dispatch_projection(execution.dispatch)
+    return {
+        "query_text": execution.query.text,
+        "query_language": execution.query.language,
+        "decision": execution.classification.decision,
+        "rationale": execution.classification.rationale,
+        "dispatch_kind": dispatch_kind,
+        "trace_id": execution.trace_id,
+        "result": result,
+    }
+
+
+def _dispatch_projection(
+    dispatch: QueryExecution | ClaimExecution | ClarificationResult,
+) -> tuple[str, dict[str, object]]:
+    if isinstance(dispatch, QueryExecution):
+        return (
+            "question",
+            {
+                "status": dispatch.result.status,
+                "blocks": [
+                    {"text": block.text, "evidence_ids": list(block.evidence_ids)}
+                    for block in dispatch.result.blocks
+                ],
+            },
+        )
+    if isinstance(dispatch, ClaimExecution):
+        return (
+            "claim",
+            {
+                "decision": dispatch.result.decision,
+                "applicability": dispatch.result.applicability,
+                "convention": dispatch.result.convention,
+            },
+        )
+    # Type is narrowed to ClarificationResult by elimination; runtime guards
+    # on the route execution dispatch type belong to the use case itself.
+    return (
+        "clarification",
+        {
+            "message": dispatch.message,
+            "missing_fields": list(dispatch.missing_fields),
+        },
+    )
+
+
+def run_router_experiment(
+    profile_name: str,
+    dataset_name: str,
+    dataset_version: str,
+    evaluators: Sequence[EvaluatorFunction],
+    *,
+    langfuse_client: Langfuse | None = None,
+) -> ExperimentResult:
+    """Run a native Langfuse router experiment against an injected dataset client."""
+
+    _validate_identifier("dataset_name", dataset_name)
+    _validate_identifier("dataset_version", dataset_version)
+    _validate_identifier("profile_name", profile_name)
+
+    client = langfuse_client if langfuse_client is not None else _default_langfuse_client()
+    from bootstrap import build_resolve_query  # lazy import: avoid cycles
+
+    dataset_client = client.get_dataset(dataset_name)
+    resolve_query = build_resolve_query(profile_name)
+    task = build_router_task(resolve_query)
+    return dataset_client.run_experiment(
+        name=dataset_name,
+        run_name=f"{profile_name}-{dataset_version}",
+        task=task,
+        evaluators=list(evaluators),
+        max_concurrency=_resolve_max_concurrency(),
+    )

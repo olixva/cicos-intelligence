@@ -15,12 +15,23 @@ from typing import Any, cast
 
 import pytest
 
+from application.models.claim import ClaimExecution
 from application.models.query import (
     AnswerBlock,
+    ContextEvidence,
     QueryExecution,
     QueryInput,
     QuestionAnswer,
 )
+from domain.models.claim import ClaimFact, ClaimInput
+from domain.models.decision import ClaimAnalysis
+from domain.models.evidence import PageEvidence
+from domain.models.routing import (
+    ClarificationResult,
+    RouteClassification,
+    RouteExecution,
+)
+from domain.models.rule_evaluation import RuleEvaluation
 
 
 @dataclass
@@ -34,6 +45,116 @@ class _RecordingAnswerQuestion:
             context=(),
             trace_id="trace-spy",
         )
+
+
+def _matched_rule() -> RuleEvaluation:
+    """Return a minimal matched ``RuleEvaluation`` so ``decision='resolved'`` validates."""
+
+    return RuleEvaluation(
+        rule_id="rule-cide-vehicle-count",
+        inputs=(("vehicle_count", "two"),),
+        result="matched",
+        evidence_ids=("sha256:abc:page:5",),
+        rationale="vehicle count is two and chain collision applies",
+    )
+
+
+def _make_claim_execution_spy() -> ClaimExecution:
+    """Return a deterministic claim execution payload used as the spy return value."""
+
+    page_source = PageEvidence(
+        evidence_id="sha256:abc:page:5",
+        document_hash="sha256:abc",
+        pdf_page=5,
+        text="Manual excerpt.",
+        printed_label=None,
+        image_path=None,
+        regions=(),
+    )
+    return ClaimExecution(
+        result=ClaimAnalysis(
+            applicability="applicable",
+            convention="CIDE",
+            decision="resolved",
+            party_ids=("A", "B"),
+            facts=(
+                ClaimFact(
+                    name="vehicle_count",
+                    value="two",
+                    asserted_by="user",
+                    source_text="two cars",
+                ),
+            ),
+            contradictions=(),
+            conditions=("provided police report",),
+            missing_information=("police report id",),
+            blocks=(),
+            rules_evaluated=(_matched_rule(),),
+        ),
+        context=(
+            ContextEvidence(
+                evidence_ids=("sha256:abc:page:5",),
+                text="Manual excerpt.",
+                sources=(page_source,),
+                delivery="text",
+            ),
+        ),
+        trace_id="trace-claim",
+        trace_url=None,
+        needs_input=False,
+        thread_id=None,
+        missing_information=(),
+    )
+
+
+def _make_route_execution_spy(*, dispatch: Any) -> RouteExecution:
+    """Wrap a given dispatch payload in a ``RouteExecution`` for the router tests."""
+
+    return RouteExecution(
+        query=QueryInput(text="Consulta", language="es"),
+        classification=RouteClassification(decision="claim", rationale="routing rationale"),
+        dispatch=dispatch,
+        trace_id="trace-router",
+    )
+
+
+@dataclass
+class _RecordingAnalyzeClaim:
+    received: list[ClaimInput] = field(default_factory=list)
+    next_execution: ClaimExecution = field(default_factory=_make_claim_execution_spy)
+
+    async def execute(self, claim: ClaimInput) -> ClaimExecution:
+        self.received.append(claim)
+        return self.next_execution
+
+
+@dataclass
+class _RecordingResolveQuery:
+    received: list[QueryInput] = field(default_factory=list)
+    next_execution: RouteExecution = field(
+        default_factory=lambda: _make_route_execution_spy(
+            dispatch=ClaimExecution(
+                result=ClaimAnalysis(
+                    applicability="applicable",
+                    convention="CIDE",
+                    decision="resolved",
+                    party_ids=("A", "B"),
+                    facts=(),
+                    contradictions=(),
+                    conditions=(),
+                    missing_information=(),
+                    blocks=(),
+                    rules_evaluated=(_matched_rule(),),
+                ),
+                context=(),
+                trace_id="trace-claim-dispatch",
+            )
+        )
+    )
+
+    async def execute(self, query: QueryInput) -> RouteExecution:
+        self.received.append(query)
+        return self.next_execution
 
 
 @dataclass
@@ -274,3 +395,423 @@ def test_run_question_experiment_returns_the_sdk_experiment_result_untouched(
 
     assert dataset_spy.result.marker == "I am the SDK result"
     assert len(dataset_spy.run_calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# Claim experiment runner
+# ---------------------------------------------------------------------------
+
+
+def _build_fake_claim_item(
+    *,
+    text: str = "Siniestro de prueba",
+    language: str = "es",
+    clarifications: tuple[str, ...] = (),
+    session_id: str | None = None,
+    thread_id: str | None = None,
+    resume: bool = False,
+) -> Any:
+    item = type(
+        "_FakeDatasetItem",
+        (),
+        {
+            "input": {
+                "text": text,
+                "language": language,
+                "clarifications": list(clarifications),
+                "session_id": session_id,
+                "thread_id": thread_id,
+                "resume": resume,
+            },
+            "expected_output": {"reference": "REFERENCE_SENTINEL"},
+            "metadata": {"case_id": "fixture-case-claim"},
+        },
+    )()
+    return item
+
+
+def _wire_claim_runner(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    fake_item: Any,
+    max_concurrency: str | None = None,
+    dataset_result: Any = _EXPERIMENT_RESULT_SENTINEL,
+) -> tuple[_DatasetClientSpy, _RecordingAnalyzeClaim]:
+    _reset_module_state()
+    spy_port = _RecordingAnalyzeClaim()
+    import bootstrap
+
+    monkeypatch.setattr(bootstrap, "build_analyze_claim", lambda profile: spy_port)
+
+    if max_concurrency is None:
+        monkeypatch.delenv("ALLIANZ_LANGFUSE_MAX_CONCURRENCY", raising=False)
+    else:
+        monkeypatch.setenv("ALLIANZ_LANGFUSE_MAX_CONCURRENCY", max_concurrency)
+
+    dataset_spy = _DatasetClientSpy(result=dataset_result, invoked_item=fake_item)
+    langfuse_spy = _LangfuseSpy(client=dataset_spy)
+
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        run_claim_experiment,
+    )
+
+    result = run_claim_experiment(
+        profile_name="structured",
+        dataset_name="golden-claim",
+        dataset_version="v1",
+        evaluators=[_evaluator_sentinel],
+        langfuse_client=cast(Any, langfuse_spy),
+    )
+    assert result is dataset_result
+    return dataset_spy, spy_port
+
+
+def test_run_claim_experiment_rejects_blank_identifiers() -> None:
+    _reset_module_state()
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        run_claim_experiment,
+    )
+
+    with pytest.raises(ValueError, match="dataset_name"):
+        run_claim_experiment(
+            profile_name="structured",
+            dataset_name="   ",
+            dataset_version="v1",
+            evaluators=[],
+        )
+    with pytest.raises(ValueError, match="dataset_version"):
+        run_claim_experiment(
+            profile_name="structured",
+            dataset_name="golden",
+            dataset_version="",
+            evaluators=[],
+        )
+    with pytest.raises(ValueError, match="profile_name"):
+        run_claim_experiment(
+            profile_name="\t",
+            dataset_name="golden",
+            dataset_version="v1",
+            evaluators=[],
+        )
+
+
+def test_run_claim_experiment_calls_dataset_client_with_keyword_kwargs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_item = _build_fake_claim_item()
+    dataset_spy, _ = _wire_claim_runner(monkeypatch, fake_item=fake_item)
+
+    assert dataset_spy.get_dataset_calls == ["golden-claim"]
+    assert len(dataset_spy.run_calls) == 1
+    call = dataset_spy.run_calls[0]
+    assert call["name"] == "golden-claim"
+    assert call["run_name"] == "structured-v1"
+    assert callable(call["task"])
+    assert call["evaluators"][0] is _evaluator_sentinel
+    assert call["max_concurrency"] == 4
+
+
+def test_run_claim_experiment_respects_max_concurrency_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_item = _build_fake_claim_item()
+    dataset_spy, _ = _wire_claim_runner(
+        monkeypatch, fake_item=fake_item, max_concurrency="6"
+    )
+    assert dataset_spy.run_calls[0]["max_concurrency"] == 6
+
+
+def test_run_claim_experiment_never_lets_expected_output_reach_claim_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_item = _build_fake_claim_item()
+    _, spy_port = _wire_claim_runner(monkeypatch, fake_item=fake_item)
+
+    assert len(spy_port.received) == 1
+    assert spy_port.received[0].text == "Siniestro de prueba"
+    assert spy_port.received[0].language == "es"
+    serialized = repr(spy_port.received[0])
+    assert "REFERENCE_SENTINEL" not in serialized
+    assert "fixture-case-claim" not in serialized
+
+
+def test_run_claim_experiment_returns_the_sdk_result_untouched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _CustomResult:
+        marker = "I am the SDK claim result"
+
+    fake_item = _build_fake_claim_item()
+    dataset_spy, _ = _wire_claim_runner(
+        monkeypatch, fake_item=fake_item, dataset_result=_CustomResult()
+    )
+    assert dataset_spy.result.marker == "I am the SDK claim result"
+    assert len(dataset_spy.run_calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# Router experiment runner
+# ---------------------------------------------------------------------------
+
+
+def _build_fake_router_item(*, text: str = "Consulta mixta", language: str = "es") -> Any:
+    return type(
+        "_FakeDatasetItem",
+        (),
+        {
+            "input": {"text": text, "language": language},
+            "expected_output": {"reference": "ROUTER_REFERENCE_SENTINEL"},
+            "metadata": {"case_id": "fixture-case-router"},
+        },
+    )()
+
+
+def _wire_router_runner(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    fake_item: Any,
+    max_concurrency: str | None = None,
+    dataset_result: Any = _EXPERIMENT_RESULT_SENTINEL,
+) -> tuple[_DatasetClientSpy, _RecordingResolveQuery]:
+    _reset_module_state()
+    spy_port = _RecordingResolveQuery()
+    import bootstrap
+
+    monkeypatch.setattr(bootstrap, "build_resolve_query", lambda profile: spy_port)
+
+    if max_concurrency is None:
+        monkeypatch.delenv("ALLIANZ_LANGFUSE_MAX_CONCURRENCY", raising=False)
+    else:
+        monkeypatch.setenv("ALLIANZ_LANGFUSE_MAX_CONCURRENCY", max_concurrency)
+
+    dataset_spy = _DatasetClientSpy(result=dataset_result, invoked_item=fake_item)
+    langfuse_spy = _LangfuseSpy(client=dataset_spy)
+
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        run_router_experiment,
+    )
+
+    result = run_router_experiment(
+        profile_name="structured",
+        dataset_name="golden-router",
+        dataset_version="v1",
+        evaluators=[_evaluator_sentinel],
+        langfuse_client=cast(Any, langfuse_spy),
+    )
+    assert result is dataset_result
+    return dataset_spy, spy_port
+
+
+def test_run_router_experiment_rejects_blank_identifiers() -> None:
+    _reset_module_state()
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        run_router_experiment,
+    )
+
+    with pytest.raises(ValueError, match="dataset_name"):
+        run_router_experiment(
+            profile_name="structured",
+            dataset_name="",
+            dataset_version="v1",
+            evaluators=[],
+        )
+    with pytest.raises(ValueError, match="dataset_version"):
+        run_router_experiment(
+            profile_name="structured",
+            dataset_name="golden",
+            dataset_version="   ",
+            evaluators=[],
+        )
+    with pytest.raises(ValueError, match="profile_name"):
+        run_router_experiment(
+            profile_name="",
+            dataset_name="golden",
+            dataset_version="v1",
+            evaluators=[],
+        )
+
+
+def test_run_router_experiment_calls_dataset_client_with_keyword_kwargs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_item = _build_fake_router_item()
+    dataset_spy, _ = _wire_router_runner(monkeypatch, fake_item=fake_item)
+
+    assert dataset_spy.get_dataset_calls == ["golden-router"]
+    assert len(dataset_spy.run_calls) == 1
+    call = dataset_spy.run_calls[0]
+    assert call["name"] == "golden-router"
+    assert call["run_name"] == "structured-v1"
+    assert callable(call["task"])
+    assert call["evaluators"][0] is _evaluator_sentinel
+    assert call["max_concurrency"] == 4
+
+
+def test_run_router_experiment_respects_max_concurrency_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_item = _build_fake_router_item()
+    dataset_spy, _ = _wire_router_runner(
+        monkeypatch, fake_item=fake_item, max_concurrency="9"
+    )
+    assert dataset_spy.run_calls[0]["max_concurrency"] == 9
+
+
+def test_run_router_experiment_never_lets_expected_output_reach_router_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_item = _build_fake_router_item()
+    _, spy_port = _wire_router_runner(monkeypatch, fake_item=fake_item)
+
+    assert spy_port.received == [QueryInput("Consulta mixta", "es")]
+    serialized = " ".join(repr(item) for item in spy_port.received)
+    assert "ROUTER_REFERENCE_SENTINEL" not in serialized
+    assert "fixture-case-router" not in serialized
+
+
+def test_run_router_experiment_returns_the_sdk_result_untouched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _CustomResult:
+        marker = "I am the SDK router result"
+
+    fake_item = _build_fake_router_item()
+    dataset_spy, _ = _wire_router_runner(
+        monkeypatch, fake_item=fake_item, dataset_result=_CustomResult()
+    )
+    assert dataset_spy.result.marker == "I am the SDK router result"
+    assert len(dataset_spy.run_calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# Task builders and serializers
+# ---------------------------------------------------------------------------
+
+
+def test_build_claim_task_uses_only_dataset_input() -> None:
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        build_claim_task,
+    )
+
+    spy = _RecordingAnalyzeClaim()
+    fake_item = type(
+        "_Item",
+        (),
+        {
+            "input": {"text": "Siniestro", "language": "es"},
+            "expected_output": {"reference": "LEAKY"},
+            "metadata": {"case_id": "leak"},
+        },
+    )()
+    payload = asyncio.run(build_claim_task(spy)(item=fake_item))
+    assert spy.received == [
+        ClaimInput(
+            text="Siniestro",
+            language="es",
+            clarifications=(),
+            session_id=None,
+            thread_id=None,
+            resume=False,
+        )
+    ]
+    assert "LEAKY" not in repr(payload)
+    assert payload["trace_id"] == "trace-claim"
+    assert payload["result"]["decision"] == "resolved"
+    assert payload["facts"][0]["name"] == "vehicle_count"
+
+
+def test_build_router_task_uses_only_dataset_input() -> None:
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        build_router_task,
+    )
+
+    spy = _RecordingResolveQuery()
+    fake_item = type(
+        "_Item",
+        (),
+        {
+            "input": {"text": "Consulta", "language": "es"},
+            "expected_output": {"reference": "LEAKY_ROUTER"},
+            "metadata": {"case_id": "leak-router"},
+        },
+    )()
+    payload = asyncio.run(build_router_task(spy)(item=fake_item))
+    assert spy.received == [QueryInput("Consulta", "es")]
+    assert "LEAKY_ROUTER" not in repr(payload)
+    assert payload["decision"] == "claim"
+    assert payload["dispatch_kind"] == "claim"
+
+
+def test_serialize_claim_execution_includes_decision_and_facts() -> None:
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        serialize_claim_execution,
+    )
+
+    execution = _make_claim_execution_spy()
+    payload = serialize_claim_execution(execution)
+
+    assert payload["trace_id"] == "trace-claim"
+    assert payload["result"]["applicability"] == "applicable"
+    assert payload["result"]["convention"] == "CIDE"
+    assert payload["result"]["decision"] == "resolved"
+    assert payload["result"]["conditions"] == ["provided police report"]
+    assert payload["result"]["missing_information"] == ["police report id"]
+    assert payload["result"]["needs_input"] is False
+    assert payload["result"]["interview_missing"] == []
+    assert payload["facts"][0]["name"] == "vehicle_count"
+    assert payload["facts"][0]["value"] == "two"
+    assert payload["facts"][0]["asserted_by"] == "user"
+    assert payload["blocks"] == []
+    assert payload["context"][0]["evidence_ids"] == ["sha256:abc:page:5"]
+    assert payload["context"][0]["delivery"] == "text"
+
+
+def test_serialize_route_execution_classifies_dispatch_kind() -> None:
+    from infrastructure.adapters.outbound.evaluation.langfuse_experiments import (
+        serialize_route_execution,
+    )
+
+    claim_dispatch = ClaimExecution(
+        result=ClaimAnalysis(
+            applicability="applicable",
+            convention="ASCIDE",
+            decision="conditional",
+            party_ids=("A", "B"),
+            facts=(),
+            contradictions=(),
+            conditions=("police report",),
+            missing_information=(),
+            blocks=(),
+            rules_evaluated=(_matched_rule(),),
+        ),
+        context=(),
+        trace_id="trace-claim-dispatch",
+    )
+    execution_claim = _make_route_execution_spy(dispatch=claim_dispatch)
+    payload_claim = serialize_route_execution(execution_claim)
+    assert payload_claim["dispatch_kind"] == "claim"
+    assert payload_claim["decision"] == "claim"
+    assert payload_claim["result"]["decision"] == "conditional"
+    assert payload_claim["result"]["convention"] == "ASCIDE"
+    assert payload_claim["result"]["applicability"] == "applicable"
+
+    question_dispatch = QueryExecution(
+        result=QuestionAnswer("answered", (AnswerBlock("Texto.", ("sha256:abc:page:5",)),)),
+        context=(),
+        trace_id="trace-question-dispatch",
+    )
+    execution_question = _make_route_execution_spy(dispatch=question_dispatch)
+    payload_question = serialize_route_execution(execution_question)
+    assert payload_question["dispatch_kind"] == "question"
+    assert payload_question["result"]["status"] == "answered"
+    assert len(payload_question["result"]["blocks"]) == 1
+
+    clarification_dispatch = ClarificationResult(
+        message="Necesitamos más datos.",
+        missing_fields=("vehicle_count",),
+    )
+    execution_clarification = _make_route_execution_spy(dispatch=clarification_dispatch)
+    payload_clarification = serialize_route_execution(execution_clarification)
+    assert payload_clarification["dispatch_kind"] == "clarification"
+    assert payload_clarification["result"]["message"] == "Necesitamos más datos."
+    assert payload_clarification["result"]["missing_fields"] == ["vehicle_count"]
