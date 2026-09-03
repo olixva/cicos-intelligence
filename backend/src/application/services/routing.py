@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import uuid
 from collections.abc import Awaitable, Callable
 
@@ -11,6 +10,7 @@ from application.models.query import QueryExecution, QueryInput
 from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.outbound.query_classifier import QueryClassifier
+from application.services.claim_heuristics import looks_like_claim_text
 from domain.models.claim import ClaimInput
 from domain.models.routing import (
     ClarificationResult,
@@ -29,46 +29,6 @@ _CLOSED_DECISIONS: frozenset[RouteDecision] = frozenset(
 )
 
 _DEFAULT_CLARIFICATION = "Necesito más información para enrutar tu consulta."
-
-# Marcadores típicos de relato de siniestro. El router barato
-# (gpt-5.6-luna) puede clasificar un relato de colisión como
-# "question" o "clarification_required" cuando el texto incluye
-# palabras incidentales (caso real: "no consigue detenerse a tiempo"
-# → el modelo entiende "tiempo" como una pregunta meteorológica y
-# clasifica como clarification_required). Esta heurística es el
-# cortafuegos: si el texto tiene al menos DOS de estos marcadores,
-# forzamos "claim" para que el análisis corra sobre el texto.
-_CLAIM_TEXT_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"\bveh[ií]culo\s+[a-z]\b", re.IGNORECASE),
-    re.compile(r"\bveh[ií]culos?\s+[a-z]\s+y\s+[a-z]\b", re.IGNORECASE),
-    re.compile(r"\bsiniestro\b", re.IGNORECASE),
-    re.compile(r"\bcolisi[oó]n\b", re.IGNORECASE),
-    re.compile(r"\bchoc[oóaáe]+\b", re.IGNORECASE),
-    re.compile(r"\bD\.\s?A\.\s?A\.\b", re.IGNORECASE),
-    re.compile(r"\bmaniobra\b", re.IGNORECASE),
-    re.compile(r"\bsem[aá]foro\b", re.IGNORECASE),
-    re.compile(r"\bculpable\b", re.IGNORECASE),
-    re.compile(r"\bfren[oóaá]\b", re.IGNORECASE),
-    re.compile(r"\btrasera?\b", re.IGNORECASE),
-    re.compile(r"\bmatr[ií]cula\b", re.IGNORECASE),
-    re.compile(r"\bparte\s+amistoso\b", re.IGNORECASE),
-    re.compile(r"\balcance\b", re.IGNORECASE),
-    re.compile(r"\bimpacto\b", re.IGNORECASE),
-)
-
-_CLAIM_TEXT_THRESHOLD = 2
-
-
-def _looks_like_claim_text(text: str) -> bool:
-    """True si el texto tiene al menos ``_CLAIM_TEXT_THRESHOLD`` marcadores
-    de relato de siniestro. Sirve para detectar casos donde el router
-    barato clasifica mal por palabras incidentales (``tiempo``,
-    ``hora``, ``parte``, etc.) que aparecen en un contexto claramente
-    de colisión entre vehículos."""
-    return (
-        sum(1 for pattern in _CLAIM_TEXT_PATTERNS if pattern.search(text))
-        >= _CLAIM_TEXT_THRESHOLD
-    )
 
 
 async def resolve_query(
@@ -94,7 +54,7 @@ async def resolve_query(
     # Sin este cortafuegos, un alcance trasero se queda sin analizar
     # porque el router dice "clarification_required" y el handler
     # genérico responde "no puedo informar del tiempo".
-    if decision != "claim" and _looks_like_claim_text(query.text):
+    if decision != "claim" and looks_like_claim_text(query.text):
         decision = "claim"
         classification = RouteClassification(
             decision=decision,
