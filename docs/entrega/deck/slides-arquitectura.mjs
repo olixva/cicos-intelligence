@@ -122,7 +122,7 @@ function intercambiable(pres, ctx) {
     ['ORQUESTACIÓN', 'LangGraph', 'question_workflow\nclaim_workflow\nquery_workflow', 'Los casos de uso hablan con un puerto. Sustituir el orquestador no toca el dominio.'],
     ['INGESTA', 'pypdf · Docling', 'document_parser\nevidence_repository', 'Dos parsers publicados a la vez para el mismo documento verificado.'],
     ['RECUPERACIÓN', 'Qdrant híbrido', 'retriever\nindex_publisher', 'Denso, BM25 y fusión son política del adaptador, no del caso de uso.'],
-    ['MODELOS', 'OpenAI', 'language_model\nembedding_provider\nquery_classifier', 'Tres puertos distintos: generar, incrustar y clasificar no son la misma capacidad.'],
+    ['MODELOS', 'OpenAI', 'language_model\nclaim_fact_extractor\nembedding_provider\nquery_classifier', 'Cuatro puertos: generar, extraer, incrustar y clasificar no son la misma capacidad.'],
   ];
 
   const cw = 2.828, y0 = 2.62, ch = 3.34;
@@ -144,9 +144,9 @@ function intercambiable(pres, ctx) {
     '· El argumento fuerte no es el dibujo: es que la sustitución YA está ejercitada. pypdf y',
     '  Docling están los dos publicados para el mismo manual, con dos índices distintos en Qdrant,',
     '  y el dominio no distingue uno de otro.',
-    '· Los tres puertos de modelo separados son deliberados: generar texto, incrustar y clasificar',
-    '  el modo son capacidades distintas y podrían venir de proveedores distintos —o de un modelo',
-    '  local para la clasificación, que es la llamada más frecuente y más barata.',
+    '· Los cuatro puertos de modelo separados son deliberados: generar, extraer hechos, incrustar y',
+    '  clasificar el modo son capacidades distintas y podrían venir de proveedores distintos —o de',
+    '  un modelo local para la clasificación, que es la llamada más frecuente y más barata.',
     '',
     'Si preguntan «¿esto no es sobreingeniería para cinco días?»: la respuesta honesta es que',
     'costó tiempo el primer día y lo devolvió el cuarto, cuando hubo que meter la tabla de',
@@ -270,7 +270,7 @@ function interfaz(pres, ctx) {
   const items = [
     ['Los hechos, con su procedencia', 'vehicle_count, direct_collision, lane_change_vehicle… y cada uno dice de dónde sale: «según relato», «según ambos conductores». No hay un hecho sin origen.'],
     ['Las catorce reglas, también las que no casan', 'Once dicen «no comprobable con los datos aportados». Esa ausencia es información: enseña exactamente qué haría falta para ir más lejos.'],
-    ['La decisión y la norma que la sostiene', 'ASCIDE · el Convenio es aplicable · resuelto, con el texto literal de la b.10. Nada de esa conclusión la ha redactado el modelo.'],
+    ['La decisión y la norma que la sostiene', 'ASCIDE · el Convenio es aplicable · resuelto, con el texto literal de la b.10. El modelo no ha redactado nada de esa conclusión.'],
   ];
   const lw = ix - M - 0.42;
   items.forEach(([h, d], i) => {

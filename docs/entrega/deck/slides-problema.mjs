@@ -96,7 +96,7 @@ function losVeredictos(pres, ctx) {
     ['3', 'Aparcado con daños y fuga', 'Indeterminado · condicionado', C.amber, C.amberSoft,
       'Sin identificar al causante no hay segunda parte: la norma del vehículo aparcado exige conocerla · pág. 73'],
     ['4', 'Cambio de carril', 'Resuelto · ASCIDE b.10 · culpable A', C.teal, C.tealSoft,
-      'Norma subsidiaria: si ambos reconocen el cambio de carril, responde quien lo efectúa · págs. 75 y 111'],
+      'Norma subsidiaria: si ambos reconocen el cambio de carril, responde quien lo efectúa · pág. 75 (orden de prioridad ASCIDE, pág. 111)'],
     ['5', 'Alcohol y lesiones graves', 'Aplicable · culpa indeterminada', C.amber, C.amberSoft,
       'El alcohol no excluye el Convenio · pág. 9 — pero lesiones y vía penal quedan fuera de su alcance · págs. 27 y 62'],
   ];

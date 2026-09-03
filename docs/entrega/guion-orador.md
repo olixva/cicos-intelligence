@@ -216,9 +216,9 @@ INTERCAMBIABILIDAD (55 s).
 · El argumento fuerte no es el dibujo: es que la sustitución YA está ejercitada. pypdf y
   Docling están los dos publicados para el mismo manual, con dos índices distintos en Qdrant,
   y el dominio no distingue uno de otro.
-· Los tres puertos de modelo separados son deliberados: generar texto, incrustar y clasificar
-  el modo son capacidades distintas y podrían venir de proveedores distintos —o de un modelo
-  local para la clasificación, que es la llamada más frecuente y más barata.
+· Los cuatro puertos de modelo separados son deliberados: generar, extraer hechos, incrustar y
+  clasificar el modo son capacidades distintas y podrían venir de proveedores distintos —o de
+  un modelo local para la clasificación, que es la llamada más frecuente y más barata.
 
 Si preguntan «¿esto no es sobreingeniería para cinco días?»: la respuesta honesta es que
 costó tiempo el primer día y lo devolvió el cuarto, cuando hubo que meter la tabla de

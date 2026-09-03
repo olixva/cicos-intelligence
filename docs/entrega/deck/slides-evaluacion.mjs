@@ -324,7 +324,7 @@ function observabilidad(pres, ctx) {
     ['Los tres workflows, nodo a nodo', 'Documental, siniestros y enrutado automático, con su estado de entrada y salida.'],
     ['Todas las llamadas al modelo', 'Generación, extracción de hechos, clasificación y embeddings, con coste y latencia por etapa.'],
     ['Un hilo, una sesión', 'El session_id agrupa la conversación completa, incluida la interrupción y su reanudación.'],
-    ['Datasets y experimentos, junto a las trazas', 'El mismo despliegue aloja el dataset del golden y las ejecuciones de evaluación: no acaban en una hoja de cálculo aparte.'],
+    ['Datasets y experimentos, junto a las trazas', 'El mismo despliegue aloja los datasets de evaluación y sus ejecuciones: la medida no acaba en una hoja de cálculo aparte.'],
   ];
   card(s, { x: M, y: 2.5, w: 7.2, h: 3.3 });
   tb(s, 'QUÉ SE TRAZA', { x: M + 0.32, y: 2.68, w: 5, h: 0.24, fontFace: F.head, fontSize: 9.5, bold: true, charSpacing: 1.1, color: C.soft });
@@ -557,7 +557,7 @@ function preguntasDificiles(pres, ctx) {
 
   const rows = [
     ['«¿Esto no lo está inventando el modelo?»',
-      'No: la decisión la emite un evaluador determinista sobre reglas firmadas, y una invariante del dominio impide publicar un culpable sin las reglas que lo sostienen.', 'Láminas 24 y 17'],
+      'No: la decisión la emite un evaluador determinista sobre reglas firmadas, y una invariante del dominio impide publicar un culpable sin las reglas que lo sostienen.', 'Láminas 17 y 24'],
     ['«¿Por qué no resuelve los cinco accidentes?»',
       'Porque el manual no da para más con los datos de cada relato. En cuanto el parte aporta las casillas del apartado 12, la tabla entra y resuelve.', 'Lámina 05 y demo 3'],
     ['«¿Qué métricas tenéis?»',
@@ -565,7 +565,7 @@ function preguntasDificiles(pres, ctx) {
     ['«¿Por qué no usáis Docling, si es mejor?»',
       'Porque disponible no es lo mismo que mejor. Está publicado y esperando la comparación de evaluación que lo justifique; el comando para compararlos existe.', 'Lámina 20'],
     ['«¿Y si cambiáis de proveedor de modelo?»',
-      'Son tres puertos distintos —generar, extraer, clasificar— más el de embeddings. El único que no se puede cambiar sin reindexar es el embedding, y la firma del índice lo impide.', 'Láminas 14 y 15'],
+      'Son cuatro puertos distintos: generar, extraer, clasificar e incrustar. El único que no se puede cambiar sin reindexar es el embedding, y la firma del índice lo impide.', 'Láminas 14 y 15'],
     ['«¿Esto no es sobreingeniería para cinco días?»',
       'Costó tiempo el día 1 y lo devolvió el día 4, cuando hubo que meter la tabla de 324 celdas en el flujo sin romper nada de lo anterior.', 'Láminas 11 y 13'],
     ['«¿Quién ha validado el golden set?»',
@@ -600,7 +600,7 @@ function stack(pres, ctx) {
     ['Lenguaje y ejecución', 'Python 3.14 · uv', 'Entorno reproducible y resolución de dependencias rápida'],
     ['API', 'FastAPI · Pydantic 2 · SSE', 'Contrato tipado y publicación del OpenAPI que consume el cliente'],
     ['Orquestación', 'LangGraph · MemorySaver', 'Grafos tipados con checkpoint e interrupción humana'],
-    ['Modelos', 'OpenAI (generación, extracción, embeddings, enrutado)', 'Cuatro usos distintos tras tres puertos separados'],
+    ['Modelos', 'OpenAI (generación, extracción, embeddings, enrutado)', 'Cuatro usos distintos tras cuatro puertos separados'],
     ['Índice', 'Qdrant · denso + BM25 español (fastembed) · RRF nativo', 'Fusión determinista dentro del motor'],
     ['Extracción de PDF', 'pypdf 6.16.2 · Docling 2.124.0', 'Dos perfiles publicados para el mismo documento verificado'],
     ['Observabilidad y evaluación', 'Langfuse autoalojado · Ragas', 'Trazas, datasets, releases y experimentos en local'],
