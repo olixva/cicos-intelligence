@@ -1,6 +1,6 @@
 import {
   W, H, M, CW, RIGHT, C, F, tb, rect, rrect, ell, card, pill, chip, dot, arrow,
-  title, deck, band, notes, page, divider, hline,
+  title, deck, band, notes, page, divider, hline, LOG,
 } from './lib.mjs';
 
 /* ═══════════════════════════════════ 04 · Demo ══════════════════════════════ */
@@ -86,6 +86,7 @@ export function chapterFour(pres, ctx) {
 
 function demo(pres, ctx, { n, head, input, watch, close, speak }) {
   const s = page(pres, ctx, { eyebrow: '04 · Demo en vivo', dark: true });
+  LOG[LOG.length - 1].title = `Demo ${n} — ${head}`;
 
   rrect(s, { x: M, y: 1.0, w: 1.72, h: 0.46, rectRadius: 0.1, fill: { color: C.teal } });
   tb(s, `DEMO ${n}`, { x: M, y: 1.11, w: 1.72, h: 0.26, align: 'center', fontFace: F.head, fontSize: 13, bold: true, color: C.paper });
@@ -488,6 +489,8 @@ function cierre(pres, ctx) {
       ell(sl, { x: 11.4, y: 3.9, w: 3.0, h: 3.0, fill: { color: '063E82' } });
     },
   });
+
+  LOG[LOG.length - 1].title = 'No es un chatbot sobre un PDF.';
 
   tb(s, 'No es un chatbot sobre un PDF.', {
     x: M, y: 1.5, w: 9.6, h: 0.8, fontFace: F.head, fontSize: 40, bold: true, color: C.paper,

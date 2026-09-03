@@ -407,7 +407,7 @@ ESTADO DE LAS REGLAS (50 s). Lámina de honestidad dentro del bloque técnico.
 
 Cuatro recorridos sobre el sistema real, en local. Lo que hay que creerse no son las láminas.
 
-## 28 · (sin título)
+## 28 · Demo 1 — Enrutado y consulta documental
 
 *04 · Demo en vivo*
 
@@ -424,7 +424,7 @@ Guion en pantalla:
 Antes de empezar la demo: make local-services-up, make serve-backend, make serve-frontend,
 y comprobar GET /health/ready → {"status":"ready"}. Tener Langfuse ya abierto en otra pestaña.
 
-## 29 · (sin título)
+## 29 · Demo 2 — El siniestro que sí se resuelve
 
 *04 · Demo en vivo*
 
@@ -440,7 +440,7 @@ Guion en pantalla:
 Antes de empezar la demo: make local-services-up, make serve-backend, make serve-frontend,
 y comprobar GET /health/ready → {"status":"ready"}. Tener Langfuse ya abierto en otra pestaña.
 
-## 30 · (sin título)
+## 30 · Demo 3 — Abstenerse con criterio, y pedir el dato exacto
 
 *04 · Demo en vivo*
 
@@ -458,7 +458,7 @@ Guion en pantalla:
 Antes de empezar la demo: make local-services-up, make serve-backend, make serve-frontend,
 y comprobar GET /health/ready → {"status":"ready"}. Tener Langfuse ya abierto en otra pestaña.
 
-## 31 · (sin título)
+## 31 · Demo 4 — Trazabilidad y operación
 
 *04 · Demo en vivo*
 
@@ -588,7 +588,7 @@ ROADMAP (40 s).
 · Cerrar señalando que ninguno de los cuatro toca el dominio: es la factura que paga la
   arquitectura del bloque 03.
 
-## 40 · (sin título)
+## 40 · No es un chatbot sobre un PDF.
 
 *Cierre*
 
