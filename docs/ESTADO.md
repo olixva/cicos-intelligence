@@ -24,7 +24,9 @@ Fuente documental: `data/raw/Manual-cide-ascide-y-cicos.pdf`, 111 páginas, SHA-
 | `docs/ingestion-baseline.md`, `docs/ingestion/parser-comparison.md` | Extracción baseline y comparativa de parsers. |
 | `docs/operations/local-services.md` | Operación de los servicios locales. |
 | `docs/enunciado/GenAI_Interview_Instructions.docx` | Enunciado original, tal como se recibió. |
-| `docs/entrega/arquitectura.md`, `docs/entrega/guion-demo.md` | Recreados en este corte tras la pérdida sin commitear de la versión anterior. |
+| `docs/entrega/presentacion.pptx` (+ `.pdf`) | Presentación de entrega, 46 láminas. **Generada por código** desde `docs/entrega/deck/`; no se edita a mano. |
+| `docs/entrega/guion-orador.md` | Notas de orador de las 46 láminas, generadas durante el build del deck. |
+| `docs/entrega/arquitectura.md`, `docs/entrega/guion-demo.md` | Documento técnico de entrega y guion de la demo en vivo, alineados con el deck. |
 | `README.md`, `backend/README.md`, `frontend/README.md` | Puesta en marcha. |
 
 **No hay un "plan vigente" activo.** El anterior (`docs/superpowers/plans/2026-09-02-cierre-verificado.md`) fue borrado en una sesión previa sin commitear el borrado ni sustituirlo; este índice ya no lo referencia. Retomar el trabajo desde la sección "Qué falta" de abajo, verificada contra el código en este corte.
@@ -35,10 +37,10 @@ Fuente documental: `data/raw/Manual-cide-ascide-y-cicos.pdf`, 111 páginas, SHA-
 
 | Gate | Resultado medido |
 |---|---|
-| `make test-backend` (`uv run pytest`) | **422 passed**, 1 skipped (salida 0) |
+| `make test-backend` (`uv run pytest`) | **500 passed**, 1 skipped (salida 0) — medido el 2026-09-03 |
 | `make lint-backend` | OK |
 | `make typecheck-backend` | 0 errores, 0 warnings, 0 informations |
-| `make check-frontend` | lint + typecheck + **96 tests** + build, OK |
+| `make check-frontend` | lint + typecheck + **97 tests** en 17 ficheros + build, OK — medido el 2026-09-03 |
 | `make check-openapi` | OK, sin drift |
 
 ### Defectos encontrados y corregidos en la verificación end-to-end
@@ -82,6 +84,16 @@ Compose `allianz-rag` (Langfuse, langfuse-worker, ClickHouse, PostgreSQL, Redis,
 
 ### Qué está hecho
 
+- **Presentación de entrega (2026-09-03)**: `docs/entrega/presentacion.pptx`, 46 láminas
+  generadas por código desde `docs/entrega/deck/` (pptxgenjs), con notas de orador en las 46 y
+  un guion en markdown que sale del mismo build. Cubre lo que el enunciado pide explícitamente
+  y no estaba: plan con hitos, supuestos, riesgos y el porqué de cada decisión técnica, además
+  de una lámina de selección de modelos. Lleva **capturas reales del producto** tomadas con
+  Playwright contra la aplicación en marcha. Todas las cifras se midieron contra este
+  repositorio antes de generarla; la comprobación encontró y corrigió cuatro afirmaciones
+  falsas (13 puertos de salida cuando son 12, la colisión en cadena citada como «págs. 57-58»
+  cuando el ruleset firmado cita la 57, la página del caso del vehículo aparcado, y el golden
+  dado por publicado como dataset en Langfuse cuando no lo está).
 - **Ingestión**: contrato de publicación unificado; pypdf y Docling publican `original.pdf`. **Ambos parsers están publicados** para el documento verificado: `pypdf-6.16.2` (baseline, texto plano) y `docling-2.124.0-pdfium-5.13.0-rapidocr-latin-torch-r2-3d1d1af9689b76cf` (estructurado, con `regions`/bounding boxes verificadas en las 111 páginas). CLI `compare-parsers`. Páginas en blanco preservadas.
 - **Índices Qdrant**: dos publicaciones verificadas — `baseline` (pypdf, chunking fijo, 118 fragmentos, **activa**) y `structured` (docling, chunking por secciones, 109 fragmentos, publicada pero **no activada** como demo). No se ha promovido `structured` a activa porque la spec exige selección por evaluación, no por disponibilidad («la disponibilidad de una técnica no demuestra que mejore los resultados»); con Docling ya publicado, esa comparación es ahora posible.
 - **Perfiles e índices**: `IndexSignature` con 13 campos; CLI `index-rollback` y `list-index-versions`; `rollback_alias` verifica firma antes de mover el alias.
@@ -116,14 +128,14 @@ Compose `allianz-rag` (Langfuse, langfuse-worker, ClickHouse, PostgreSQL, Redis,
 
 Ordenados por impacto sobre la entrega.
 
-1. **Falta la presentación PowerPoint de la entrevista** (`docs/entrega/presentacion.pptx`). Se recrean en este corte `docs/entrega/arquitectura.md` y `docs/entrega/guion-demo.md` (perdidos sin commitear en una sesión previa) y se genera el `.pptx` a partir de ellos.
-2. **El golden set no tiene revisión humana**, sólo revisión de tres pasos por IA (ver arriba). Sigue sin comparativa de recuperación, métricas de router publicadas ni holdout. Ampliar más allá de los 5 casos de entrevista con generación Ragas + revisión sigue pendiente.
-3. **1 de las 14 reglas firmadas sigue sin condición machine-checkable**: `ascide-b11-roundabout` (rotondas), que tiene una excepción con **resultado alternativo** (no una simple retirada de atribución) — «culpable quien accede, salvo que ambos tengan daños laterales no angulares, en cuyo caso culpable el de daños en el lateral derecho» — y exigiría una segunda regla en el artefacto con su propio `applies_when` mutuamente excluyente, cambio más sustancial que rellenar un predicado existente. `convention-scope` (ámbito geográfico) tampoco es una regla de decisión y queda fuera de este recuento. Todas las demás (`ascide-b5`, `ascide-b6`, `ascide-b9`, `ascide-b10`, `ascide-traffic-light-amber`, `cide-door-opening`, `cide-matrix-lookup` con sus cuatro observaciones) están conectadas y verificadas con el modelo real.
+1. **El golden set no tiene revisión humana**, sólo revisión de tres pasos por IA (ver arriba). Sigue sin comparativa de recuperación, métricas de router publicadas ni holdout. Ampliar más allá de los 5 casos de entrevista con generación Ragas + revisión sigue pendiente.
+   Además, **el golden no está publicado como dataset en el proyecto de Langfuse en uso**: la API de datasets del proyecto `cmtklzgpm000trm07om22hcpa` devuelve 0 (comprobado el 2026-09-03). `allianz golden publish` está pendiente de ejecutar contra ese proyecto.
+2. **1 de las 14 reglas firmadas sigue sin condición machine-checkable**: `ascide-b11-roundabout` (rotondas), que tiene una excepción con **resultado alternativo** (no una simple retirada de atribución) — «culpable quien accede, salvo que ambos tengan daños laterales no angulares, en cuyo caso culpable el de daños en el lateral derecho» — y exigiría una segunda regla en el artefacto con su propio `applies_when` mutuamente excluyente, cambio más sustancial que rellenar un predicado existente. `convention-scope` (ámbito geográfico) tampoco es una regla de decisión y queda fuera de este recuento. Todas las demás (`ascide-b5`, `ascide-b6`, `ascide-b9`, `ascide-b10`, `ascide-traffic-light-amber`, `cide-door-opening`, `cide-matrix-lookup` con sus cuatro observaciones) están conectadas y verificadas con el modelo real.
 
    De paso se corrigieron dos patrones sistemáticos en el planificador de entrevista del LLM (misma llamada que extrae los hechos, antes de que las reglas se apliquen): confundía «el relato declara que un dato no consta» con «hay que preguntarlo» (rompía `cide-door-opening`, cuya condición de activación es precisamente esa ausencia), y confundía «disparidad de versiones» con «caso irresoluble» (rompía `ascide-b9`, `ascide-b10` y `ascide-b11`, que existen justamente para resolver esa disparidad). Ambos verificados 4/4 y 3/3 con el modelo real tras el ajuste del prompt. Sin ellas, un siniestro sin D.A.A. declarada ni maniobra reconocida (p. ej. `accident-01-rear-end` narrado sin casillas ni cambio de carril) seguirá devolviendo `undetermined` correctamente — es la respuesta correcta cuando el relato no las aporta, no una limitación oculta.
-4. **El índice `structured` (Docling) está publicado pero no activo.** Falta la comparación de evaluación baseline-vs-structured que justifique (o no) promoverlo, y el CLI técnico `allianz index` no está expuesto por el modo administrador de la API (que sigue fijo a `pypdf`).
-5. **Ningún miembro del equipo tiene cuenta propia en el proyecto Langfuse `allianz-rag`.** El proyecto sólo tiene al usuario de inicialización (`local@allianz.test`); una cuenta personal creada por el responsable del proyecto no está invitada a la organización `allianz-local`. No bloquea el funcionamiento (las claves de proyecto son independientes del login humano), pero si se quiere navegar la UI de Langfuse con una cuenta nominal, hace falta invitarla desde `Organization Settings → Members`.
-6. **`data/evaluation/golden/development.jsonl` es el golden actual (110 casos: 5 enunciado + 5 ES variantes + 100 sintéticos)**, congelado como release `synthetic-expansion-110-2026-09-03` bajo `data/evaluation/golden/releases/`. Las releases `v1-interview-2026-09-02`, `v2-es-2026-09-02` y `synthetic-expansion-2026-09-02` (los 10 previos + los 100 sintéticos intermedios) se han retirado: están absorbidas dentro de los 110 casos vigentes. No hay todavía `holdout.jsonl`.
+3. **El índice `structured` (Docling) está publicado pero no activo.** Falta la comparación de evaluación baseline-vs-structured que justifique (o no) promoverlo, y el CLI técnico `allianz index` no está expuesto por el modo administrador de la API (que sigue fijo a `pypdf`).
+4. **Ningún miembro del equipo tiene cuenta propia en el proyecto Langfuse `allianz-rag`.** El proyecto sólo tiene al usuario de inicialización (`local@allianz.test`); una cuenta personal creada por el responsable del proyecto no está invitada a la organización `allianz-local`. No bloquea el funcionamiento (las claves de proyecto son independientes del login humano), pero si se quiere navegar la UI de Langfuse con una cuenta nominal, hace falta invitarla desde `Organization Settings → Members`.
+5. **`data/evaluation/golden/development.jsonl` es el golden actual (110 casos: 5 enunciado + 5 ES variantes + 100 sintéticos)**, congelado como release `synthetic-expansion-110-2026-09-03` bajo `data/evaluation/golden/releases/`. Las releases `v1-interview-2026-09-02`, `v2-es-2026-09-02` y `synthetic-expansion-2026-09-02` (los 10 previos + los 100 sintéticos intermedios) se han retirado: están absorbidas dentro de los 110 casos vigentes. No hay todavía `holdout.jsonl`.
 
 ### Limitaciones que hay que declarar, no resolver
 
