@@ -51,24 +51,35 @@ class ClaimExtractionSchema(_StrictSchema):
     terminal_reason: str | None = None
 
     def to_application(self) -> ExtractedClaimFacts:
+        # El proveedor a veces emite facts con ``name`` o ``source_text``
+        # whitespace-only (longitud > 0 para Pydantic ``min_length=1`` pero
+        # ``.strip()`` vacío para el invariante del dataclass ``ClaimFact``).
+        # Los descartamos antes de cruzar al modelo de aplicación; el
+        # invariante de no-vacío sigue siendo del dominio, el adaptador
+        # sólo limpia el output del proveedor.
+        facts = tuple(
+            ClaimFact(item.name, item.value, item.asserted_by, item.source_text)
+            for item in self.facts
+            if item.name.strip() and item.source_text.strip()
+        )
+        # Misma defensa para las preguntas de entrevista.
+        questions = tuple(
+            InterviewQuestion(
+                id=item.id,
+                prompt=item.prompt,
+                reason=item.reason,
+                answer_kind=item.answer_kind,
+                options=item.options,
+            )
+            for item in self.questions
+            if item.id.strip() and item.prompt.strip() and item.reason.strip()
+        )
         return ExtractedClaimFacts(
             self.party_ids,
-            tuple(
-                ClaimFact(item.name, item.value, item.asserted_by, item.source_text)
-                for item in self.facts
-            ),
+            facts,
             InterviewPlan(
                 status=self.interview_status,
-                questions=tuple(
-                    InterviewQuestion(
-                        id=item.id,
-                        prompt=item.prompt,
-                        reason=item.reason,
-                        answer_kind=item.answer_kind,
-                        options=item.options,
-                    )
-                    for item in self.questions
-                ),
+                questions=questions,
                 terminal_reason=self.terminal_reason,
             ),
         )
