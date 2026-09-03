@@ -28,10 +28,23 @@ class DemoCase(BaseModel):
 DEFAULT_DEMO_CASE_IDS: tuple[str, ...] = (
     "consulta-es-01-alcoholemia",
     "consulta-synth-21-atestado-ascide-cierra",
-    "siniestro-synth-47-adv-sin-datos",
+    "siniestro-synth-12-b9-marcha-atras",
     "accident-02-pile-up-es",
     "accident-04-lane-change-es",
 )
+
+
+#: La demo necesita mostrar un relato completo que abra una entrevista breve.
+#: El caso evaluado mantiene sus anotaciones originales; sólo su presentación
+#: pública concreta que falta confirmar la colisión directa.
+DEMO_TEXT_OVERRIDES: dict[str, str] = {
+    "siniestro-synth-12-b9-marcha-atras": (
+        "En una autovía, el vehículo A inició un cambio de carril hacia la izquierda mientras "
+        "el vehículo B circulaba correctamente por ese carril. Ambos conductores coinciden en "
+        "que A hacía la maniobra y discrepan sobre quién tenía prioridad. El relato no aclara "
+        "si los vehículos llegaron a colisionar directamente."
+    ),
+}
 
 
 def build_demo_router(
@@ -53,6 +66,8 @@ def build_demo_router(
                     raw_object = cast(dict[str, object], raw)
                     safe = _extract_safe_fields(raw_object)
                     case = DemoCase.model_validate(safe)
+                    if text := DEMO_TEXT_OVERRIDES.get(case.case_id):
+                        case = case.model_copy(update={"text": text})
                     available[case.case_id] = case
         except (OSError, ValueError, TypeError) as error:
             raise HTTPException(

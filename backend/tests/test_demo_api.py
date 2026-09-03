@@ -11,7 +11,7 @@ def test_default_demo_catalogue_covers_the_five_demonstration_outcomes() -> None
     assert DEFAULT_DEMO_CASE_IDS == (
         "consulta-es-01-alcoholemia",
         "consulta-synth-21-atestado-ascide-cierra",
-        "siniestro-synth-47-adv-sin-datos",
+        "siniestro-synth-12-b9-marcha-atras",
         "accident-02-pile-up-es",
         "accident-04-lane-change-es",
     )
@@ -81,6 +81,29 @@ def test_demo_catalogue_is_curated_and_ordered(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert [case["case_id"] for case in response.json()] == ["tres", "uno"]
+
+
+def test_demo_catalogue_uses_a_described_claim_with_one_decisive_missing_fact(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "development.jsonl"
+    source.write_text(
+        '{"case_id":"siniestro-synth-12-b9-marcha-atras","text":"texto original",'
+        '"language":"es","expected_intent":"claim"}\n',
+        encoding="utf-8",
+    )
+    app = FastAPI()
+    app.include_router(build_demo_router(source, case_ids=("siniestro-synth-12-b9-marcha-atras",)))
+
+    response = TestClient(app).get("/api/v1/demo/cases")
+
+    assert response.status_code == 200
+    assert response.json()[0]["text"] == (
+        "En una autovía, el vehículo A inició un cambio de carril hacia la izquierda mientras "
+        "el vehículo B circulaba correctamente por ese carril. Ambos conductores coinciden en "
+        "que A hacía la maniobra y discrepan sobre quién tenía prioridad. El relato no aclara "
+        "si los vehículos llegaron a colisionar directamente."
+    )
 
 
 def test_demo_catalogue_reports_unavailable_when_no_curated_case_exists(tmp_path: Path) -> None:
