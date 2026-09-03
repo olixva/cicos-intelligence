@@ -55,6 +55,9 @@ include = ["domain*", "application*", "infrastructure*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# `scripts/` no es un paquete instalable; los tests de transcripción importan
+# `transcribe_matrix_textlayer` directamente desde ahí.
+pythonpath = ["scripts"]
 
 [tool.ruff]
 target-version = "py314"

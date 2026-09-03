@@ -447,10 +447,7 @@ def _write_summary(
             n_str = str(summary["n"])
             min_str = str(summary["min"])
             max_str = str(summary["max"])
-            lines.append(
-                f"  - {key}: mean={mean_str} "
-                f"(n={n_str}, min={min_str}, max={max_str})"
-            )
+            lines.append(f"  - {key}: mean={mean_str} (n={n_str}, min={min_str}, max={max_str})")
     lines.append("")
     cross = metrics.get("cross_mode") or {}
     cm = cross.get("router_confusion_matrix") or {}

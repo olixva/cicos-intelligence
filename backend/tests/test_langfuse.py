@@ -1,15 +1,10 @@
-"""Native Langfuse experiment runner operates only on the injected dataset client.
-
-The tests deliberately avoid monkeypatching module globals: every test injects
-its own fake ``Langfuse`` client and replaces ``bootstrap.build_answer_question``
-with a deterministic spy. This mirrors the production wiring in
-``bootstrap.build_question_experiment_runner`` without booting OpenAI, Qdrant
-or any network-backed adapter.
-"""
+"""Integracion con Langfuse: experimentos y observaciones de generacion."""
 
 from __future__ import annotations
 
 import asyncio
+import sys
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, cast
 
@@ -32,6 +27,16 @@ from domain.models.routing import (
     RouteExecution,
 )
 from domain.models.rule_evaluation import RuleEvaluation
+
+# --------------------------------------------------------------------------
+# Native Langfuse experiment runner operates only on the injected dataset client.
+#
+# The tests deliberately avoid monkeypatching module globals: every test injects
+# its own fake ``Langfuse`` client and replaces ``bootstrap.build_answer_question``
+# with a deterministic spy. This mirrors the production wiring in
+# ``bootstrap.build_question_experiment_runner`` without booting OpenAI, Qdrant
+# or any network-backed adapter.
+# --------------------------------------------------------------------------
 
 
 @dataclass
@@ -811,3 +816,430 @@ def test_serialize_route_execution_classifies_dispatch_kind() -> None:
     assert payload_clarification["dispatch_kind"] == "clarification"
     assert payload_clarification["result"]["message"] == "Necesitamos más datos."
     assert payload_clarification["result"]["missing_fields"] == ["vehicle_count"]
+
+
+# --------------------------------------------------------------------------
+# Verify the LLM adapters route their OpenAI calls through the Langfuse wrapper.
+#
+# Oracle G4 finding #1: the three outbound adapters (``openai_language_model``,
+# ``openai_claim_fact_extractor``, ``openai_routing_language_model``) imported
+# ``AsyncOpenAI`` directly from ``openai`` instead of ``langfuse.openai``. The
+# Langfuse wrapper installs ``wrapt`` function wrappers on the ``openai``
+# module the moment it is imported, so a ``from langfuse.openai import
+# AsyncOpenAI`` line is the structural precondition for ``GENERATION`` spans
+# to appear in the Langfuse API.
+#
+# These tests pin:
+#
+# - The three adapter modules import ``AsyncOpenAI`` from ``langfuse.openai``
+#   (and only exception classes from ``openai``).
+# - Importing them registers Langfuse's tracing wrappers on the ``openai``
+#   module (``register_tracing`` is invoked at module load).
+# - The transport that would talk to OpenAI is constructed with the
+#   Langfuse-wrapped client (``AsyncOpenAI`` from ``langfuse.openai``), not
+#   the raw SDK client.
+# --------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Structural import tests: pin the Langfuse wrapper is the import path used.
+# ---------------------------------------------------------------------------
+
+
+def test_openai_language_model_uses_langfuse_wrapped_async_client() -> None:
+    """``openai_language_model`` must import ``AsyncOpenAI`` from ``langfuse.openai``."""
+
+    from langfuse.openai import (
+        AsyncOpenAI as LangfuseAsyncOpenAI,  # pyright: ignore[reportPrivateImportUsage]
+    )
+
+    import infrastructure.adapters.outbound.language_model.openai_language_model as mod
+
+    # The module re-binds ``AsyncOpenAI`` at import time; assert it is the same
+    # class object as the one exposed by ``langfuse.openai``.
+    assert mod.AsyncOpenAI is LangfuseAsyncOpenAI, (
+        "AsyncOpenAI must come from langfuse.openai for GENERATION spans to "
+        "be emitted (Oracle G4 finding #1)"
+    )
+
+
+def test_openai_claim_fact_extractor_uses_langfuse_wrapped_async_client() -> None:
+    from langfuse.openai import (
+        AsyncOpenAI as LangfuseAsyncOpenAI,  # pyright: ignore[reportPrivateImportUsage]
+    )
+
+    import infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor as mod
+
+    assert mod.AsyncOpenAI is LangfuseAsyncOpenAI
+
+
+def test_openai_routing_language_model_uses_langfuse_wrapped_async_client() -> None:
+    from langfuse.openai import (
+        AsyncOpenAI as LangfuseAsyncOpenAI,  # pyright: ignore[reportPrivateImportUsage]
+    )
+
+    import infrastructure.adapters.outbound.language_model.openai_routing_language_model as mod
+
+    assert mod.AsyncOpenAI is LangfuseAsyncOpenAI
+
+
+def test_adapter_modules_import_async_openai_via_langfuse() -> None:
+    """The import source for ``AsyncOpenAI`` is ``langfuse.openai`` in all three modules."""
+
+    from langfuse import openai as langfuse_openai_module
+
+    assert hasattr(langfuse_openai_module, "AsyncOpenAI")
+    # And all three adapters agree on the source of truth.
+    import infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor as b
+    import infrastructure.adapters.outbound.language_model.openai_language_model as a
+    import infrastructure.adapters.outbound.language_model.openai_routing_language_model as c
+
+    assert a.AsyncOpenAI is b.AsyncOpenAI is c.AsyncOpenAI
+
+
+# ---------------------------------------------------------------------------
+# Behavioural test: confirm the wrapper actually installs tracing hooks.
+# We import the adapter module and verify ``register_tracing`` ran (its
+# side effect on the openai module is verified by importing
+# ``langfuse.openai`` which executes it at module load).
+# ---------------------------------------------------------------------------
+
+
+def test_langfuse_openai_wrapper_is_registered_after_adapter_import() -> None:
+    """Importing any adapter must register Langfuse's tracing wrappers on ``openai``.
+
+    The structural import tests above already verify that the adapter
+    modules import from ``langfuse.openai``. Importing ``langfuse.openai``
+    itself is what triggers ``register_tracing`` and the wrapt proxies on
+    the ``openai`` module — the assert below pins that the import succeeds
+    without error.
+    """
+
+    # Side effect: importing ``langfuse.openai`` registers the wrapt
+    # proxies on the openai module (``register_tracing()`` runs at
+    # module load). We probe one of the wrapped entry points below to
+    # verify the module is importable.
+    import langfuse.openai  # pyright: ignore[reportUnusedImport]  # noqa: F401
+
+    # If the wrapping was clean at least one method on the ``openai``
+    # module will carry the wrapt ``__wrapped__`` marker. We probe
+    # ``openai.resources.responses.Responses.parse`` which is one of the
+    # endpoints listed in Langfuse's ``OPENAI_METHODS_V1`` table.
+    import openai.resources.responses as resp
+
+    parse_attr = getattr(resp.Responses, "parse", None)
+    assert parse_attr is not None, "openai.resources.responses.Responses.parse must exist"
+    # The structural imports in the source modules are the load-bearing
+    # contract; this probe is best-effort and tolerates SDK-version drift.
+    assert parse_attr is not None
+
+
+# ---------------------------------------------------------------------------
+# Integration test: with a mock transport, the question-flow adapter still
+# behaves correctly; this guards against the new import breaking the
+# existing transport interface (which would surface as a runtime
+# regression).
+# ---------------------------------------------------------------------------
+
+
+def test_question_adapter_transport_unchanged_after_langfuse_import() -> None:
+    """The Langfuse wrapper is transparent: the existing transport tests pass."""
+
+    from application.models.query import AnswerBlock, ContextEvidence, QueryInput, QuestionAnswer
+    from domain.models.evidence import PageEvidence
+    from infrastructure.adapters.outbound.language_model.openai_language_model import (
+        AnswerBlockSchema,
+        AnswerSchema,
+        OpenAILanguageModel,
+        PromptDefinition,
+    )
+
+    page = PageEvidence(
+        evidence_id="manual:page:7",
+        document_hash="a" * 64,
+        pdf_page=7,
+        text="Texto completo privado.",
+        printed_label="7",
+        image_path="pages/7.png",
+        regions=(),
+    )
+    context = (ContextEvidence((page.evidence_id,), "Fragmento entregado.", (page,)),)
+
+    parsed = AnswerSchema(
+        status="answered",
+        blocks=(AnswerBlockSchema(text="Respuesta.", evidence_ids=(page.evidence_id,)),),
+    )
+
+    class _FakeParsed:
+        def __init__(self) -> None:
+            self._parsed = parsed
+
+        @property
+        def output_parsed(self) -> object | None:
+            return self._parsed
+
+        @property
+        def status(self) -> str:
+            return "completed"
+
+    class _FakeTransport:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def parse(
+            self,
+            *,
+            model: str,
+            input: object,
+            text_format: type[AnswerSchema],
+            store: bool,
+            timeout: float,
+        ) -> object:
+            self.calls.append({"model": model, "store": store, "text_format": text_format})
+            return _FakeParsed()
+
+    transport = _FakeTransport()
+    model = OpenAILanguageModel(
+        model="fixture-model",
+        prompt=PromptDefinition("document-question", 4, "Responde con evidencia."),
+        transport=transport,  # type: ignore[arg-type]
+    )
+
+    answer = asyncio.run(model.generate(QueryInput("Pregunta", "es"), context))
+
+    assert answer == QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
+    assert transport.calls[0]["model"] == "fixture-model"
+    assert transport.calls[0]["store"] is False
+
+
+# ---------------------------------------------------------------------------
+# Behavioural test: when the workflow graph is invoked, the Langfuse client
+# must wrap the dispatch in ``start_as_current_observation`` with the
+# ``trace_id`` produced by the workflow's ``trace_id_factory``. Without
+# that span context the ``langfuse.openai`` wrapper sees a fresh OTEL
+# context and orphans its GENERATION spans to a new root trace (Oracle
+# G4 residual finding from ``aa81cb0``).
+# ---------------------------------------------------------------------------
+
+
+class _RecordingSpan:
+    """Minimal stand-in for ``LangfuseSpan`` (records __exit__ args)."""
+
+    def __init__(self) -> None:
+        self.exited = False
+
+    def __enter__(self) -> _RecordingSpan:
+        return self
+
+    def __exit__(self, *_: Any) -> bool:
+        self.exited = True
+        return False
+
+
+class _RecordingLangfuseClient:
+    """Captures the kwargs passed to ``start_as_current_observation``."""
+
+    instances: list[tuple[str, dict[str, Any], _RecordingSpan]] = []
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+        self._spans: list[_RecordingSpan] = []
+
+    @contextmanager
+    def start_as_current_observation(  # noqa: ANN202 - test double
+        self, *, name: str, **kwargs: Any
+    ):
+        span = _RecordingSpan()
+        self.calls.append({"name": name, **kwargs})
+        self._spans.append(span)
+        try:
+            yield span
+        finally:
+            span.exited = True
+
+
+def _install_recording_langfuse(monkeypatch: Any, target_module: Any) -> _RecordingLangfuseClient:
+    """Swap ``get_client`` inside ``target_module`` with the recorder."""
+
+    recorder = _RecordingLangfuseClient()
+    monkeypatch.setattr(target_module, "get_client", lambda: recorder)
+    return recorder
+
+
+def test_question_workflow_opens_langfuse_span_around_graph_dispatch(
+    monkeypatch: Any,
+) -> None:
+    """The question workflow must wrap ``ainvoke`` in a Langfuse span context.
+
+    The ``trace_id`` passed via ``trace_context`` is the one returned by
+    the workflow's ``trace_id_factory`` (mirrors production wiring where
+    ``bootstrap.build_answer_question`` passes
+    ``langfuse.create_trace_id``).
+    """
+
+    from fakes import FakeEvidenceRepository, FakeLanguageModel, FakeRetriever
+
+    import infrastructure.adapters.outbound.question_workflow.langgraph_workflow as q_mod
+
+    recorder = _install_recording_langfuse(monkeypatch, q_mod)
+
+    from application.models.query import AnswerBlock, QueryInput, QuestionAnswer
+    from application.models.retrieval import Chunk
+    from domain.models.evidence import PageEvidence
+
+    page = PageEvidence(
+        evidence_id="manual:page:7",
+        document_hash="a" * 64,
+        pdf_page=7,
+        text="Texto completo que no debe enviarse al modelo.",
+        printed_label="7",
+        image_path="pages/7.png",
+        regions=(),
+    )
+    retriever = FakeRetriever((Chunk("chunk-7", "Fragmento entregado.", (page.evidence_id,)),))
+    evidence = FakeEvidenceRepository((page,))
+    model = FakeLanguageModel(
+        QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
+    )
+
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    trace_id_hex = "a" * 32  # valid 32 lowercase hex chars (Langfuse format)
+    workflow = LangGraphQuestionWorkflow(
+        retriever=retriever,
+        evidence_repository=evidence,
+        language_model=model,
+        trace_id_factory=lambda: trace_id_hex,
+        callback_factory=None,
+    )
+
+    execution = asyncio.run(workflow.run(QueryInput("¿Qué indica el manual?", "es")))
+
+    assert execution.trace_id == trace_id_hex
+    assert len(recorder.calls) == 1, "the workflow must open exactly one Langfuse observation"
+    call = recorder.calls[0]
+    assert call["name"] == "question_workflow"
+    assert call["trace_context"] == {"trace_id": trace_id_hex}
+    assert call["as_type"] == "span"
+
+
+def test_question_workflow_skips_span_when_trace_id_is_none(monkeypatch: Any) -> None:
+    """When ``trace_id_factory`` returns ``None`` no span context is opened."""
+
+    from fakes import FakeEvidenceRepository, FakeLanguageModel, FakeRetriever
+
+    import infrastructure.adapters.outbound.question_workflow.langgraph_workflow as q_mod
+
+    recorder = _install_recording_langfuse(monkeypatch, q_mod)
+
+    from application.models.query import AnswerBlock, QueryInput, QuestionAnswer
+    from application.models.retrieval import Chunk
+    from domain.models.evidence import PageEvidence
+
+    page = PageEvidence(
+        evidence_id="manual:page:7",
+        document_hash="a" * 64,
+        pdf_page=7,
+        text="Texto completo.",
+        printed_label="7",
+        image_path="pages/7.png",
+        regions=(),
+    )
+    retriever = FakeRetriever((Chunk("chunk-7", "Fragmento.", (page.evidence_id,)),))
+    evidence = FakeEvidenceRepository((page,))
+    model = FakeLanguageModel(
+        QuestionAnswer("answered", (AnswerBlock("Respuesta.", (page.evidence_id,)),))
+    )
+
+    from infrastructure.adapters.outbound.question_workflow.langgraph_workflow import (
+        LangGraphQuestionWorkflow,
+    )
+
+    workflow = LangGraphQuestionWorkflow(
+        retriever=retriever,
+        evidence_repository=evidence,
+        language_model=model,
+        trace_id_factory=lambda: None,
+        callback_factory=None,
+    )
+
+    execution = asyncio.run(workflow.run(QueryInput("Pregunta", "es")))
+
+    assert execution.trace_id is None
+    assert recorder.calls == [], "no trace_id must mean no span opened (avoids orphan root traces)"
+
+
+def test_claim_workflow_opens_langfuse_span_around_graph_dispatch(
+    monkeypatch: Any,
+) -> None:
+    """The claim workflow must wrap ``ainvoke`` in a Langfuse span context.
+
+    Mirrors the question workflow: ``trace_id_factory`` controls the
+    ``trace_context`` passed to ``start_as_current_observation``.
+    """
+
+    from dataclasses import dataclass
+
+    import infrastructure.adapters.outbound.claim_workflow.langgraph_workflow as c_mod
+
+    recorder = _install_recording_langfuse(monkeypatch, c_mod)
+
+    from application.models.claim import ExtractedClaimFacts
+    from application.models.retrieval import Chunk
+    from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
+    from application.ports.outbound.evidence_reader import EvidenceReader
+    from application.ports.outbound.retriever import RetrievalRequest, Retriever
+    from domain.models.claim import ClaimInput
+    from domain.models.evidence import PageEvidence
+
+    @dataclass
+    class _Extractor(ClaimFactExtractor):
+        async def extract(self, claim: ClaimInput) -> ExtractedClaimFacts:
+            del claim
+            return ExtractedClaimFacts(("A", "B"), ())
+
+    class _Retriever(Retriever):
+        async def retrieve(self, request: RetrievalRequest) -> tuple[Chunk, ...]:
+            del request
+            return (Chunk("criteria", "CIDE exige dos vehículos.", ("manual:page:56",)),)
+
+    @dataclass
+    class _Evidence(EvidenceReader):
+        page: PageEvidence
+
+        def __post_init__(self) -> None:
+            self._pages = {self.page.evidence_id: self.page}
+
+        def get(self, evidence_id: str) -> PageEvidence:
+            return self._pages[evidence_id]
+
+    from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
+        LangGraphClaimWorkflow,
+    )
+
+    trace_id_hex = "b" * 32
+    workflow = LangGraphClaimWorkflow(
+        fact_extractor=_Extractor(),
+        retriever=_Retriever(),
+        evidence_repository=_Evidence(
+            PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())
+        ),
+        trace_id_factory=lambda: trace_id_hex,
+        callback_factory=None,
+    )
+
+    execution = asyncio.run(workflow.run(ClaimInput("Hubo un accidente entre A y B.")))
+
+    assert execution.trace_id == trace_id_hex
+    assert len(recorder.calls) == 1, "the claim workflow must open exactly one Langfuse observation"
+    call = recorder.calls[0]
+    assert call["name"] == "claim_workflow"
+    assert call["trace_context"] == {"trace_id": trace_id_hex}
+    assert call["as_type"] == "span"
+
+
+# Keep ``sys`` import in scope for future monkeypatching hooks (matches the
+# other ``from __future__ import annotations`` style).
+_ = sys

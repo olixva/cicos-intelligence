@@ -57,6 +57,5 @@ def looks_like_claim_text(text: str) -> bool:
     contexto claramente de colisión entre vehículos y no deben
     interpretarse como pregunta meteorológica o administrativa."""
     return (
-        sum(1 for pattern in _CLAIM_TEXT_PATTERNS if pattern.search(text))
-        >= _CLAIM_TEXT_THRESHOLD
+        sum(1 for pattern in _CLAIM_TEXT_PATTERNS if pattern.search(text)) >= _CLAIM_TEXT_THRESHOLD
     )
