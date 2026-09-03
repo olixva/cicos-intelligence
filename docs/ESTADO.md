@@ -120,6 +120,40 @@ Compose `allianz-rag` (Langfuse, langfuse-worker, ClickHouse, PostgreSQL, Redis,
   - **5 variantes ES** de releases anteriores (`accident-02-pile-up-es`, `accident-04-lane-change-es`, `consulta-es-01-alcoholemia`, `consulta-es-02-mas-de-dos-vehiculos`, `fuera-de-alcance-es-01-baremo-lesiones`) — preservadas tras la consolidación de los dos releases previos.
   - **100 casos sintéticos** en español (50 question + 50 claim, balance exacto 50/50).
   Se aplicaron **5 bounded fixes de schema** durante el merge (3 deduplicaciones de `evidence_requirements.all_of` / `provenance.source_ids`, 1 ASCII-fold de `alternative_id` con `ó`). La validación posterior pasa con `errors: []`, `item_count: 110`, `evidence_pool_size: 111`. Las releases antiguas (`v1-interview-2026-09-02`, `v2-es-2026-09-02`, `synthetic-expansion-2026-09-02`) están retiradas del árbol. Cada caso tiene el esquema completo (`input`/`expected_output`/`metadata`), con `applicability`/`convention`/`claim_decision` coherentes, requisitos verificables, alternativas aceptables, prohibiciones específicas y paquetes de evidencia AND/OR citando páginas reales del manual. **Revisión por IA** (no humana): tres pasos (`claude-authoring`, `claude-adversarial-review`, `claude-adjudication`). **Limitación declarada**: ningún caso tiene revisión de un experto humano del dominio; el set es **referencia sintética auditada contra el manual**, no baremo pericial. Sigue pendiente congelar una reserva (holdout) cuando se decida abrir evaluación final (de momento 0 en holdout, todo en development por criterio operativo de esta noche).
+
+- **Bucle de evaluación — primera corrida completa** (`commit fe9aaed`, baseline runner + smoke en `data/evaluation/results/2026-09-03-smoke/`): 5 casos × 3 modos en 31.5s, 0 errores, contrato del runner validado.
+
+- **Adapter fixes del adapter OpenAI (estabilidad del runner)** — dos bugs detectados en la primera corrida completa (commit `33bec4e` y `3b452ee`): (a) `AnswerSchema.to_application()` no deduplicaba `evidence_ids` repetidos dentro de un mismo bloque; (b) `ClaimExtractionSchema.to_application()` no descartaba facts/questions con `name`/`source_text`/`id`/`prompt`/`reason` whitespace-only (Pydantic `min_length=1` pasa pero el dataclass exige `.strip()` no vacío). Ambos TDD: tests rojos → fix → gates verdes. Erradican los 11/330 HTTP 500 que aparecían en la primera corrida.
+
+- **Re-corrida post-fixes del adapter** (`commit fe9aaed`, `data/evaluation/results/2026-09-03-baseline-pre-ruleset-fix/`, 1379.9s, 329/330 OK, gpt-5.6-luna). Métricas crudas:
+
+| Métrica | Valor | n |
+|---|---|---|
+| question answer_status_accuracy | 0.585 | 110 |
+| question evidence_validity | 0.370 | 110 |
+| claim applicability_accuracy | 0.829 | 39 |
+| **claim convention_accuracy** | **0.120** | 39 |
+| **claim claim_decision_accuracy** | **0.314** | 39 |
+| claim evidence_validity | 0.526 | 39 |
+| auto router_match | **0.964** | 110 |
+| abstention correct_rate | 0.613 | — |
+| unjustified_resolution_rate | 0.000 | — |
+| router_confusion | 55/51/2/2 (claim→claim, q→q, claim→q, q→claim) | 110 |
+
+- **Oracle Gate 1 sobre los números crudos** (`ora-2`): la accuracy cruda de convention/decision es engañosa. Cuando el ruleset dispara, el resultado suele ser correcto; el problema es que **no dispara** en ~19 de 25 mismatches porque modeló los guard negativos como `is_false` estricto (la nota de la regla decía "dispara salvo que se contradiga explícitamente", el motor lo modelaba como "dispara sólo si se constata el false"). El framing de "el workflow deja campos en None en lugar de undetermined explícito" se rechaza parcialmente: el workflow SÍ emite `undetermined`, el ruleset no dispara.
+
+- **Fix del ruleset** (`commit 03922f8`): nuevo operador `is_false_or_absent` en `backend/src/domain/rules/ruleset.py` (helper `_optional_fields` que excluye estos campos del chequeo de hechos faltantes) + re-authoring de 2 reglas en `data/rules/ruleset.v1.json` (líneas 174 `exit_disputed_as_incorporation` en `ascide-b6-exit-from-parking` y 307 `door_opening_specified` en `cide-door-opening`). `is_false` estricto NO cambia (regression test incluido). 4 tests rojos primero, 506 tests verdes en total. Re-attestation pendiente — el `reviewer_id` se conserva, pero el contenido requiere sign-off explícito.
+
+- **Restauración de borrado accidental** (`commit 1a56a8d`): el commit `03922f8` arrastró 20 archivos en `docs/entrega/deck/*` que no eran míos (lista explícita en el plan como "no borrar carpetas de otras sesiones sin incorporar su contenido"). Restaurados desde HEAD~1.
+
+- **Re-corrida post-ruleset-fix NO EJECUTADA**: el usuario paró el run para no gastar más tokens. El fix está en `main` con tests verdes, pero las métricas reales que confirmen la subida esperada (Oracle: convention 0.120 → 0.50-0.65, claim_decision 0.314 → 0.55-0.70) no se han medido contra `development.jsonl`. Queda pendiente para cuando se autorice gasto LLM.
+
+- **Pendientes del plan original**, deferred por presupuesto de tokens**:
+  - Phase 3b: authoring de `applies_when` para reglas sin predicado (`ascide-b11-roundabout`, `convention-scope`).
+  - Phase 3 revisión humana de etiquetas golden: 6 casos con conflicts matrix/applicability-vs-golden (`accident-03`, `synth-03`, `synth-20`, `synth-23`, `synth-31`, `synth-32`) — no tocar código, crear nota en `docs/superpowers/plans/2026-09-03-golden-label-review.md`.
+  - Phase 3 endurecer extractor (Bug D de Oracle): mismo input produce `one_vehicle_parked='true'` (claim) y `one_vehicle_parked='A'` (auto).
+  - Phase 4: jueces LLM (`faithfulness`, cumplimiento de requisitos) + calibración obligatoria contra errores conocidos.
+  - Phase 5 (auditoría): `ascide-b11-roundabout` split en 2 reglas mutuamente excluyentes, stub de reranker, stub de visión (`profiles.py` tiene `reranker: Literal["none", "openai"]` y `vision: Literal["none", "openai-responses"]` declarados pero ningún adaptador real).
 - **Frontend**: React 19 + Vite, chat con tool calls, visor PDF, sugerencias cargadas desde la API de demo, 92 tests unitarios, build limpio. El botón superior alterna entre modo administrador y volver al chat.
 - **Historial real**: `lib/thread-store.ts` persiste hilos versionados en localStorage con tolerancia a datos corruptos, cuota y sandbox.
 - **Duraciones del frontend**: verificado contra el código — **no fabrica duraciones**. `dispatchToolCallsFromEnvelope` en `routes/_index.tsx` omite deliberadamente `durationMs` cuando el backend no emite tiempos por etapa, y `tool-call-card.tsx` muestra "OK" en su lugar. La entrada anterior de este documento sobre `durationMs: 0` estaba obsoleta; el código ya lo corrigió antes de este corte.
