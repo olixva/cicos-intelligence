@@ -11,6 +11,7 @@ export function chapterThree(pres, ctx) {
   });
   hexagonal(pres, ctx);
   intercambiable(pres, ctx);
+  modelos(pres, ctx);
   recorridos(pres, ctx);
   interfaz(pres, ctx);
   ingesta(pres, ctx);
@@ -150,6 +151,56 @@ function intercambiable(pres, ctx) {
     'Si preguntan «¿esto no es sobreingeniería para cinco días?»: la respuesta honesta es que',
     'costó tiempo el primer día y lo devolvió el cuarto, cuando hubo que meter la tabla de',
     'culpabilidad en el flujo sin romper nada de lo anterior.',
+  ].join('\n'));
+}
+
+/* ---------------------------------------------------------------- modelos */
+
+function modelos(pres, ctx) {
+  const s = page(pres, ctx, { eyebrow: '03 · Modelos' });
+  title(s, 'El sistema usa un modelo para cuatro cosas distintas, y las trata como cuatro decisiones.');
+  deck(s, '«Elegir el modelo» no es una decisión, son cuatro: cada uso tiene su exigencia, su coste y su frecuencia — y cada uno vive detrás de su propio puerto.');
+
+  const uses = [
+    ['RESPONDER', 'Generación documental', 'OPENAI_ANSWER_MODEL',
+      'Redacta sólo sobre el contexto recuperado y con una cita por bloque. Es la llamada que más exige en calidad de escritura y respeto a la fuente.', C.navy],
+    ['EXTRAER', 'Hechos del siniestro', 'OPENAI_CLAIM_EXTRACTION_MODEL',
+      'Salida estructurada con esquema cerrado (extra="forbid", strict). No redacta la conclusión: rellena un vocabulario de hechos con nombre.', C.blue],
+    ['CLASIFICAR', 'Intención del usuario', 'ALLIANZ_ROUTER_MODEL',
+      'Tres etiquetas y nada más. Es la llamada más frecuente y la más barata: candidata natural a un modelo pequeño, o local.', C.teal],
+    ['INCRUSTAR', 'El manual, una sola vez', 'text-embedding-3-small\n1536 dimensiones · coseno',
+      'Fijado en el perfil del índice y grabado en su firma de 13 campos: cambiarlo obliga a reindexar, y el sistema no deja hacerlo por accidente.', C.amber],
+  ];
+
+  const cw = 2.828, y0 = 2.5, ch = 3.3;
+  uses.forEach(([tag, name, cfg, desc, color], i) => {
+    const x = M + i * (cw + 0.26);
+    card(s, { x, y: y0, w: cw, h: ch });
+    tb(s, tag, { x: x + 0.26, y: y0 + 0.28, w: cw - 0.52, h: 0.24, fontFace: F.head, fontSize: 10.5, bold: true, charSpacing: 1.2, color });
+    tb(s, name, { x: x + 0.26, y: y0 + 0.58, w: cw - 0.52, h: 0.56, fontFace: F.head, fontSize: 15, bold: true, color: C.ink, lineSpacingMultiple: 1.0 });
+    rrect(s, { x: x + 0.26, y: y0 + 1.2, w: cw - 0.52, h: 0.6, rectRadius: 0.08, fill: { color: C.ice } });
+    tb(s, cfg, { x: x + 0.36, y: y0 + 1.3, w: cw - 0.72, h: 0.44, fontFace: F.mono, fontSize: 8.5, color: C.navy, lineSpacingMultiple: 1.1 });
+    tb(s, desc, { x: x + 0.26, y: y0 + 1.94, w: cw - 0.52, h: 1.2, fontSize: 11.5, color: C.muted, lineSpacingMultiple: 1.06 });
+  });
+
+  band(s, 'Y los prompts no se editan: se versionan. La configuración los fija por nombre y versión —document-question v1, auto-router v1—, así que cambiar un prompt es publicar una versión trazable, no una edición silenciosa.', { tone: 'navy' });
+
+  notes(s, [
+    'MODELOS (55 s). El enunciado evalúa explícitamente «la capacidad de seleccionar y usar',
+    'modelos de lenguaje apropiados». Ésta es esa lámina.',
+    '',
+    '· El argumento: «¿qué modelo usáis?» es la pregunta equivocada. Son cuatro usos con',
+    '  exigencias distintas y cada uno está detrás de su propio puerto, así que pueden venir de',
+    '  proveedores distintos sin tocar el dominio.',
+    '· El router es el ejemplo más claro: es la llamada más frecuente del sistema y la más',
+    '  trivial —tres etiquetas—. Ahí un modelo pequeño o local es la decisión correcta en cuanto',
+    '  haya volumen, y el cambio es de configuración.',
+    '· El embedding es el único que NO se puede cambiar a la ligera: está en la firma del índice.',
+    '  Cambiarlo sin reindexar produciría respuestas peores sin que nadie supiera por qué, y por',
+    '  eso el alias se niega a moverse a un índice con firma incompatible.',
+    '',
+    'La banda inferior es el punto de MLOps: los prompts viven versionados en Langfuse y la',
+    'configuración los fija por nombre y versión. Una ejecución dice con qué prompt corrió.',
   ].join('\n'));
 }
 
