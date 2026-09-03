@@ -21,12 +21,17 @@ describe('AssistantMessage aria-live (Finding G3 #2 — WCAG 4.1.3)', () => {
     expect(liveRegion?.textContent).toContain('Texto en streaming');
   });
 
-  it('el span sr-only de TextGenerateEffect está aria-hidden (evita duplicación)', () => {
+  it('el texto streameado se renderiza visible al terminar (done), sin duplicación', () => {
+    // Con el cambio a MarkdownResponse, el bubble 'done' ya no usa
+    // TextGenerateEffect (que tenía un span sr-only aria-hidden para
+    // evitar duplicación con el texto animado). MarkdownResponse pinta
+    // el texto final directamente, así que basta con verificar que el
+    // contenido es visible y accesible (texto plano en el árbol).
     const { container } = render(
       <AssistantMessage message={{ ...streamingMessage, status: 'done' }} />,
     );
-    const srOnly = container.querySelector('span.sr-only');
-    expect(srOnly).not.toBeNull();
-    expect(srOnly).toHaveAttribute('aria-hidden', 'true');
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    expect(liveRegion?.textContent).toContain('Texto en streaming');
   });
 });

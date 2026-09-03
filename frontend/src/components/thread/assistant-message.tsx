@@ -9,6 +9,7 @@ import { ToolCallCard } from '@/components/tool-call/tool-call-card';
 import { CitationChip } from '@/components/citation/citation-chip';
 import { cn } from '@/lib/cn';
 import { ClarificationPanel } from '@/components/thread/clarification-panel';
+import { MarkdownResponse } from '@/components/thread/markdown-response';
 import type {
   CitationRef,
   MessageAssistant,
@@ -118,8 +119,10 @@ export function AssistantMessage({
             </p>
           ) : message.streamedText.length === 0 && isStreaming ? (
             <p className="text-muted-foreground">Generando respuesta…</p>
+          ) : isStreaming ? (
+            <TextGenerateEffect text={message.streamedText} streaming />
           ) : (
-            <TextGenerateEffect text={message.streamedText} streaming={isStreaming} />
+            <MarkdownResponse text={message.streamedText} />
           )}
         </div>
 
