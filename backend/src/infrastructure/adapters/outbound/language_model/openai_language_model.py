@@ -40,10 +40,20 @@ class AnswerSchema(_StrictSchema):
     blocks: tuple[AnswerBlockSchema, ...]
 
     def to_application(self) -> QuestionAnswer:
-        return QuestionAnswer(
-            self.status,
-            tuple(AnswerBlock(block.text, block.evidence_ids) for block in self.blocks),
-        )
+        blocks: list[AnswerBlock] = []
+        for block in self.blocks:
+            # El proveedor a veces repite el mismo evidence_id dentro de un
+            # bloque (p. ej. cuando el JSON estructurado cita el mismo
+            # fragmento varias veces). Deduplicamos preservando orden antes
+            # de invocar ``AnswerBlock.__post_init__`` que rechaza duplicados
+            # como invariante de dominio. La unicidad sigue siendo un
+            # requisito del modelo de aplicación; el adaptador la relaja sólo
+            # en el momento de cruzar la frontera con el proveedor.
+            seen: dict[str, None] = {}
+            for evidence_id in block.evidence_ids:
+                seen.setdefault(evidence_id, None)
+            blocks.append(AnswerBlock(block.text, tuple(seen)))
+        return QuestionAnswer(self.status, tuple(blocks))
 
 
 @dataclass(frozen=True, slots=True)

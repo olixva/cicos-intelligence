@@ -57,9 +57,7 @@ def decision_accuracy(*, predicted: str, expected: str | None) -> float | None:
     return 1.0 if predicted == expected else 0.0
 
 
-def macro_f1(
-    tp: Mapping[str, int], fp: Mapping[str, int], fn: Mapping[str, int]
-) -> float | None:
+def macro_f1(tp: Mapping[str, int], fp: Mapping[str, int], fn: Mapping[str, int]) -> float | None:
     """Unweighted mean of per-class F1 over the union of all observed class labels."""
 
     classes = set(tp) | set(fp) | set(fn)
@@ -104,9 +102,7 @@ def invented_facts_rate(
         return None
     allowed = {_normalize_fact(fact) for fact in expected_facts}
     allowed.update(_normalize_fact(fact) for fact in forbidden_facts)
-    inventions = sum(
-        1 for fact in predicted_facts if _normalize_fact(fact) not in allowed
-    )
+    inventions = sum(1 for fact in predicted_facts if _normalize_fact(fact) not in allowed)
     return inventions / len(predicted_facts)
 
 

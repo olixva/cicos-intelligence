@@ -150,6 +150,33 @@ def test_provider_timeout_remains_a_technical_error() -> None:
     asyncio.run(scenario())
 
 
+def test_answer_schema_to_application_dedupes_repeated_evidence_ids() -> None:
+    """El proveedor a veces repite evidence_ids en un mismo bloque (p. ej. cuando
+    cita el mismo fragmento varias veces en el JSON estructurado). El adaptador
+    debe deduplicarlos preservando orden en lugar de propagar un ``ValueError``
+    que tira la request con 500."""
+
+    parsed = AnswerSchema(
+        status="answered",
+        blocks=(
+            {
+                "text": "Cita duplicada por el modelo.",
+                "evidence_ids": (
+                    "manual:page:7",
+                    "manual:page:7",
+                    "manual:page:9",
+                ),
+            },
+        ),
+    )
+
+    application = parsed.to_application()
+
+    assert application.status == "answered"
+    assert application.blocks[0].evidence_ids == ("manual:page:7", "manual:page:9")
+    assert len(application.blocks[0].evidence_ids) == len(set(application.blocks[0].evidence_ids))
+
+
 def test_application_validation_failure_is_wrapped_as_model_output_error() -> None:
     """Schema-valid whitespace must not escape the provider boundary as a raw ValueError."""
     from infrastructure.adapters.outbound.language_model.openai_language_model import (

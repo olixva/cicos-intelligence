@@ -56,8 +56,7 @@ class ClaimAnalysis:
             # questions the manual can never use once vehicle count, chain
             # collision or an identified third vehicle excluded it.
             raise InvalidDecisionError(
-                "an inapplicable convention must stay not_assessed, not "
-                f"{self.decision!r}"
+                f"an inapplicable convention must stay not_assessed, not {self.decision!r}"
             )
         if self.decision == "resolved" and not any(
             evaluation.result == "matched" for evaluation in self.rules_evaluated

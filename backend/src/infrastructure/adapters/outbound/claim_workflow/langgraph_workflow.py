@@ -477,8 +477,7 @@ def _matrix_rationale(decision: MatrixDecision) -> str:
     assert decision.exception_text is not None
     if decision.status == "needs_exception_fact":
         return (
-            "Tabla de culpabilidad CIDE: pendiente de la observación — "
-            f"{decision.exception_text}"
+            f"Tabla de culpabilidad CIDE: pendiente de la observación — {decision.exception_text}"
         )
     return f"Tabla de culpabilidad CIDE: la observación se cumple — {decision.exception_text}"
 

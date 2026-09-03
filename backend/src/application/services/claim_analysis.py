@@ -116,8 +116,7 @@ def _from_matrix_decision(
     """
     if decision.status == "attributes":
         text = (
-            "La tabla de culpabilidad CIDE atribuye la responsabilidad a "
-            f"{decision.liable_party}."
+            f"La tabla de culpabilidad CIDE atribuye la responsabilidad a {decision.liable_party}."
         )
         return ClaimAnalysis(
             applicability="applicable",

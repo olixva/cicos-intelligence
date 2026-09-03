@@ -6,7 +6,7 @@ Uso::
 
     # Asume backend levantado en 127.0.0.1:8000 y extractiones cargadas.
     cd backend && uv run --no-sync python scripts/run_baseline.py \\
-        --output /Users/aoc/proyectos/prueba-allianz/data/evaluation/results/2026-09-03-baseline-deterministas \\
+        --output ../data/evaluation/results/2026-09-03-baseline-deterministas \\
         --label baseline-deterministas \\
         --concurrency 4
 
@@ -60,6 +60,11 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+# Habilita ``import infrastructure...`` desde ``backend/scripts/``.
+_BACKEND_SRC = Path(__file__).resolve().parent.parent / "src"
+if str(_BACKEND_SRC) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_SRC))
+
 from infrastructure.adapters.outbound.evaluation.domain_evaluators import (  # noqa: E402
     abstention_metrics,
     decision_accuracy,
@@ -69,12 +74,9 @@ from infrastructure.adapters.outbound.evaluation.domain_evaluators import (  # n
     unjustified_resolution_rate,
 )
 
-
 # --- Configuración -------------------------------------------------------------
 
-GOLDEN_PATH = Path(
-    "/Users/aoc/proyectos/prueba-allianz/data/evaluation/golden/development.jsonl"
-)
+GOLDEN_PATH = Path("/Users/aoc/proyectos/prueba-allianz/data/evaluation/golden/development.jsonl")
 DEFAULT_BASE_URL = os.environ.get("ALLIANZ_BASELINE_URL", "http://127.0.0.1:8000")
 QUERY_PATH = "/api/v1/queries"
 HEALTH_PATH = "/health/ready"
@@ -104,7 +106,7 @@ def _git_commit() -> str:
         return subprocess.check_output(
             ["git", "rev-parse", "HEAD"], text=True, cwd=GOLDEN_PATH.parent.parent.parent
         ).strip()
-    except (OSError, subprocess.CalledProcessError):
+    except OSError, subprocess.CalledProcessError:
         return "unknown"
 
 
@@ -160,9 +162,7 @@ async def _post_envelope(
         "mode": mode,
         "session_id": session_id,
     }
-    response = await client.post(
-        QUERY_PATH, json=payload, headers={"User-Agent": USER_AGENT}
-    )
+    response = await client.post(QUERY_PATH, json=payload, headers={"User-Agent": USER_AGENT})
     response.raise_for_status()
     return response.json()
 
@@ -188,9 +188,7 @@ async def _wait_for_ready(client: httpx.AsyncClient, *, attempts: int = 30) -> N
 # --- Métricas por modo ---------------------------------------------------------
 
 
-def _evaluate_question(
-    *, response: dict[str, Any], case: dict[str, Any]
-) -> dict[str, Any]:
+def _evaluate_question(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     result = response.get("result") or {}
     if result.get("kind") != "question":
         return {"error": f"unexpected kind {result.get('kind')!r}"}
@@ -204,17 +202,13 @@ def _evaluate_question(
         "answer_status_accuracy": decision_accuracy(
             predicted=predicted_status, expected=expected_status
         ),
-        "evidence_validity": evidence_reference_validity(
-            cited=cited, valid_pool=pool
-        ),
+        "evidence_validity": evidence_reference_validity(cited=cited, valid_pool=pool),
         "cited_count": len(cited),
         "expected_pool_size": len(pool),
     }
 
 
-def _evaluate_claim(
-    *, response: dict[str, Any], case: dict[str, Any]
-) -> dict[str, Any]:
+def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     result = response.get("result") or {}
     if result.get("kind") != "claim":
         return {"error": f"unexpected kind {result.get('kind')!r}"}
@@ -247,25 +241,19 @@ def _evaluate_claim(
             expected_facts=expected_fact_names,
             forbidden_facts=forbidden,
         ),
-        "evidence_validity": evidence_reference_validity(
-            cited=cited, valid_pool=pool
-        ),
+        "evidence_validity": evidence_reference_validity(cited=cited, valid_pool=pool),
         "cited_count": len(cited),
         "fact_count": len(predicted_facts),
     }
 
 
-def _evaluate_auto(
-    *, response: dict[str, Any], case: dict[str, Any]
-) -> dict[str, Any]:
+def _evaluate_auto(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     resolved = response.get("resolved_mode")
     expected_intent = (case.get("metadata") or {}).get("expected_intent")
     return {
         "resolved_mode": resolved,
         "expected_intent": expected_intent,
-        "router_match": decision_accuracy(
-            predicted=resolved, expected=expected_intent
-        ),
+        "router_match": decision_accuracy(predicted=resolved, expected=expected_intent),
     }
 
 
@@ -296,8 +284,13 @@ async def _run_one(
             evaluation = _evaluate_claim(response=response, case=case)
         else:
             evaluation = _evaluate_auto(response=response, case=case)
-        return case_id, mode, {"response": response, "evaluation": evaluation}, time.monotonic() - start
-    except (httpx.HTTPError, json.JSONDecodeError, KeyError, ValueError) as error:
+        return (
+            case_id,
+            mode,
+            {"response": response, "evaluation": evaluation},
+            time.monotonic() - start,
+        )
+    except (httpx.HTTPError, json.JSONDecodeError, KeyError, ValueError) as error:  # noqa: BLE001
         return (
             case_id,
             mode,
@@ -320,9 +313,7 @@ async def _run_all(
     async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
         await _wait_for_ready(client)
         tasks = [
-            asyncio.create_task(
-                _run_one(client, semaphore, case=case, mode=mode)
-            )
+            asyncio.create_task(_run_one(client, semaphore, case=case, mode=mode))
             for case in cases
             for mode in modes
         ]
@@ -332,13 +323,15 @@ async def _run_all(
 # --- Agregación ----------------------------------------------------------------
 
 
-def _aggregate(per_case: dict[str, dict[str, Any]], cases_lookup: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def _aggregate(
+    per_case: dict[str, dict[str, Any]], cases_lookup: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
     """Suma métricas a nivel de modo para ``metrics.json``."""
     per_mode: dict[str, dict[str, list[Any]]] = {mode: {} for mode in MODES}
     counts: Counter[str] = Counter()
     errors: Counter[str] = Counter()
 
-    for case_id, modes in per_case.items():
+    for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
         for mode, payload in modes.items():
             counts[mode] += 1
             if "error" in payload:
@@ -375,7 +368,7 @@ def _aggregate(per_case: dict[str, dict[str, Any]], cases_lookup: dict[str, dict
     # Métricas compuestas entre modos.
     predicted_routes = []
     expected_routes = []
-    for case_id, modes in per_case.items():
+    for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
         auto = modes.get("auto")
         if auto and "evaluation" in auto and isinstance(auto["evaluation"], dict):
             evaluation = auto["evaluation"]
@@ -393,7 +386,7 @@ def _aggregate(per_case: dict[str, dict[str, Any]], cases_lookup: dict[str, dict
 
     # Empareja claim por case_id para que abstention/unjustified tengan misma longitud.
     paired: list[tuple[str, str]] = []
-    for case_id, modes in per_case.items():
+    for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
         claim = modes.get("claim")
         if not claim or "evaluation" not in claim or not isinstance(claim["evaluation"], dict):
             continue
@@ -450,8 +443,13 @@ def _write_summary(
             mean = summary.get("mean")
             if mean is None:
                 continue
+            mean_str = f"{mean:.3f}"
+            n_str = str(summary["n"])
+            min_str = str(summary["min"])
+            max_str = str(summary["max"])
             lines.append(
-                f"  - {key}: mean={mean:.3f} (n={summary['n']}, min={summary['min']}, max={summary['max']})"
+                f"  - {key}: mean={mean_str} "
+                f"(n={n_str}, min={min_str}, max={max_str})"
             )
     lines.append("")
     cross = metrics.get("cross_mode") or {}
@@ -471,9 +469,13 @@ def _write_summary(
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--limit", type=int, default=None, help="Sólo los primeros N casos (smoke test).")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Sólo los primeros N casos (smoke test)."
+    )
     parser.add_argument("--modes", default=",".join(MODES), help="Modos separados por coma.")
-    parser.add_argument("--output", required=True, help="Carpeta de salida (debe estar vacía o inexistente).")
+    parser.add_argument(
+        "--output", required=True, help="Carpeta de salida (debe estar vacía o inexistente)."
+    )
     parser.add_argument("--label", default="baseline", help="Etiqueta corta de la corrida.")
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)

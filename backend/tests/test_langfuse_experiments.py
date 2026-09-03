@@ -515,9 +515,7 @@ def test_run_claim_experiment_respects_max_concurrency_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fake_item = _build_fake_claim_item()
-    dataset_spy, _ = _wire_claim_runner(
-        monkeypatch, fake_item=fake_item, max_concurrency="6"
-    )
+    dataset_spy, _ = _wire_claim_runner(monkeypatch, fake_item=fake_item, max_concurrency="6")
     assert dataset_spy.run_calls[0]["max_concurrency"] == 6
 
 
@@ -651,9 +649,7 @@ def test_run_router_experiment_respects_max_concurrency_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fake_item = _build_fake_router_item()
-    dataset_spy, _ = _wire_router_runner(
-        monkeypatch, fake_item=fake_item, max_concurrency="9"
-    )
+    dataset_spy, _ = _wire_router_runner(monkeypatch, fake_item=fake_item, max_concurrency="9")
     assert dataset_spy.run_calls[0]["max_concurrency"] == 9
 
 
