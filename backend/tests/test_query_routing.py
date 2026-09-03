@@ -189,3 +189,104 @@ def test_resolve_query_wraps_provider_error_from_claim_flow() -> None:
         asyncio.run(
             resolve_query(_query(), classifier, _CounterAnswerQuestion(), _BoomAnalyzeClaim())
         )
+
+
+# ---------------------------------------------------------------------------
+# Override heurístico: el router barato (gpt-5.6-luna) puede clasificar
+# un relato de siniestro como 'clarification_required' o 'question' por
+# confundir palabras incidentales (p. ej. "no consigue detenerse a
+# tiempo" → pregunta sobre el tiempo) con la intención real. Si el texto
+# tiene vocabulario típico de relato de siniestro, forzamos 'claim'.
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_query_overrides_clarification_to_claim_on_vehicle_collision() -> None:
+    """Caso real reportado: el router barato clasifica un alcance
+    trasero como 'clarification_required' porque la frase incluye
+    "no consigue detenerse a tiempo", que el modelo entiende como
+    pregunta sobre el tiempo meteorológico o la hora. La heurística
+    detecta vehículos etiquetados + vocabulario de colisión + semáforo
+    y fuerza 'claim' para que el análisis corra sobre el texto."""
+
+    claim_text = (
+        "El vehículo A está detenido ante un semáforo en rojo cuando el "
+        "vehículo B no consigue detenerse a tiempo y choca por detrás "
+        "contra el vehículo A. Ambos conductores afirman que estaban "
+        "prestando atención, pero el conductor del vehículo B insiste "
+        "en que el vehículo A frenó de forma repentina."
+    )
+    answer = _CounterAnswerQuestion()
+    claim = _CounterAnalyzeClaim()
+    classifier = _StubClassifier(
+        RouteClassification("clarification_required", rationale="pide hora")
+    )
+    query = QueryInput(text=claim_text, language="es")
+
+    execution = asyncio.run(resolve_query(query, classifier, answer, claim))
+
+    assert execution.classification.decision == "claim"
+    assert "Heur" in (execution.classification.rationale or "")
+    assert isinstance(execution.dispatch, ClaimExecution)
+    assert answer.calls == 0
+    assert claim.calls == 1
+    assert execution.trace_id == "trace-c"
+
+
+def test_resolve_query_overrides_question_to_claim_on_collision_narrative() -> None:
+    """Si el router decide 'question' para un texto que claramente
+    describe una colisión, también override."""
+
+    answer = _CounterAnswerQuestion()
+    claim = _CounterAnalyzeClaim()
+    classifier = _StubClassifier(RouteClassification("question"))
+    query = QueryInput(
+        text=(
+            "El vehículo A y el vehículo B chocan en un cruce. ¿Quién "
+            "es culpable? Ambos dicen que tenían semáforo en verde."
+        ),
+        language="es",
+    )
+
+    execution = asyncio.run(resolve_query(query, classifier, answer, claim))
+
+    assert execution.classification.decision == "claim"
+    assert isinstance(execution.dispatch, ClaimExecution)
+    assert claim.calls == 1
+    assert answer.calls == 0
+
+
+def test_resolve_query_keeps_question_for_actual_questions() -> None:
+    """La heurística no afecta a preguntas reales: una pregunta al
+    manual con vocabulario de incidente incidental no debe override."""
+
+    answer = _CounterAnswerQuestion()
+    claim = _CounterAnalyzeClaim()
+    classifier = _StubClassifier(RouteClassification("question"))
+    query = QueryInput(text="¿Qué dice el manual sobre CIDE?", language="es")
+
+    execution = asyncio.run(resolve_query(query, classifier, answer, claim))
+
+    assert execution.classification.decision == "question"
+    assert isinstance(execution.dispatch, QueryExecution)
+    assert answer.calls == 1
+    assert claim.calls == 0
+
+
+def test_resolve_query_keeps_clarification_for_genuinely_ambiguous_input() -> None:
+    """Texto corto sin vocabulario de relato no debe override aunque
+    el router diga clarification_required. La heurística mira 2+
+    marcadores típicos, no sólo presencia de 'vehículo'."""
+
+    answer = _CounterAnswerQuestion()
+    claim = _CounterAnalyzeClaim()
+    classifier = _StubClassifier(
+        RouteClassification("clarification_required", rationale="faltan datos")
+    )
+    query = QueryInput(text="hola", language="es")
+
+    execution = asyncio.run(resolve_query(query, classifier, answer, claim))
+
+    assert execution.classification.decision == "clarification_required"
+    assert isinstance(execution.dispatch, ClarificationResult)
+    assert answer.calls == 0
+    assert claim.calls == 0
