@@ -1,6 +1,6 @@
 import {
   W, H, M, CW, RIGHT, C, F, tb, rect, rrect, ell, card, pill, chip, dot, arrow,
-  chrome, title, deck, band, notes, page, hline,
+  chrome, title, deck, band, notes, page, hline, LOG,
 } from './lib.mjs';
 
 const LOGO = new URL('./assets/allianz-logo.png', import.meta.url).pathname;
@@ -9,6 +9,7 @@ export function cover(pres, ctx) {
   const s = pres.addSlide();
   s.background = { color: C.navy };
   ctx.n += 1;
+  LOG.push({ n: ctx.n, eyebrow: 'Portada', title: 'CICOS Claims Intelligence', notes: '' });
 
   // Motivo de portada: dos círculos concéntricos desplazados fuera del lienzo.
   ell(s, { x: 8.9, y: -1.9, w: 6.6, h: 6.6, fill: { color: C.deep } });
@@ -59,13 +60,13 @@ export function cover(pres, ctx) {
 
 export function agenda(pres, ctx) {
   const s = page(pres, ctx, { eyebrow: 'Recorrido' });
-  title(s, 'Cuarenta y cinco minutos: veinte de diseño, quince de demo en vivo, diez de preguntas.');
+  title(s, 'Cuarenta y cinco minutos, y casi un tercio de ellos con el sistema delante.');
   deck(s, 'La narración va de por qué este problema es más difícil de lo que parece, a cómo se demuestra que el sistema no improvisa.');
 
   const rows = [
-    ['01', 'El problema', 'Qué pide el enunciado y por qué cuatro de sus cinco accidentes no tienen respuesta determinista.', '3 min'],
+    ['01', 'El problema', 'Qué pide el enunciado y por qué cuatro de sus cinco accidentes no tienen respuesta determinista.', '4 min'],
     ['02', 'Plan, supuestos y riesgos', 'Cinco días con hitos comprobables, seis supuestos declarados y las decisiones técnicas con su porqué.', '4 min'],
-    ['03', 'Arquitectura', 'Hexagonal, modelos, ingesta con cadena de custodia, recuperación híbrida, workflows y motor de reglas.', '11 min'],
+    ['03', 'Arquitectura', 'Hexagonal, modelos, ingesta con cadena de custodia, recuperación híbrida, workflows y motor de reglas.', '10 min'],
     ['04', 'Demo en vivo', 'Cuatro recorridos sobre el sistema real: enrutado, caso resuelto, abstención y trazabilidad.', '14 min'],
     ['05', 'Evaluación y límites', 'Golden set de 110 casos, protocolo de medida, lo que el sistema no hace y la siguiente iteración.', '5 min'],
     ['06', 'Preguntas', 'Con el código, el manual, las trazas y el estado verificado delante.', '8 min'],

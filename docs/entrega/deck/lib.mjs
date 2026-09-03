@@ -126,6 +126,7 @@ export function chrome(s, { eyebrow, num, dark = false, logo = true }) {
 
 // Título de acción: una frase completa que dice la conclusión, no el tema.
 export function title(s, text, { dark = false, y = 0.88, size = 26, w = 11.1 } = {}) {
+  if (LOG.length) LOG[LOG.length - 1].title = text.replace(/\n/g, ' ');
   tb(s, text, {
     x: M, y, w, h: 0.9, fontFace: F.head, fontSize: size, bold: true,
     color: dark ? C.paper : C.ink, lineSpacingMultiple: 1.02,
@@ -153,7 +154,13 @@ export function band(s, text, { y = 6.40, tone = 'navy', h = 0.54 } = {}) {
   });
 }
 
-export function notes(s, text) { s.addNotes(text); }
+// Registro de láminas: alimenta el guion de orador en markdown que build.mjs escribe.
+export const LOG = [];
+
+export function notes(s, text) {
+  s.addNotes(text);
+  if (LOG.length) LOG[LOG.length - 1].notes = text;
+}
 
 // Crea la lámina, pinta el fondo y el chrome, y devuelve el objeto slide.
 // `decor` pinta el fondo decorativo ANTES del chrome, para que nunca tape el logo.
@@ -162,6 +169,7 @@ export function page(pres, ctx, { eyebrow, dark = false, logo = true, bg, decor 
   s.background = { color: bg || (dark ? C.navy : C.paper) };
   if (decor) decor(s);
   chrome(s, { eyebrow, num: ++ctx.n, dark, logo });
+  LOG.push({ n: ctx.n, eyebrow: eyebrow || '', title: '', notes: '' });
   return s;
 }
 
@@ -185,6 +193,7 @@ export function divider(pres, ctx, { num, name, promise, shot }) {
     ell(s, { x: 11.6, y: 3.6, w: 3.4, h: 3.4, fill: { color: '063E82' } });
   }
   chrome(s, { num: ++ctx.n, dark: true });
+  LOG.push({ n: ctx.n, eyebrow: 'Separador', title: `${num} · ${name}`, notes: promise.replace(/\n/g, ' ') });
 
   const tw = shot ? 4.8 : 8.6;
   tb(s, num, {
