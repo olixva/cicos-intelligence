@@ -313,7 +313,7 @@ export default function IndexRoute() {
 
   return (
     <TooltipProvider delayDuration={250}>
-      <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <div className="relative flex h-screen flex-col bg-background text-foreground overflow-hidden">
         {/* Dot pattern sutil de fondo (5% claro / 8% oscuro). */}
         <div className="pointer-events-none fixed inset-0 -z-10 text-foreground">
           <DotPattern size={22} opacity={0.05} />
@@ -351,7 +351,7 @@ export default function IndexRoute() {
           </div>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1">
           {showSidebar && !adminMode && (
             <ThreadSidebar
               threads={state.threads}
@@ -362,7 +362,7 @@ export default function IndexRoute() {
             />
           )}
 
-          <main className="flex flex-1 flex-col overflow-hidden">
+          <main className="flex min-h-0 flex-1 flex-col">
             <div className="bg-background/70 px-4 py-2 backdrop-blur">
               <BannerSystem />
             </div>
