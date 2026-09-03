@@ -242,7 +242,7 @@ Una petición válida con evidencia o datos insuficientes no es un fallo técnic
 
 ## 8. API, resultados y experiencia
 
-Los contratos detallados y los estados se desarrollan en el [anexo de API y experiencia](../../architecture/2026-08-31-api-y-experiencia-propuesta.md). Las capacidades HTTP son:
+Los contratos detallados y los estados se desarrollan en el [anexo de API y experiencia](../architecture/2026-08-31-api-y-experiencia-propuesta.md). Las capacidades HTTP son:
 
 | Endpoint | Propósito |
 | --- | --- |
@@ -269,7 +269,7 @@ La sección Evaluación abrirá Langfuse local. Las respuestas podrán enlazar s
 
 ## 9. Golden set y revisión
 
-El [protocolo de golden set y métricas](../../evaluation/2026-08-31-golden-set-y-metricas-rag.md) forma parte de esta especificación y conserva las definiciones detalladas. El manual es la autoridad documental; el golden set es una referencia derivada que puede necesitar correcciones versionadas.
+El [protocolo de golden set y métricas](../evaluation/2026-08-31-golden-set-y-metricas-rag.md) forma parte de esta especificación y conserva las definiciones detalladas. El manual es la autoridad documental; el golden set es una referencia derivada que puede necesitar correcciones versionadas.
 
 El inventario de evidencia precederá a la generación. Ragas propondrá candidatos a partir de paquetes verificados, con modelos de máxima capacidad adecuados, distribución de consultas y lenguaje configurados. Los sintetizadores se extenderán por su API cuando el dominio lo requiera; no se construirá otro generador general. Las evidencias visuales originales se conservarán durante todo el circuito.
 
@@ -374,8 +374,8 @@ La curación podrá avanzar junto a la implementación del baseline, pero la res
 
 Anexos que conservan el detalle y las fuentes investigadas:
 
-- [Stack y fronteras tecnológicas](../../architecture/2026-08-31-stack-tecnologico-propuesto.md).
-- [API, estados y experiencia](../../architecture/2026-08-31-api-y-experiencia-propuesta.md).
-- [Golden set, métricas y protocolo experimental](../../evaluation/2026-08-31-golden-set-y-metricas-rag.md).
+- [Stack y fronteras tecnológicas](../architecture/2026-08-31-stack-tecnologico-propuesto.md).
+- [API, estados y experiencia](../architecture/2026-08-31-api-y-experiencia-propuesta.md).
+- [Golden set, métricas y protocolo experimental](../evaluation/2026-08-31-golden-set-y-metricas-rag.md).
 
 Esta especificación es el punto de entrada al diseño y los anexos desarrollan sus contratos y protocolos. Cualquier cambio de alcance se reflejará en ambos, conservando el historial. La revisión final comprueba coherencia, correspondencia con el enunciado, límites de alcance y criterios de aceptación. Tras su aprobación se redactará el plan con la skill writing-plans de Superpowers; no se inicia la implementación por el hecho de haber escrito este documento.

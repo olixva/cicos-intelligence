@@ -2,7 +2,7 @@
 
 Fecha: 31 de agosto de 2026.
 
-Documento de detalle vinculado a la [especificación consolidada](../superpowers/specs/2026-08-31-allianz-rag-design.md).
+Documento de detalle vinculado a la [especificación consolidada](../specs/2026-08-31-allianz-rag-design.md).
 
 Estado: diseño funcional aprobado por el usuario y ampliado, a petición suya, con un modo automático que elige entre los dos flujos. Conserva el stack, los flujos LangGraph y la integración nativa con Langfuse y Ragas ya aprobados. No se ha implementado ni probado la API o la interfaz.
 

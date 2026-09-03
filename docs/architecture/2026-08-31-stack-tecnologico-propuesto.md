@@ -2,7 +2,7 @@
 
 Fecha: 31 de agosto de 2026.
 
-Documento de detalle vinculado a la [especificación consolidada](../superpowers/specs/2026-08-31-allianz-rag-design.md).
+Documento de detalle vinculado a la [especificación consolidada](../specs/2026-08-31-allianz-rag-design.md).
 
 Estado: stack aprobado por el usuario, con LangGraph y preferencia explícita por la máxima integración nativa con Langfuse y Ragas. No se han instalado dependencias ni validado todavía el conjunto completo en ejecución. La arquitectura de carpetas y las garantías del protocolo de evaluación se conservan. El diseño funcional de API y pantallas está recogido en el documento complementario, con el modo Automático solicitado además de los dos explícitos.
 

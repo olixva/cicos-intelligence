@@ -2,7 +2,7 @@
 
 Fecha de investigación: 31 de agosto de 2026.
 
-Estado: protocolo de diseño, anexo de la [especificación consolidada](../superpowers/specs/2026-08-31-allianz-rag-design.md). Recoge la prioridad de calidad solicitada y concreta la evaluación; todavía no se han generado los casos, calibrado los jueces ni ejecutado comparativas.
+Estado: protocolo de diseño, anexo de la [especificación consolidada](../specs/2026-08-31-allianz-rag-design.md). Recoge la prioridad de calidad solicitada y concreta la evaluación; todavía no se han generado los casos, calibrado los jueces ni ejecutado comparativas.
 
 Actualización de arquitectura del 31 de agosto: se sustituye el runner de experimentos propio por el SDK de Langfuse integrado con Ragas. Esta revisión cambia la herramienta de ejecución, no los controles de calidad del golden set ni los criterios de aceptación.
 
