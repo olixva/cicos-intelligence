@@ -99,10 +99,8 @@ def test_demo_catalogue_uses_a_described_claim_with_one_decisive_missing_fact(
 
     assert response.status_code == 200
     assert response.json()[0]["text"] == (
-        "En una autovía, el vehículo A inició un cambio de carril hacia la izquierda mientras "
-        "el vehículo B circulaba correctamente por ese carril. Ambos conductores coinciden en "
-        "que A hacía la maniobra y discrepan sobre quién tenía prioridad. El relato no aclara "
-        "si los vehículos llegaron a colisionar directamente."
+        "El vehículo A golpea al vehículo B mientras realiza una maniobra de marcha atrás. "
+        "No hay D.A.A. ni atestado."
     )
 
 

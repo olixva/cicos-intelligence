@@ -34,15 +34,13 @@ DEFAULT_DEMO_CASE_IDS: tuple[str, ...] = (
 )
 
 
-#: La demo necesita mostrar un relato completo que abra una entrevista breve.
-#: El caso evaluado mantiene sus anotaciones originales; sólo su presentación
-#: pública concreta que falta confirmar la colisión directa.
+#: La demo necesita mostrar un relato que abra una entrevista breve sin
+#: adelantar la situación del vehículo B. El caso evaluado mantiene sus
+#: anotaciones originales; sólo cambia su presentación pública.
 DEMO_TEXT_OVERRIDES: dict[str, str] = {
     "siniestro-synth-12-b9-marcha-atras": (
-        "En una autovía, el vehículo A inició un cambio de carril hacia la izquierda mientras "
-        "el vehículo B circulaba correctamente por ese carril. Ambos conductores coinciden en "
-        "que A hacía la maniobra y discrepan sobre quién tenía prioridad. El relato no aclara "
-        "si los vehículos llegaron a colisionar directamente."
+        "El vehículo A golpea al vehículo B mientras realiza una maniobra de marcha atrás. "
+        "No hay D.A.A. ni atestado."
     ),
 }
 
