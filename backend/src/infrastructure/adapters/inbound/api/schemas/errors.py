@@ -45,16 +45,3 @@ class ErrorResponse(_ResponseModel):
     message: str = Field(max_length=200)
     request_id: str
     retryable: bool
-
-
-def error_response_for(
-    code: ErrorCode, message: str, request_id: str, retryable: bool
-) -> ErrorResponse:
-    """Build an ``ErrorResponse`` while keeping the literal closed.
-
-    Centralised so the surface has exactly one place that knows the
-    closed ``code`` enumeration; callers pass the code as a string and
-    the constructor validates it.
-    """
-
-    return ErrorResponse(code=code, message=message, request_id=request_id, retryable=retryable)

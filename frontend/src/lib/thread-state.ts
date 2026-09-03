@@ -19,14 +19,12 @@ export type { UiMode };
  * el hook `useThread` (en este mismo archivo) lo conecta al ciclo
  * de vida real con fetch + AbortController.
  *
- * Decisión sobre `@assistant-ui/react`: el runtime oficial asume un
- * transporte HTTP con shape distinto al SSE del backend
- * (`started | stage | completed | failed`). Acoplarnos a su runtime
- * requeriría adaptar el contrato del backend o construir un adapter
- * no trivial. Hemos decidido implementar el thread manualmente sobre
- * `eventsource-parser`, que es la elección del spec UX v2 y la que ya
- * usaba `use-query-stream.ts` del scaffold anterior. Documentado en
- * el commit body de la fase.
+ * El thread es propio en lugar de un runtime de chat de terceros: los
+ * runtimes al uso asumen un transporte HTTP con una forma distinta a la
+ * del SSE del backend (`started | stage | completed | failed`), y
+ * acoplarse a ellos obligaría a adaptar el contrato del backend. El
+ * transporte se implementa sobre `eventsource-parser` en
+ * `lib/streaming-client.ts`.
  */
 
 // =====================================================================
