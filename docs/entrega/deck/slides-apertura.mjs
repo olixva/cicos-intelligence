@@ -60,16 +60,16 @@ export function cover(pres, ctx) {
 
 export function agenda(pres, ctx) {
   const s = page(pres, ctx, { eyebrow: 'Recorrido' });
-  title(s, 'Cuarenta y cinco minutos, y casi un tercio de ellos con el sistema delante.');
+  title(s, 'Cuarenta y cinco minutos, y un cuarto de ellos con el sistema delante.');
   deck(s, 'La narración va de por qué este problema es más difícil de lo que parece, a cómo se demuestra que el sistema no improvisa.');
 
   const rows = [
     ['01', 'El problema', 'Qué pide el enunciado y por qué cuatro de sus cinco accidentes no tienen respuesta determinista.', '4 min'],
     ['02', 'Plan, supuestos y riesgos', 'Cinco días con hitos comprobables, seis supuestos declarados y las decisiones técnicas con su porqué.', '4 min'],
-    ['03', 'Arquitectura', 'Hexagonal, modelos, ingesta con cadena de custodia, recuperación híbrida, workflows y motor de reglas.', '10 min'],
-    ['04', 'Demo en vivo', 'Cuatro recorridos sobre el sistema real: enrutado, caso resuelto, abstención y trazabilidad.', '14 min'],
-    ['05', 'Evaluación y límites', 'Golden set de 110 casos, protocolo de medida, lo que el sistema no hace y la siguiente iteración.', '5 min'],
-    ['06', 'Preguntas', 'Con el código, el manual, las trazas y el estado verificado delante.', '8 min'],
+    ['03', 'Arquitectura', 'Hexagonal, modelos, ingesta con cadena de custodia, recuperación híbrida, workflows y motor de reglas.', '12 min'],
+    ['04', 'Demo en vivo', 'Cuatro recorridos sobre el sistema real: enrutado, caso resuelto, abstención y trazabilidad.', '12 min'],
+    ['05', 'Evaluación y límites', 'Golden set de 110 casos, protocolo de medida, lo que el sistema no hace y la siguiente iteración.', '6 min'],
+    ['06', 'Preguntas', 'Con el código, el manual, las trazas y el estado verificado delante.', '7 min'],
   ];
 
   let y = 2.46;
@@ -83,7 +83,7 @@ export function agenda(pres, ctx) {
     y += 0.69;
   });
 
-  band(s, 'La demo ocupa un tercio del tiempo a propósito: lo que hay que creerse no son las láminas, es el sistema corriendo.', { tone: 'navy' });
+  band(s, 'La demo ocupa un cuarto del tiempo a propósito: lo que hay que creerse no son las láminas, es el sistema corriendo.', { tone: 'navy' });
 
   notes(s, [
     'AGENDA (40 s).',
@@ -93,7 +93,14 @@ export function agenda(pres, ctx) {
     '2) El bloque 05 incluye una lámina de límites: lo que el sistema NO hace se cuenta aquí,',
     '   no en la letra pequeña ni cuando alguien lo pregunte.',
     '',
-    'Si el tiempo aprieta: los bloques 01 y 02 se pueden comprimir a 5 min entre los dos;',
-    'nunca recortar la demo ni la lámina de límites.',
+    'RUTA CORTA, si hay que bajar de 45 a 35 minutos (en este orden):',
+    '1) Saltar las láminas 17 y 19 — la interfaz y la cita abrible — porque la demo 1 y la 2',
+    '   las enseñan en vivo. Están ahí como red de seguridad si la demo falla. (-1:35)',
+    '2) Comprimir la 22 (grafo documental) a media frase: los tres nodos y el límite de 8. (-0:25)',
+    '3) Fundir 09 (supuestos) y 10 (riesgos) en un solo pase, leyendo sólo los titulares. (-1:00)',
+    '4) Recortar la demo 1 a la mitad: se puede ir directo a la 2. (-1:30)',
+    'Nunca recortar: la 05 (los cinco veredictos), la demo 3 y la 38 (lo que el sistema no hace).',
+    '',
+    'El apéndice (42-45) no se pasa: está para las preguntas.',
   ].join('\n'));
 }

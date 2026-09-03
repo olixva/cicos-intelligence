@@ -5,8 +5,8 @@ Actualizado el 2026-09-03 para acompañar a `docs/entrega/presentacion.pptx` (44
 bloque **04 · Demo en vivo** del deck; cada lámina lleva además este guion en sus notas de
 orador. Todos los comandos son reproducibles en local.
 
-**Reparto de los 45 minutos**: 4 min problema · 4 min plan y riesgos · 10 min arquitectura ·
-**14 min demo** · 5 min evaluación y límites · 8 min preguntas.
+**Reparto de los 45 minutos**: 4 min problema · 4 min plan y riesgos · 12 min arquitectura ·
+**12 min demo** · 6 min evaluación y límites · 7 min preguntas.
 
 ## 0. Arranque (antes de la sesión)
 
@@ -113,5 +113,5 @@ Remate: la misma traza que mira quien opera el sistema es la que alimenta la eva
 - Sin servicios: `make local-services-up` y `curl localhost:8000/health/ready`.
 - Sin respuesta del modelo: cambiar a los ejemplos de demo, que están verificados, y explicar
   el recorrido con la lámina de la interfaz (lleva la captura real del razonamiento).
-- Sin red: las láminas 16 y 18 contienen capturas reales del producto — la demo se puede
+- Sin red: las láminas 17 y 19 contienen capturas reales del producto — la demo se puede
   contar sin el sistema delante, aunque pierde fuerza.

@@ -283,6 +283,8 @@ function interfaz(pres, ctx) {
 
   notes(s, [
     'LA INTERFAZ (50 s). Es una captura real, tomada del sistema corriendo hoy.',
+    'SALTABLE si la demo va bien: la demo 2 enseña esto mismo en vivo. Esta lámina es la red',
+    'de seguridad para contarlo sin sistema delante.',
     '',
     '· Merece la pena detenerse en la columna de reglas que NO casan. Casi todas las demos',
     '  esconden eso. Aquí es deliberado: si el sistema no puede aplicar la tabla de culpabilidad',
@@ -373,6 +375,7 @@ function evidenciaAbrible(pres, ctx) {
 
   notes(s, [
     'EVIDENCIA ABRIBLE (45 s). Segunda captura real.',
+    'SALTABLE si la demo va bien: la demo 1 abre esta misma cita en vivo.',
     '',
     '· El detalle que suele pasar desapercibido y que más importa a los seis meses: el',
     '  identificador de evidencia apunta al documento y a la página física, no al fragmento del',

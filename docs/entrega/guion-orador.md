@@ -1,11 +1,11 @@
 # Guion de orador — Allianz CICOS Claims Intelligence
 
-Generado por `docs/entrega/deck/build.mjs` a partir de las notas de las 45 láminas de
+Generado por `docs/entrega/deck/build.mjs` a partir de las notas de las 46 láminas de
 `docs/entrega/presentacion.pptx`. No se edita a mano: se regenera con `npm run build` dentro
 de `docs/entrega/deck/`. Los mismos textos están en las notas de orador del `.pptx`.
 
-**Reparto de los 45 minutos**: 4 min problema · 4 min plan y riesgos · 10 min arquitectura ·
-14 min demo en vivo · 5 min evaluación y límites · 8 min preguntas.
+**Reparto de los 45 minutos**: 4 min problema · 4 min plan y riesgos · 12 min arquitectura ·
+12 min demo en vivo · 6 min evaluación y límites · 7 min preguntas.
 
 ---
 
@@ -25,7 +25,7 @@ Las cuatro cifras están verificadas hoy contra el repositorio: 111 páginas del
 110 casos en el golden de desarrollo, 14 reglas en el ruleset firmado, 500 pruebas de backend
 + 97 de frontend = 597.
 
-## 02 · Cuarenta y cinco minutos, y casi un tercio de ellos con el sistema delante.
+## 02 · Cuarenta y cinco minutos, y un cuarto de ellos con el sistema delante.
 
 *Recorrido*
 
@@ -36,8 +36,15 @@ Marcar dos cosas y pasar:
 2) El bloque 05 incluye una lámina de límites: lo que el sistema NO hace se cuenta aquí,
    no en la letra pequeña ni cuando alguien lo pregunte.
 
-Si el tiempo aprieta: los bloques 01 y 02 se pueden comprimir a 5 min entre los dos;
-nunca recortar la demo ni la lámina de límites.
+RUTA CORTA, si hay que bajar de 45 a 35 minutos (en este orden):
+1) Saltar las láminas 17 y 19 — la interfaz y la cita abrible — porque la demo 1 y la 2
+   las enseñan en vivo. Están ahí como red de seguridad si la demo falla. (-1:35)
+2) Comprimir la 22 (grafo documental) a media frase: los tres nodos y el límite de 8. (-0:25)
+3) Fundir 09 (supuestos) y 10 (riesgos) en un solo pase, leyendo sólo los titulares. (-1:00)
+4) Recortar la demo 1 a la mitad: se puede ir directo a la 2. (-1:30)
+Nunca recortar: la 05 (los cinco veredictos), la demo 3 y la 38 (lo que el sistema no hace).
+
+El apéndice (42-45) no se pasa: está para las preguntas.
 
 ## 03 · 01 · El problema
 
@@ -244,6 +251,8 @@ LOS TRES RECORRIDOS (45 s).
 *03 · Producto*
 
 LA INTERFAZ (50 s). Es una captura real, tomada del sistema corriendo hoy.
+SALTABLE si la demo va bien: la demo 2 enseña esto mismo en vivo. Esta lámina es la red
+de seguridad para contarlo sin sistema delante.
 
 · Merece la pena detenerse en la columna de reglas que NO casan. Casi todas las demos
   esconden eso. Aquí es deliberado: si el sistema no puede aplicar la tabla de culpabilidad
@@ -278,6 +287,7 @@ no dependen del parser, así que reindexar no invalida ni una cita del golden se
 *03 · Evidencia*
 
 EVIDENCIA ABRIBLE (45 s). Segunda captura real.
+SALTABLE si la demo va bien: la demo 1 abre esta misma cita en vivo.
 
 · El detalle que suele pasar desapercibido y que más importa a los seis meses: el
   identificador de evidencia apunta al documento y a la página física, no al fragmento del
@@ -608,25 +618,34 @@ glosario y comandos.
 
 Material de apoyo para las preguntas: stack, API, glosario del dominio y comandos reproducibles.
 
-## 42 · Stack completo, y el puerto por el que cada pieza es sustituible.
+## 42 · Las preguntas incómodas, con la respuesta corta y dónde está la larga.
+
+*Apéndice · Preguntas*
+
+Apéndice. NO se pasa en la presentación: está para tenerla a mano en el turno de preguntas
+y para repasarla cinco minutos antes de entrar.
+
+La columna de la derecha dice a qué lámina saltar si conviene enseñarla al responder.
+
+## 43 · Stack completo, y el puerto por el que cada pieza es sustituible.
 
 *Apéndice · Stack*
 
 Apéndice. Sólo si preguntan por el stack. La columna de la derecha explica el porqué de cada elección, que suele ser la pregunta real.
 
-## 43 · Superficie de API: un sobre común tipado para los tres recorridos.
+## 44 · Superficie de API: un sobre común tipado para los tres recorridos.
 
 *Apéndice · API*
 
 Apéndice. El sobre de respuesta es común a los tres recorridos: identifica el modo seguido, las etapas ejecutadas, las citas y el estado. Es lo que permite que la interfaz enseñe el razonamiento sin lógica duplicada.
 
-## 44 · Glosario mínimo del dominio, para que nadie asienta sin seguirlo.
+## 45 · Glosario mínimo del dominio, para que nadie asienta sin seguirlo.
 
 *Apéndice · Dominio*
 
 Apéndice. Útil si en la sala hay perfiles no aseguradores. Los cinco primeros términos aparecen en la demo.
 
-## 45 · Todo lo que se ha enseñado se reproduce con estos comandos.
+## 46 · Todo lo que se ha enseñado se reproduce con estos comandos.
 
 *Apéndice · Reproducibilidad*
 

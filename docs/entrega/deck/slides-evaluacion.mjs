@@ -544,10 +544,52 @@ export function appendix(pres, ctx) {
     name: 'Apéndice',
     promise: 'Material de apoyo para las preguntas: stack, API,\nglosario del dominio y comandos reproducibles.',
   });
+  preguntasDificiles(pres, ctx);
   stack(pres, ctx);
   api(pres, ctx);
   glosario(pres, ctx);
   comandos(pres, ctx);
+}
+
+function preguntasDificiles(pres, ctx) {
+  const s = page(pres, ctx, { eyebrow: 'Apéndice · Preguntas' });
+  title(s, 'Las preguntas incómodas, con la respuesta corta y dónde está la larga.');
+
+  const rows = [
+    ['«¿Esto no lo está inventando el modelo?»',
+      'No: la decisión la emite un evaluador determinista sobre reglas firmadas, y una invariante del dominio impide publicar un culpable sin las reglas que lo sostienen.', 'Láminas 24 y 17'],
+    ['«¿Por qué no resuelve los cinco accidentes?»',
+      'Porque el manual no da para más con los datos de cada relato. En cuanto el parte aporta las casillas del apartado 12, la tabla entra y resuelve.', 'Lámina 05 y demo 3'],
+    ['«¿Qué métricas tenéis?»',
+      'El protocolo está terminado y la campaña completa está en curso. Prefiero enseñar la caja de estado real antes que un número que no pueda defender.', 'Lámina 35'],
+    ['«¿Por qué no usáis Docling, si es mejor?»',
+      'Porque disponible no es lo mismo que mejor. Está publicado y esperando la comparación de evaluación que lo justifique; el comando para compararlos existe.', 'Lámina 20'],
+    ['«¿Y si cambiáis de proveedor de modelo?»',
+      'Son tres puertos distintos —generar, extraer, clasificar— más el de embeddings. El único que no se puede cambiar sin reindexar es el embedding, y la firma del índice lo impide.', 'Láminas 14 y 15'],
+    ['«¿Esto no es sobreingeniería para cinco días?»',
+      'Costó tiempo el día 1 y lo devolvió el día 4, cuando hubo que meter la tabla de 324 celdas en el flujo sin romper nada de lo anterior.', 'Láminas 11 y 13'],
+    ['«¿Quién ha validado el golden set?»',
+      'Una IA en tres pasos, documentados caso a caso. No un experto humano del dominio: es la limitación declarada más seria y la primera del roadmap.', 'Láminas 34 y 38'],
+  ];
+
+  const y0 = 1.92, rh = 0.63;
+  const wQ = 3.9, xA = M + 4.16, wA = 6.1, xW = M + 10.5, wW = CW - 10.5;
+  rows.forEach(([q, a, where], i) => {
+    const y = y0 + i * rh;
+    if (i % 2 === 0) rrect(s, { x: M, y, w: CW, h: rh - 0.05, fill: { color: C.ice } });
+    tb(s, q, { x: M + 0.14, y: y + 0.1, w: wQ, h: 0.44, fontSize: 11.5, bold: true, color: C.ink, lineSpacingMultiple: 1.0 });
+    tb(s, a, { x: xA, y: y + 0.09, w: wA, h: 0.46, fontSize: 10.5, color: C.muted, lineSpacingMultiple: 1.02 });
+    tb(s, where, { x: xW, y: y + 0.17, w: wW, h: 0.26, align: 'right', fontSize: 10, bold: true, color: C.blue });
+  });
+
+  band(s, 'La regla para el turno de preguntas: si no lo puedo enseñar o citar, lo digo como pendiente. Nadie penaliza un límite declarado; todo el mundo penaliza uno descubierto.', { tone: 'navy' });
+
+  notes(s, [
+    'Apéndice. NO se pasa en la presentación: está para tenerla a mano en el turno de preguntas',
+    'y para repasarla cinco minutos antes de entrar.',
+    '',
+    'La columna de la derecha dice a qué lámina saltar si conviene enseñarla al responder.',
+  ].join('\n'));
 }
 
 function stack(pres, ctx) {
