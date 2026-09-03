@@ -84,20 +84,18 @@ uv run --project backend allianz inspect-manual \
   data/raw/Manual-cide-ascide-y-cicos.pdf \
   --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
 
-# 3. Ingesta baseline
-uv run --project backend --group ingestion --extra local-rag allianz ingest \
-  data/raw/Manual-cide-ascide-y-cicos.pdf --parser pypdf --output data/extractions
-
-# 4. Índice en Qdrant (alias `allianz-manual-active`)
+# 3. Índice en Qdrant (alias `allianz-manual-active`)
 uv run --project backend --extra local-rag allianz index \
   --document-hash b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344 \
   --parser pypdf --evidence-root data/extractions --profile baseline
 
-# 5. Comprobar
+# 4. Comprobar
 make doctor
 ```
 
-La ingesta estructurada con Docling es opcional y está descrita en
+No hace falta reingerir: la publicación baseline (`pypdf-6.16.2`) viene
+versionada en `data/extractions/`, junto al manual original. Reingerir o usar
+la ingesta estructurada con Docling es opcional y está descrito en
 [ingesta-y-recuperacion.md](ingesta-y-recuperacion.md).
 
 ## Día a día

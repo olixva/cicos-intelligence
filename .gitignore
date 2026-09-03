@@ -19,6 +19,13 @@ data/*
 !data/evaluation/
 data/evaluation/*
 !data/evaluation/golden/
+# El manual fuente y la publicación baseline (pypdf) sí se versionan: 808 KB
+# entre ambos, y sin ellos un checkout limpio no puede validar la evidencia
+# que citan los artefactos firmados ni servir el API sin re-ingerir.
+!data/raw/
+!data/extractions/
+data/extractions/*/*
+!data/extractions/*/pypdf-6.16.2/
 ops/local.env
 *.tar.gz
 *.whl

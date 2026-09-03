@@ -33,7 +33,11 @@ sin escribir en ella: comprueba identidad y legibilidad, nada más.
 ## Los dos parsers
 
 Ambos publican bajo el mismo contrato y ambos están publicados para el
-documento verificado.
+documento verificado. **La publicación de `pypdf` viaja versionada en el
+repositorio** (`data/extractions/<sha256>/pypdf-6.16.2/`, 488 KB), junto al
+manual original: sin ella, un checkout limpio no puede validar la evidencia
+que citan los artefactos firmados. La de Docling, de 20 MB, se regenera con el
+comando de abajo.
 
 ### `pypdf` — línea base
 

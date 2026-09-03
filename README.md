@@ -40,6 +40,7 @@ prueba-allianz/
 ├── frontend/    SPA React 19 + Vite                           → frontend/README.md
 ├── data/
 │   ├── raw/         el manual original
+│   ├── extractions/ publicación baseline de evidencia (pypdf), versionada
 │   ├── rules/       artefactos firmados (ruleset, matriz CIDE, catálogo D.A.A.)
 │   └── evaluation/  golden set y sus releases congeladas
 ├── docs/        documentación del sistema                     → docs/README.md
@@ -58,13 +59,11 @@ cp ops/local.env.example ops/local.env
 # 2. Servicios locales (Qdrant + Langfuse)
 make local-services-up
 
-# 3. Verificar la fuente, ingerirla y publicar el índice
+# 3. Verificar la fuente y publicar el índice
+#    (la publicación baseline ya viene en el repositorio; no hay que reingerir)
 uv run --project backend allianz inspect-manual \
   data/raw/Manual-cide-ascide-y-cicos.pdf \
   --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
-
-uv run --project backend --group ingestion --extra local-rag allianz ingest \
-  data/raw/Manual-cide-ascide-y-cicos.pdf --parser pypdf --output data/extractions
 
 uv run --project backend --extra local-rag allianz index \
   --document-hash b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344 \
