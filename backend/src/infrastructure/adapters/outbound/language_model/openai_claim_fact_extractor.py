@@ -23,6 +23,52 @@ from application.ports.outbound.language_model import (
 )
 from domain.models.claim import ClaimFact, ClaimInput
 
+# Nombres de hecho cuya semántica canónica es booleana. El LLM a veces
+# confunde estos campos con identificadores de vehículo u otros valores y
+# devuelve, p. ej. ``one_vehicle_parked="A"`` en lugar del literal ``"true"``.
+# Esta lista es la fuente de verdad para la normalización en el adaptador y
+# es deliberadamente más estricta que el prompt (no necesita coincidir al
+# 100 % con él): sólo los nombres para los que exigimos normalización
+# estricta.
+_BOOLEAN_FACT_NAMES: frozenset[str] = frozenset(
+    {
+        "admitted_amber",
+        "chain_collision",
+        "collision_with_parked_vehicle",
+        "contradictory_versions",
+        "daa_section_12_only",
+        "direct_collision",
+        "door_opening_specified",
+        "driver_under_influence",
+        "exit_disputed_as_incorporation",
+        "lane_change_acknowledged_by_both",
+        "one_vehicle_parked",
+        "third_vehicle_identified",
+    }
+)
+
+_TRUTHY_LITERALS: frozenset[str] = frozenset({"true", "si", "sí", "yes", "1"})
+_FALSY_LITERALS: frozenset[str] = frozenset({"false", "no", "0"})
+
+
+def _coerce_boolean_value(value: str | None) -> str:
+    """Normaliza ``value`` al alfabeto estricto ``"true"`` / ``"false"``.
+
+    - Valor ausente (``None``) o whitespace-only → ``"false"``.
+    - Literal conocido (canónico o alias común) → su forma estricta.
+    - Cualquier otro valor presente → ``"true"``: si el modelo declaró el
+      hecho, la presencia del fact ya implica que aplica.
+    """
+
+    if value is None or not value.strip():
+        return "false"
+    normalized = value.strip().lower()
+    if normalized in _TRUTHY_LITERALS:
+        return "true"
+    if normalized in _FALSY_LITERALS:
+        return "false"
+    return "true"
+
 
 class _StrictSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -57,8 +103,20 @@ class ClaimExtractionSchema(_StrictSchema):
         # Los descartamos antes de cruzar al modelo de aplicación; el
         # invariante de no-vacío sigue siendo del dominio, el adaptador
         # sólo limpia el output del proveedor.
+        # Para los facts con nombre booleano conocido normalizamos ``value``
+        # al alfabeto estricto ``"true"``/``"false"``: el LLM emite a veces
+        # identificadores de vehículo (p. ej. ``one_vehicle_parked="A"``) o
+        # alias no canónicos (``"sí"``, ``"yes"``), y queremos un valor
+        # determinista independientemente del modo (claim vs. auto).
         facts = tuple(
-            ClaimFact(item.name, item.value, item.asserted_by, item.source_text)
+            ClaimFact(
+                item.name,
+                _coerce_boolean_value(item.value)
+                if item.name in _BOOLEAN_FACT_NAMES
+                else item.value,
+                item.asserted_by,
+                item.source_text,
+            )
             for item in self.facts
             if item.name.strip() and item.source_text.strip()
         )

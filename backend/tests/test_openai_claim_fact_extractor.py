@@ -98,6 +98,162 @@ InterviewQuestionSchema(
     assert application.interview_plan.questions[0].id == "q1"
 
 
+def test_known_boolean_fact_coerces_arbitrary_value_to_strict_boolean() -> None:
+    """Bug D: el extractor emite ``value="A"`` para ``one_vehicle_parked`` cuando
+    el LLM lo confunde con un identificador de vehículo. El adaptador debe
+    normalizar cualquier valor presente al literal estricto ``"true"`` para
+    nombres booleanos conocidos — la presencia del fact ya implica que la
+    maniobra ocurre."""
+
+    from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
+        ClaimExtractionSchema,
+        ClaimFactSchema,
+    )
+
+    parsed = ClaimExtractionSchema(
+        party_ids=("A", "B"),
+        facts=(
+            ClaimFactSchema(
+                name="one_vehicle_parked",
+                value="A",
+                asserted_by=None,
+                source_text="uno de los vehículos estaba estacionado",
+            ),
+        ),
+    )
+
+    application = parsed.to_application()
+
+    assert len(application.facts) == 1
+    assert application.facts[0].name == "one_vehicle_parked"
+    assert application.facts[0].value == "true"
+
+
+def test_known_boolean_fact_normalises_string_true_false() -> None:
+    """Para nombres booleanos conocidos, los literales canónicos y sus alias
+    (``"true"``, ``"sí"``, ``"yes"``, ``"1"`` / ``"false"``, ``"no"``, ``"0"``)
+    se reducen al literal estricto."""
+
+    from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
+        ClaimExtractionSchema,
+        ClaimFactSchema,
+    )
+
+    parsed = ClaimExtractionSchema(
+        party_ids=("A", "B"),
+        facts=(
+            ClaimFactSchema(
+                name="direct_collision",
+                value="true",
+                asserted_by=None,
+                source_text="relato describe choque",
+            ),
+            ClaimFactSchema(
+                name="direct_collision",
+                value="false",
+                asserted_by=None,
+                source_text="relato dice que no lo hubo",
+            ),
+            ClaimFactSchema(
+                name="direct_collision",
+                value="sí",
+                asserted_by=None,
+                source_text="el conductor afirma que sí",
+            ),
+            ClaimFactSchema(
+                name="direct_collision",
+                value="yes",
+                asserted_by=None,
+                source_text="yes there was a collision",
+            ),
+        ),
+    )
+
+    application = parsed.to_application()
+    values = tuple(fact.value for fact in application.facts)
+
+    assert values == ("true", "false", "true", "true")
+
+
+def test_known_boolean_fact_with_none_value_becomes_false() -> None:
+    """Un fact booleano conocido sin valor (ausente o ``None``) representa la
+    ausencia del hecho en el relato y se normaliza a ``"false"``."""
+
+    from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
+        ClaimExtractionSchema,
+        ClaimFactSchema,
+    )
+
+    parsed = ClaimExtractionSchema(
+        party_ids=("A", "B"),
+        facts=(
+            ClaimFactSchema(
+                name="one_vehicle_parked",
+                value=None,
+                asserted_by=None,
+                source_text="el relato no menciona vehículo estacionado",
+            ),
+        ),
+    )
+
+    application = parsed.to_application()
+
+    assert application.facts[0].value == "false"
+
+
+def test_unknown_fact_passes_value_through_unchanged() -> None:
+    """Los facts cuyo nombre no es booleano conocido pasan tal cual — no se
+    fuerza coerción. ``lane_change_vehicle`` es un identificador de vehículo,
+    no un booleano."""
+
+    from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
+        ClaimExtractionSchema,
+        ClaimFactSchema,
+    )
+
+    parsed = ClaimExtractionSchema(
+        party_ids=("A", "B"),
+        facts=(
+            ClaimFactSchema(
+                name="lane_change_vehicle",
+                value="A",
+                asserted_by=None,
+                source_text="ambos coinciden en que el A cambiaba de carril",
+            ),
+        ),
+    )
+
+    application = parsed.to_application()
+
+    assert application.facts[0].value == "A"
+
+
+def test_string_fact_is_not_coerced() -> None:
+    """Los facts con semántica string (no booleano) preservan su valor exacto,
+    p. ej. ``vehicle_count`` que ya en el prompt se documenta como número."""
+
+    from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
+        ClaimExtractionSchema,
+        ClaimFactSchema,
+    )
+
+    parsed = ClaimExtractionSchema(
+        party_ids=("A", "B"),
+        facts=(
+            ClaimFactSchema(
+                name="vehicle_count",
+                value="3",
+                asserted_by=None,
+                source_text="intervienen tres vehículos",
+            ),
+        ),
+    )
+
+    application = parsed.to_application()
+
+    assert application.facts[0].value == "3"
+
+
 def test_claim_extractor_uses_structured_output_and_never_adds_manual_context() -> None:
     from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
         OpenAIClaimFactExtractor,
