@@ -133,7 +133,12 @@ export default function IndexRoute() {
   }, []);
 
   const handleSubmit = useCallback(
-    (text: string, clarifications: string[] = [], continuation: { threadId?: string | null; resume?: boolean } = {}) => {
+    (
+      text: string,
+      clarifications: string[] = [],
+      continuation: { threadId?: string | null; resume?: boolean } = {},
+      displayText?: string,
+    ) => {
       if (state.isStreaming) return;
       const messageId = crypto.randomUUID?.() ?? `${Date.now()}-u`;
       const assistantId = crypto.randomUUID?.() ?? `${Date.now()}-a`;
@@ -141,7 +146,12 @@ export default function IndexRoute() {
         type: 'SUBMIT',
         messageId,
         assistantId,
-        text,
+        // ``displayText`` (cuando se aporta) es lo que se muestra en el chat;
+        // ``text`` es lo que se envía al backend. Útil para el flujo de
+        // clarificaciones: el backend necesita el relato original + las
+        // nuevas clarificaciones, pero el usuario sólo quiere ver su
+        // aclaración como mensaje, no el relato repetido.
+        text: displayText ?? text,
         mode: state.mode,
         createdAt: Date.now(),
       });
@@ -388,17 +398,26 @@ export default function IndexRoute() {
                     <Thread
                       messages={state.messages}
                       onOpenCitation={handleOpenCitation}
-                      onSubmitClarification={(clarifications) => {
-                        const lastUser = [...state.messages].reverse().find((message) => message.role === 'user');
-                        const lastAssistant = [...state.messages].reverse().find((message) => message.role === 'assistant');
-                        const threadId = lastAssistant?.role === 'assistant'
-                          ? lastAssistant.envelope?.metadata?.thread_id
-                          : null;
-                        if (lastUser?.role === 'user') {
-                          dispatch({ type: 'HYDRATE_MODE', mode: 'claim' });
-                          handleSubmit(lastUser.text, clarifications, { threadId, resume: Boolean(threadId) });
-                        }
-                      }}
+onSubmitClarification={(clarifications) => {
+                      const lastUser = [...state.messages].reverse().find((message) => message.role === 'user');
+                      const lastAssistant = [...state.messages].reverse().find((message) => message.role === 'assistant');
+                      const threadId = lastAssistant?.role === 'assistant'
+                        ? lastAssistant.envelope?.metadata?.thread_id
+                        : null;
+                      if (lastUser?.role === 'user') {
+                        dispatch({ type: 'HYDRATE_MODE', mode: 'claim' });
+                        // displayText = las clarificaciones: el chat las muestra
+                        // como nuevo mensaje del usuario (no el relato repetido);
+                        // el backend sigue recibiendo el relato original +
+                        // clarifications + thread_id + resume.
+                        handleSubmit(
+                          lastUser.text,
+                          clarifications,
+                          { threadId, resume: Boolean(threadId) },
+                          clarifications.join('\n'),
+                        );
+                      }
+                    }}
                     />
                   )}
                 </div>
