@@ -24,6 +24,10 @@ ingestion = [
 ]
 local-rag = [
     "fastembed==0.8.0",
+    # `langfuse.langchain.CallbackHandler` importa `langchain` en tiempo de
+    # construcción; sin esta dependencia explícita el paquete no está en un
+    # entorno recién sincronizado y la composición del flujo documental falla.
+    "langchain==1.3.18",
     "langfuse==4.15.1",
     "langgraph==1.2.11",
     "openai==2.54.0",
