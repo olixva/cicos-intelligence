@@ -172,21 +172,29 @@ export const CHAPTERS = [
 ];
 
 // Lámina de capítulo: pausa deliberada entre bloques, con el mapa de dónde estamos.
-export function divider(pres, ctx, { num, name, promise }) {
+export function divider(pres, ctx, { num, name, promise, shot }) {
   const s = pres.addSlide();
   s.background = { color: C.navy };
-  ell(s, { x: 10.4, y: -1.5, w: 5.2, h: 5.2, fill: { color: C.deep } });
-  ell(s, { x: 11.6, y: 3.6, w: 3.4, h: 3.4, fill: { color: '063E82' } });
+  if (shot) {
+    // Un adelanto real del producto pesa más que la geometría decorativa.
+    const iw = 5.5, ih = iw / 1.609, ix = RIGHT - iw, iy = 1.6;
+    rrect(s, { x: ix - 0.06, y: iy - 0.06, w: iw + 0.12, h: ih + 0.12, rectRadius: 0.08, fill: { color: C.darkLine } });
+    s.addImage({ path: shot, x: ix, y: iy, w: iw, h: ih });
+  } else {
+    ell(s, { x: 10.4, y: -1.5, w: 5.2, h: 5.2, fill: { color: C.deep } });
+    ell(s, { x: 11.6, y: 3.6, w: 3.4, h: 3.4, fill: { color: '063E82' } });
+  }
   chrome(s, { num: ++ctx.n, dark: true });
 
+  const tw = shot ? 4.8 : 8.6;
   tb(s, num, {
     x: M, y: 2.32, w: 2.4, h: 1.5, fontFace: F.head, fontSize: 92, bold: true, color: C.darkLine,
   });
   tb(s, name, {
-    x: M + 1.9, y: 2.58, w: 8.6, h: 0.8, fontFace: F.head, fontSize: 36, bold: true, color: C.paper,
+    x: M + 1.9, y: 2.58, w: tw, h: 0.8, fontFace: F.head, fontSize: 36, bold: true, color: C.paper,
   });
   tb(s, promise, {
-    x: M + 1.9, y: 3.54, w: 8.2, h: 0.9, fontSize: 15, color: C.pale, lineSpacingMultiple: 1.12,
+    x: M + 1.9, y: 3.54, w: shot ? 4.6 : 8.2, h: 1.4, fontSize: 15, color: C.pale, lineSpacingMultiple: 1.12,
   });
 
   // Raíl de progreso: dónde estamos dentro de los cinco bloques.

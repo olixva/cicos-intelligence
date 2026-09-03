@@ -12,7 +12,9 @@ export function chapterThree(pres, ctx) {
   hexagonal(pres, ctx);
   intercambiable(pres, ctx);
   recorridos(pres, ctx);
+  interfaz(pres, ctx);
   ingesta(pres, ctx);
+  evidenciaAbrible(pres, ctx);
   parsers(pres, ctx);
   retrieval(pres, ctx);
   grafoDocumental(pres, ctx);
@@ -200,6 +202,49 @@ function recorridos(pres, ctx) {
   ].join('\n'));
 }
 
+/* --------------------------------------------------------------- interfaz */
+
+const SHOT = (name) => new URL(`./assets/${name}.png`, import.meta.url).pathname;
+
+function interfaz(pres, ctx) {
+  const s = page(pres, ctx, { eyebrow: '03 · Producto' });
+  title(s, 'La interfaz enseña el razonamiento, no sólo la respuesta.');
+  deck(s, 'Captura real resolviendo un cambio de carril: los hechos extraídos, las catorce reglas evaluadas y la decisión que resulta.');
+
+  // Marco del pantallazo, para que se lea como producto y no como adorno.
+  const ih = 4.42, iw = ih * 0.843, ix = RIGHT - iw, iy = 2.36;
+  rrect(s, { x: ix - 0.06, y: iy - 0.06, w: iw + 0.12, h: ih + 0.12, rectRadius: 0.08, fill: { color: C.navy } });
+  s.addImage({ path: SHOT('ui-reasoning'), x: ix, y: iy, w: iw, h: ih });
+
+  const items = [
+    ['Los hechos, con su procedencia', 'vehicle_count, direct_collision, lane_change_vehicle… y cada uno dice de dónde sale: «según relato», «según ambos conductores». No hay un hecho sin origen.'],
+    ['Las catorce reglas, también las que no casan', 'Once dicen «no comprobable con los datos aportados». Esa ausencia es información: enseña exactamente qué haría falta para ir más lejos.'],
+    ['La decisión y la norma que la sostiene', 'ASCIDE · el Convenio es aplicable · resuelto, con el texto literal de la b.10. Nada de esa conclusión la ha redactado el modelo.'],
+  ];
+  const lw = ix - M - 0.42;
+  items.forEach(([h, d], i) => {
+    const y = iy + i * 1.52;
+    card(s, { x: M, y, w: lw, h: 1.38, fill: C.ice });
+    chip(s, i + 1, { x: M + 0.28, y: y + 0.26, d: 0.4, fill: C.navy, size: 12 });
+    tb(s, h, { x: M + 0.84, y: y + 0.3, w: lw - 1.14, h: 0.3, fontSize: 14, bold: true, color: C.ink });
+    tb(s, d, { x: M + 0.84, y: y + 0.66, w: lw - 1.14, h: 0.62, fontSize: 12, color: C.muted, lineSpacingMultiple: 1.06 });
+  });
+
+  notes(s, [
+    'LA INTERFAZ (50 s). Es una captura real, tomada del sistema corriendo hoy.',
+    '',
+    '· Merece la pena detenerse en la columna de reglas que NO casan. Casi todas las demos',
+    '  esconden eso. Aquí es deliberado: si el sistema no puede aplicar la tabla de culpabilidad',
+    '  porque el relato no trae las casillas, se ve escrito, con el nombre de la regla.',
+    '· La consecuencia práctica: un tramitador que discrepe de la conclusión puede señalar el paso',
+    '  exacto donde discrepa — el hecho extraído, la regla aplicada o la redacción final.',
+    '',
+    'Si preguntan por qué se enseñan identificadores técnicos como lane_change_acknowledged_by_both:',
+    'porque son los mismos nombres que aparecen en el artefacto de reglas firmado. Enseñar un',
+    'sinónimo bonito rompería la trazabilidad entre lo que se ve y lo que se evalúa.',
+  ].join('\n'));
+}
+
 /* ---------------------------------------------------------------- ingesta */
 
 function ingesta(pres, ctx) {
@@ -246,6 +291,45 @@ function ingesta(pres, ctx) {
     '',
     'La banda de abajo es el detalle que más se agradece a los seis meses: los IDs de evidencia',
     'no dependen del parser, así que reindexar no invalida ni una cita del golden set.',
+  ].join('\n'));
+}
+
+/* ------------------------------------------------------- evidencia abrible */
+
+function evidenciaAbrible(pres, ctx) {
+  const s = page(pres, ctx, { eyebrow: '03 · Evidencia' });
+  title(s, 'Una cita no es una nota al pie: abre el manual por la página que la sostiene.');
+  deck(s, 'Captura real: la respuesta sobre alcoholemia cita la página 9 y, al pulsarla, aparece el párrafo exacto del manual original sin salir de la conversación.');
+
+  const iw = 6.2, ih = iw / 1.609, ix = M, iy = 2.44;
+  rrect(s, { x: ix - 0.06, y: iy - 0.06, w: iw + 0.12, h: ih + 0.12, rectRadius: 0.08, fill: { color: C.navy } });
+  s.addImage({ path: SHOT('ui-pdf'), x: ix, y: iy, w: iw, h: ih });
+
+  const items = [
+    ['El identificador es del documento, no del fragmento', 'sha256:…:page:9. Sobrevive a reindexar con otro parser o con otro tamaño de chunk: la cita del golden set sigue siendo válida.'],
+    ['Página física y etiqueta impresa, separadas', 'La 9 de 111 del PDF. La numeración que el manual imprime se guarda aparte cuando se conoce, porque no siempre coinciden.'],
+    ['Sin coordenadas verificadas no se finge un resaltado', 'Con el perfil activo se abre la página entera. El perfil estructurado sí tiene las regiones para resaltar la frase — otra razón para compararlos.'],
+  ];
+  const rx = ix + iw + 0.42, rw = RIGHT - rx;
+  items.forEach(([h, d], i) => {
+    const y = iy + i * 1.30;
+    dot(s, { x: rx, y: y + 0.08, d: 0.13, color: C.blue });
+    tb(s, h, { x: rx + 0.28, y: y, w: rw - 0.28, h: 0.46, fontSize: 13, bold: true, color: C.ink, lineSpacingMultiple: 1.0 });
+    tb(s, d, { x: rx + 0.28, y: y + 0.48, w: rw - 0.3, h: 0.7, fontSize: 11.5, color: C.muted, lineSpacingMultiple: 1.06 });
+  });
+
+  band(s, 'Quien revisa no tiene que fiarse de la respuesta: tiene el manual delante en dos clics, y puede leer el párrafo entero, no el trozo que el sistema eligió enseñar.', { tone: 'navy' });
+
+  notes(s, [
+    'EVIDENCIA ABRIBLE (45 s). Segunda captura real.',
+    '',
+    '· El detalle que suele pasar desapercibido y que más importa a los seis meses: el',
+    '  identificador de evidencia apunta al documento y a la página física, no al fragmento del',
+    '  índice. Reindexar con otro parser no invalida ni una cita.',
+    '· Página física vs. etiqueta impresa: en este manual no siempre coinciden, y confundirlas',
+    '  produce citas que parecen correctas y no lo son. Se guardan por separado.',
+    '· Y la honestidad del visor: sin coordenadas verificadas se abre la página completa en vez',
+    '  de pintar un resaltado inventado.',
   ].join('\n'));
 }
 

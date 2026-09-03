@@ -10,6 +10,7 @@ export function chapterFour(pres, ctx) {
     num: '04',
     name: 'Demo en vivo',
     promise: 'Cuatro recorridos sobre el sistema real, en local.\nLo que hay que creerse no son las láminas.',
+    shot: new URL('./assets/ui-empty.png', import.meta.url).pathname,
   });
   demo(pres, ctx, {
     n: '1', head: 'Enrutado y consulta documental',

@@ -65,8 +65,8 @@ export function agenda(pres, ctx) {
   const rows = [
     ['01', 'El problema', 'Qué pide el enunciado y por qué cuatro de sus cinco accidentes no tienen respuesta determinista.', '4 min'],
     ['02', 'Plan, supuestos y riesgos', 'Cinco días con hitos comprobables, seis supuestos declarados y las decisiones técnicas con su porqué.', '4 min'],
-    ['03', 'Arquitectura', 'Hexagonal, ingesta con cadena de custodia, recuperación híbrida, workflows y motor de reglas.', '9 min'],
-    ['04', 'Demo en vivo', 'Cuatro recorridos sobre el sistema real: enrutado, caso resuelto, abstención y trazabilidad.', '15 min'],
+    ['03', 'Arquitectura', 'Hexagonal, ingesta con cadena de custodia, recuperación híbrida, workflows y motor de reglas.', '10 min'],
+    ['04', 'Demo en vivo', 'Cuatro recorridos sobre el sistema real: enrutado, caso resuelto, abstención y trazabilidad.', '14 min'],
     ['05', 'Evaluación y límites', 'Golden set de 110 casos, protocolo de medida, lo que el sistema no hace y la siguiente iteración.', '5 min'],
     ['06', 'Preguntas', 'Con el código, el manual, las trazas y el estado verificado delante.', '8 min'],
   ];
