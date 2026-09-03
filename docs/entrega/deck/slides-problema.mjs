@@ -174,6 +174,12 @@ function laTesis(pres, ctx) {
     '  rellena hechos con nombre y el motor de reglas decide.',
     '· ABSTENCIÓN: el sistema tiene un estado explícito para «me falta este dato», y el grafo',
     '  se interrumpe para pedirlo. No es un mensaje de error: es parte del flujo.',
+    '',
+    'PUENTE si en la sala se usa el vocabulario del sector (integridad de dato, de modelo y de',
+    'decisión): son las mismas tres capas con otro nombre — evidencia es integridad del dato',
+    '(trazabilidad y control de calidad de la fuente), el versionado de prompts y la separación',
+    'de los cuatro usos del modelo es integridad del modelo, y las reglas firmadas más las',
+    'trazas son integridad de la decisión. Conviene tener la traducción a mano.',
   ].join('\n'));
 }
 

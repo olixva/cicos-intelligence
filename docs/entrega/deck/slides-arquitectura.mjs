@@ -263,7 +263,7 @@ function interfaz(pres, ctx) {
   deck(s, 'Captura real resolviendo un cambio de carril: los hechos extraídos, las catorce reglas evaluadas y la decisión que resulta.');
 
   // Marco del pantallazo, para que se lea como producto y no como adorno.
-  const ih = 4.42, iw = ih * 0.843, ix = RIGHT - iw, iy = 2.36;
+  const ih = 3.96, iw = ih * 0.843, ix = RIGHT - iw, iy = 2.36;
   rrect(s, { x: ix - 0.06, y: iy - 0.06, w: iw + 0.12, h: ih + 0.12, rectRadius: 0.08, fill: { color: C.navy } });
   s.addImage({ path: SHOT('ui-reasoning'), x: ix, y: iy, w: iw, h: ih });
 
@@ -274,12 +274,14 @@ function interfaz(pres, ctx) {
   ];
   const lw = ix - M - 0.42;
   items.forEach(([h, d], i) => {
-    const y = iy + i * 1.52;
-    card(s, { x: M, y, w: lw, h: 1.38, fill: C.ice });
-    chip(s, i + 1, { x: M + 0.28, y: y + 0.26, d: 0.4, fill: C.navy, size: 12 });
-    tb(s, h, { x: M + 0.84, y: y + 0.3, w: lw - 1.14, h: 0.3, fontSize: 14, bold: true, color: C.ink });
-    tb(s, d, { x: M + 0.84, y: y + 0.66, w: lw - 1.14, h: 0.62, fontSize: 12, color: C.muted, lineSpacingMultiple: 1.06 });
+    const y = iy + i * 1.36;
+    card(s, { x: M, y, w: lw, h: 1.24, fill: C.ice });
+    chip(s, i + 1, { x: M + 0.28, y: y + 0.2, d: 0.38, fill: C.navy, size: 11.5 });
+    tb(s, h, { x: M + 0.82, y: y + 0.24, w: lw - 1.12, h: 0.3, fontSize: 13.5, bold: true, color: C.ink });
+    tb(s, d, { x: M + 0.82, y: y + 0.58, w: lw - 1.12, h: 0.58, fontSize: 11.5, color: C.muted, lineSpacingMultiple: 1.04 });
   });
+
+  band(s, 'Es la misma tarjeta que vería quien tramita el expediente: si discrepa de la conclusión, puede señalar el paso exacto — el hecho extraído, la regla aplicada o la redacción final.', { tone: 'navy' });
 
   notes(s, [
     'LA INTERFAZ (50 s). Es una captura real, tomada del sistema corriendo hoy.',
