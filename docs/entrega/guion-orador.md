@@ -49,6 +49,13 @@ RUTA CORTA, si hay que bajar de 45 a 35 minutos (en este orden):
 4) Recortar la demo 1 a la mitad: se puede ir directo a la 2. (-1:30)
 Nunca recortar: la 05 (los cinco veredictos), la demo 3 y la 38 (lo que el sistema no hace).
 
+SI EL HUECO SON 30 MINUTOS (el enunciado dice 30-45), seguir bajando:
+5) Fundir 20 (parsers) y 21 (recuperación) en una sola frase cada una. (-1:20)
+6) Saltar 22 (grafo documental): la 23, la de siniestros, es la que importa. (-0:45)
+7) Saltar 36 (observabilidad): la demo 4 la enseña. (-0:45)
+8) Dejar la demo en dos paradas, la 2 y la 3. (-4:00)
+Con eso quedan 20 de láminas, 6 de demo y 4 de preguntas. Sigue contando la misma historia.
+
 El apéndice (42-45) no se pasa: está para las preguntas.
 
 ## 03 · 01 · El problema
