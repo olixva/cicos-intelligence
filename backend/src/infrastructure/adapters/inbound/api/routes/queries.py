@@ -42,6 +42,7 @@ from infrastructure.adapters.inbound.api.schemas.envelope import (
     EnvelopeResponse,
     EvidenceItem,
 )
+from infrastructure.adapters.inbound.api.schemas.errors import ErrorResponse
 from infrastructure.adapters.inbound.api.schemas.query import (
     QueryResolveRequest,
     QueryResolveResponse,
@@ -312,19 +313,15 @@ async def _streaming_event_loop(
             ),
         }
     except Exception as error:  # noqa: BLE001 — surface contract translates everything
+        failure = ErrorResponse(
+            code="internal_error",
+            message=str(error)[:200],
+            request_id=request_id,
+            retryable=True,
+        )
         yield {
             "event": "failed",
-            "data": _json_dumps(
-                _event_envelope(
-                    "failed",
-                    request_id,
-                    {
-                        "code": "internal_error",
-                        "message": str(error)[:200],
-                        "retryable": True,
-                    },
-                )
-            ),
+            "data": _json_dumps(_event_envelope("failed", request_id, failure.model_dump())),
         }
 
 

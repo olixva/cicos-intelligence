@@ -98,7 +98,9 @@ Desde la raíz del repositorio: `make check-frontend` encadena lint, typecheck,
 tests y build.
 
 Playwright usa el Chrome estable del sistema (`channel: 'chrome'`) para no
-descargar binarios propios.
+descargar binarios propios, y arranca el servidor de desarrollo por su cuenta.
+El smoke necesita además el backend en marcha: las tarjetas de sugerencia
+salen de `GET /api/v1/demo/cases`.
 
 ## Tipos del API
 

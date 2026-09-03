@@ -130,17 +130,22 @@ tampoco, porque no hay etapa que reportar.
 
 ## Errores
 
-Los tres modos y el streaming comparten una única forma de error:
+Un fallo durante el streaming llega como evento `failed` con esta forma:
 
 ```json
-{ "code": "unsupported_profile", "message": "…",
-  "request_id": "…", "retryable": false }
+{ "code": "internal_error", "message": "…",
+  "request_id": "…", "retryable": true }
 ```
 
-`code` es un literal cerrado: `invalid_request`, `unsupported_profile`,
+`code` es un literal cerrado (`ErrorResponse` en
+`schemas/errors.py`): `invalid_request`, `unsupported_profile`,
 `unsupported_mode`, `unsupported_language`, `provider_timeout`,
-`provider_unavailable`, `internal_error`. No se exponen trazas internas ni
-mensajes del proveedor.
+`provider_unavailable`, `internal_error`. El mensaje se recorta a 200
+caracteres y no se exponen trazas internas.
+
+Un perfil no reconocido se rechaza antes de ejecutar nada, con 422 y
+`detail = {"code": "unsupported_profile", "profile": "…"}`, tanto en la ruta
+síncrona como en la de streaming.
 
 `insufficient_evidence` **no** es un código de error: es un estado de una
 respuesta 200. Que el sistema se abstenga con criterio no es un fallo.

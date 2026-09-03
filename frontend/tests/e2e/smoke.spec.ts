@@ -1,14 +1,16 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke e2e — verifica que el chat agéntico carga y que se puede
- * enviar una consulta. No asume backend arriba: si el POST falla,
- * aparecerá un mensaje de error en la burbuja del asistente (lo
- * aceptamos dentro del timeout de 60s).
+ * Smoke e2e — verifica que el chat carga con sus elementos clave y que el
+ * composer se habilita al escribir.
  *
- * Spec UX v2: la app expone BannerSystem, EmptyState, Composer y
- * thread. Verificamos los elementos clave y dejamos el flujo de
- * streaming a la prueba manual (necesita backend con índice).
+ * Requiere el backend en marcha: las tarjetas de sugerencia salen de
+ * `GET /api/v1/demo/cases`. El flujo de streaming completo queda fuera de
+ * este smoke.
+ *
+ * Las aserciones sobre las sugerencias van contra el contrato de la
+ * interfaz (hay tarjetas y son clickables), no contra los identificadores
+ * concretos de los casos: la selección curada es contenido y cambia.
  */
 
 test.describe('Allianz CICOS — chat agéntico smoke', () => {
@@ -28,8 +30,11 @@ test.describe('Allianz CICOS — chat agéntico smoke', () => {
         name: /Claims Intelligence/i,
       }),
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: /accident-01-rear-end/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /accident-02-pile-up/i })).toBeVisible();
+    const suggestions = page.getByLabel('Sugerencias').getByRole('button', {
+      name: /Probar ejemplo:/i,
+    });
+    await expect(suggestions.first()).toBeVisible();
+    expect(await suggestions.count()).toBeGreaterThan(0);
 
     // Composer con radios de modo — el fieldset expone su nombre
     // accesible, evitamos así ambigüedad con textos repetidos.
