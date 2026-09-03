@@ -363,7 +363,7 @@ export default function IndexRoute() {
           )}
 
           <main className="flex flex-1 flex-col overflow-hidden">
-            <div className="border-b bg-background/70 px-4 py-2 backdrop-blur">
+            <div className="bg-background/70 px-4 py-2 backdrop-blur">
               <BannerSystem />
             </div>
 
