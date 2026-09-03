@@ -155,6 +155,8 @@ una técnica exista no demuestra que mejore los resultados.
 ## Índices en Qdrant
 
 ```bash
+make index-baseline    # el atajo para el perfil baseline y el manual verificado
+
 uv run --project backend --extra local-rag allianz index \
   --document-hash <sha256> --parser pypdf \
   --evidence-root data/extractions --profile baseline

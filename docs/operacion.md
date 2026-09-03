@@ -76,22 +76,16 @@ Para una tanda de evaluación masiva se bajan las tres a `gpt-5.6-luna`.
 ## Puesta en marcha desde cero
 
 ```bash
-# 1. Servicios
-make local-services-up
-
-# 2. Verificar la fuente
-uv run --project backend allianz inspect-manual \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
-
-# 3. Índice en Qdrant (alias `allianz-manual-active`)
-uv run --project backend --extra local-rag allianz index \
-  --document-hash b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344 \
-  --parser pypdf --evidence-root data/extractions --profile baseline
-
-# 4. Comprobar
-make doctor
+make local-services-up   # 1. Qdrant y Langfuse
+make verify-source       # 2. SHA-256 y legibilidad del manual
+make index-baseline      # 3. índice en Qdrant + alias `allianz-manual-active`
+make doctor              # 4. comprobar
 ```
+
+`index-baseline` carga `.env` igual que `serve-backend`, así que no hace falta
+exportar `OPENAI_API_KEY` a mano. Publica una colección nueva y mueve el alias
+al terminar; la anterior se conserva para poder volver a ella con
+`allianz index-rollback`.
 
 No hace falta reingerir: la publicación baseline (`pypdf-6.16.2`) viene
 versionada en `data/extractions/`, junto al manual original. Reingerir o usar

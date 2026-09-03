@@ -2,7 +2,8 @@
         lint-backend format-check format-backend typecheck-backend test-backend \
         lint-frontend typecheck-frontend test-frontend build-frontend test-e2e \
         local-services-config local-services-up local-services-stop \
-        doctor serve-backend serve-frontend provision-prompts
+        doctor serve-backend serve-frontend provision-prompts \
+        verify-source index-baseline
 
 LOCAL_COMPOSE = docker compose --env-file ops/local.env
 PNPM ?= npm exec --yes pnpm@9.12.0 --
@@ -66,8 +67,24 @@ local-services-up:
 local-services-stop:
 	$(LOCAL_COMPOSE) stop
 
+# Carga `.env` igual que `serve-backend`: si no, las credenciales salen como
+# ausentes aunque estén configuradas.
 doctor:
-	uv run --project backend allianz doctor
+	@$(BACKEND_ENV) uv run --project backend allianz doctor
+
+# --- Fuente e índice ---------------------------------------------------------
+# El manual verificado y su publicación baseline vienen en el repositorio; para
+# servir sólo falta publicar el índice en Qdrant y mover el alias.
+DOCUMENT_HASH = b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
+
+verify-source:
+	uv run --project backend allianz inspect-manual \
+		data/raw/Manual-cide-ascide-y-cicos.pdf --expected-sha256 $(DOCUMENT_HASH)
+
+index-baseline:
+	@$(BACKEND_ENV) uv run --project backend --extra local-rag allianz index \
+		--document-hash $(DOCUMENT_HASH) --parser pypdf \
+		--evidence-root data/extractions --profile baseline
 
 # --- Servir en desarrollo ---------------------------------------------------
 # Carga `.env` y mapea las claves de Langfuse desde `ops/local.env`, donde

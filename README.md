@@ -59,23 +59,18 @@ cp ops/local.env.example ops/local.env
 # 2. Servicios locales (Qdrant + Langfuse)
 make local-services-up
 
-# 3. Verificar la fuente y publicar el índice
-#    (la publicación baseline ya viene en el repositorio; no hay que reingerir)
-uv run --project backend allianz inspect-manual \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
-
-uv run --project backend --extra local-rag allianz index \
-  --document-hash b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344 \
-  --parser pypdf --evidence-root data/extractions --profile baseline
+# 3. Verificar la fuente y publicar el índice en Qdrant
+make verify-source     # comprueba el SHA-256 y la legibilidad del manual
+make index-baseline    # publica el índice y mueve el alias activo
 
 # 4. Arrancar
-make serve-backend    # http://127.0.0.1:8000
-make serve-frontend   # http://127.0.0.1:5173
+make serve-backend     # http://127.0.0.1:8000
+make serve-frontend    # http://127.0.0.1:5173
 ```
 
-`make doctor` comprueba que los servicios, el alias del índice y las
-credenciales están en su sitio. El detalle completo, incluida la ingesta
+No hay que reingerir el manual: su publicación baseline viene en el
+repositorio. `make doctor` comprueba que los servicios, el alias del índice y
+las credenciales están en su sitio. El detalle completo, incluida la ingesta
 estructurada con Docling, está en [docs/operacion.md](docs/operacion.md).
 
 ## Verificación
