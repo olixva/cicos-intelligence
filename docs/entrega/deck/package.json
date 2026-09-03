@@ -1,8 +1,0 @@
-{
-  "name": "allianz-deck",
-  "private": true,
-  "type": "module",
-  "description": "Genera docs/entrega/presentacion.pptx por código.",
-  "scripts": { "build": "node build.mjs" },
-  "dependencies": { "pptxgenjs": "^4.0.1" }
-}

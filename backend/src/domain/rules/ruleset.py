@@ -71,7 +71,9 @@ def _evaluate(rule: LoadedRule, facts: Mapping[str, str]) -> RuleEvaluation:
         )
 
     used = _fields(condition)
-    missing = tuple(name for name in used if name not in facts)
+    optional = _optional_fields(condition)
+    required = tuple(name for name in used if name not in optional)
+    missing = tuple(name for name in required if name not in facts)
     if missing:
         return RuleEvaluation(
             rule_id=rule.rule_id,
@@ -81,7 +83,7 @@ def _evaluate(rule: LoadedRule, facts: Mapping[str, str]) -> RuleEvaluation:
             rationale=(f"{rule.description} Faltan hechos para evaluarla: {', '.join(missing)}."),
         )
 
-    inputs = tuple((name, facts[name]) for name in used)
+    inputs = tuple((name, facts[name]) for name in required)
     holds = _holds(condition, facts)
     return RuleEvaluation(
         rule_id=rule.rule_id,
@@ -133,20 +135,26 @@ def _holds(condition: Mapping[str, object], facts: Mapping[str, str]) -> bool:
 
     field = str(condition["field"])
     op = condition.get("op")
-    actual = facts[field]
     match op:
         case "eq":
-            return actual == str(condition["value"])
+            return facts[field] == str(condition["value"])
         case "ne":
-            return actual != str(condition["value"])
+            return facts[field] != str(condition["value"])
         case "gt":
-            return _number(actual) > _number(str(condition["value"]))
+            return _number(facts[field]) > _number(str(condition["value"]))
         case "lt":
-            return _number(actual) < _number(str(condition["value"]))
+            return _number(facts[field]) < _number(str(condition["value"]))
         case "is_true":
-            return actual.strip().lower() in _TRUE
+            return facts[field].strip().lower() in _TRUE
         case "is_false":
-            return actual.strip().lower() in _FALSE
+            return facts[field].strip().lower() in _FALSE
+        case "is_false_or_absent":
+            # Guard negativa: tratar como ``false`` un campo ausente. El
+            # campo se declara opcional en ``_optional_fields``, así que la
+            # comprobación de hechos faltantes en ``_evaluate`` no lo
+            # convierte en ``insufficient_data``.
+            actual = facts.get(field)
+            return actual is None or actual.strip().lower() in _FALSE
         case _:
             raise RulesetError(f"unknown ruleset operator: {op!r}")
 
@@ -172,6 +180,27 @@ def _compound_branches(condition: Mapping[str, object]) -> tuple[Mapping[str, ob
             raise RulesetError(f"condition branch must use string keys: {raw_branch!r}")
         branches.append(cast(dict[str, object], branch))
     return tuple(branches)
+
+
+def _optional_fields(condition: Mapping[str, object]) -> tuple[str, ...]:
+    """Collect fields guarded by ``is_false_or_absent`` (treats absent as false).
+
+    These fields are exempt from the missing-fact check in ``_evaluate``: a
+    rule may rely on them to encode a default-fires guard without requiring
+    the extractor to ever produce the value.
+    """
+    if "all" in condition or "any" in condition:
+        names: list[str] = []
+        for branch in _compound_branches(condition):
+            for name in _optional_fields(branch):
+                if name not in names:
+                    names.append(name)
+        return tuple(names)
+    if condition.get("op") == "is_false_or_absent":
+        field = condition.get("field")
+        if isinstance(field, str) and field:
+            return (field,)
+    return ()
 
 
 def fact_names(rules: Sequence[LoadedRule]) -> tuple[str, ...]:

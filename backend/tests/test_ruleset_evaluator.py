@@ -140,3 +140,83 @@ def test_the_rationale_names_the_rule_and_what_was_seen() -> None:
     (result,) = evaluate_ruleset((rule,), {"chain_collision": "true"})
     assert isinstance(result, RuleEvaluation)
     assert "cadena" in result.rationale.lower()
+
+
+def test_is_false_or_absent_fires_when_the_fact_is_missing() -> None:
+    """Guard negativa: la regla debe disparar por defecto cuando el hecho
+    simplemente no consta en el relato. Semántica intencional para
+    ``ascide-b6-exit-from-parking`` (la nota de la regla dice explícitamente:
+    «mientras exit_disputed_as_incorporation no conste como false, la regla
+    no decide» — pero el motor lo modeló como ``is_false`` estricto, lo que
+    rompe el caso normal en el que el hecho no se menciona)."""
+
+    rule = _rule(
+        "ascide-b6-exit-from-parking",
+        {
+            "all": [
+                {"field": "exit_manoeuvre_by", "op": "ne", "value": ""},
+                {"field": "exit_disputed_as_incorporation", "op": "is_false_or_absent"},
+            ]
+        },
+        kind="manoeuvre",
+    )
+    (result,) = evaluate_ruleset((rule,), {"exit_manoeuvre_by": "A"})
+
+    assert result.result == "matched"
+    assert result.evidence_ids == _EV
+    # El campo opcional no aparece en inputs porque no se consultó en facts.
+    assert all(name != "exit_disputed_as_incorporation" for name, _ in result.inputs)
+
+
+def test_is_false_or_absent_fires_when_the_fact_is_explicitly_false() -> None:
+    rule = _rule(
+        "ascide-b6-exit-from-parking",
+        {
+            "all": [
+                {"field": "exit_manoeuvre_by", "op": "ne", "value": ""},
+                {"field": "exit_disputed_as_incorporation", "op": "is_false_or_absent"},
+            ]
+        },
+    )
+    (result,) = evaluate_ruleset(
+        (rule,),
+        {"exit_manoeuvre_by": "A", "exit_disputed_as_incorporation": "false"},
+    )
+    assert result.result == "matched"
+
+
+def test_is_false_or_absent_does_not_fire_when_the_fact_is_true() -> None:
+    """Si el relato afirma explícitamente que la maniobra está disputada
+    como incorporación, la regla NO debe disparar — eso es justo lo que el
+    guard negativo protege."""
+
+    rule = _rule(
+        "ascide-b6-exit-from-parking",
+        {
+            "all": [
+                {"field": "exit_manoeuvre_by", "op": "ne", "value": ""},
+                {"field": "exit_disputed_as_incorporation", "op": "is_false_or_absent"},
+            ]
+        },
+    )
+    (result,) = evaluate_ruleset(
+        (rule,),
+        {"exit_manoeuvre_by": "A", "exit_disputed_as_incorporation": "true"},
+    )
+    assert result.result == "not_matched"
+    assert result.evidence_ids == ()
+
+
+def test_is_false_still_treats_absent_as_insufficient_data() -> None:
+    """El operador ``is_false`` (estricto) NO cambia su semántica. Si el
+    hecho falta, la regla sigue marcando ``insufficient_data`` — eso es
+    deliberado para reglas como ``cide-requires-direct-collision`` donde la
+    intención es "si NO hubo colisión directa, no aplica" (hecho ausente
+    = desconocido, no decisión)."""
+
+    rule = _rule(
+        "cide-requires-direct-collision",
+        {"field": "direct_collision", "op": "is_false"},
+    )
+    (result,) = evaluate_ruleset((rule,), {})
+    assert result.result == "insufficient_data"

@@ -171,7 +171,7 @@
           },
           {
             "field": "exit_disputed_as_incorporation",
-            "op": "is_false"
+            "op": "is_false_or_absent"
           }
         ]
       }
@@ -304,7 +304,7 @@
           },
           {
             "field": "door_opening_specified",
-            "op": "is_false"
+            "op": "is_false_or_absent"
           },
           {
             "field": "door_vehicle",
