@@ -545,9 +545,9 @@ function threadReducerInner(state: ThreadState, action: ThreadAction): ThreadSta
     case 'RESOLVE_TOOL_PLAN': {
       // Sólo aplica a modo 'auto': reescribe el plan de tool calls del
       // assistant activo para que refleje el resolved_mode del envelope.
-      // Finding G1 #2 — cerrar el classify pendiente y añadir los cards
-      // que faltan (claim → check_rules + apply_decision, question →
-      // retrieve, clarification → sólo classify).
+      // Cierra el classify pendiente y añade los cards que faltan
+      // (claim → check_rules + apply_decision, question → retrieve,
+      // clarification → sólo classify).
       if (action.requested_mode !== 'auto') return state;
       if (!state.activeAssistantId) return state;
 
@@ -623,7 +623,7 @@ function extractCitations(envelope: EnvelopeResponse): CitationRef[] {
   // key (assistant-message.tsx), así que duplicados provocaban
   // "Encountered two children with the same key". El Map preserva el
   // orden de inserción, así que mantenemos el primer bloque que cita
-  // cada par (Finding G1 #1).
+  // cada par.
   const byKey = new Map<string, CitationRef>();
   for (const block of blocks) {
     const ids = Array.isArray(block.evidence_ids) ? block.evidence_ids : [];

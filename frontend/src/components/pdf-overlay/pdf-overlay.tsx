@@ -17,10 +17,9 @@ import { fullPageFallback, normalizeRegions } from '@/lib/pdf-utils';
 /**
  * PdfOverlay — modal fullscreen shadcn para mostrar la evidencia.
  *
- * Sustituye al PdfViewer lateral del spec UX v1 (spec UX v2 lo declara
- * modal). Carga pdfjs-dist lazy para evitar inflar el bundle principal
+ * Carga pdfjs-dist en lazy para no inflar el bundle principal
  * (≈1.1MB si se importa arriba). Si `regions` está vacío: fallback a
- * página completa con `console.warn` (decisión D4).
+ * página completa con `console.warn`.
  */
 export interface PdfOverlayProps {
   open: boolean;

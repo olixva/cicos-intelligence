@@ -2,7 +2,7 @@ import { cn } from '@/lib/cn';
 import { Button, type ButtonProps } from '@/components/ui/button';
 
 /**
- * ShimmerButton — Magic UI primitive ported (spec UX v2).
+ * ShimmerButton — primitivo portado de Magic UI.
  *
  * Botón con un barrido (shimmer) diagonal infinito detrás del texto.
  * Se usa en el botón "Enviar" del Composer cuando está idle.

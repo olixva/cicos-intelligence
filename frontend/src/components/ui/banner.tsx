@@ -5,7 +5,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 
 /**
  * Banner — 4 variantes (info | success | warning | destructive).
- * Decisión del spec UX: cada banner lleva icono semántico + dismiss.
+ * Cada banner lleva icono semántico y botón de descarte.
  */
 const bannerVariants = cva(
   'relative w-full rounded-md border px-4 py-3 text-sm flex items-start gap-3 [&>svg]:shrink-0',

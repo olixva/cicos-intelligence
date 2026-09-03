@@ -16,8 +16,6 @@
  * Si en el futuro el backend pasa coords en otro sistema (fracciones 0..1,
  * coords del MediaBox sin escalar), se añade aquí la conversión y los
  * tests cubren ambos paths.
- *
- * Movido desde `src/features/pdf-viewer/pdf-utils.ts` (spec UX v2).
  */
 
 export interface PdfRegion {

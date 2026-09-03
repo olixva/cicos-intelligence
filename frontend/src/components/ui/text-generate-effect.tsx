@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 
 /**
- * TextGenerateEffect — Magic UI primitive ported (spec UX v2).
+ * TextGenerateEffect — primitivo portado de Magic UI.
  *
  * Aplica un typewriter palabra-por-palabra al texto recibido. Pensado
  * para mostrar el `streamedText` del AssistantMessage cuando isStreaming.
@@ -73,7 +73,7 @@ export function TextGenerateEffect({
       </AnimatePresence>
       {/* Texto oculto para lectores de pantalla: siempre el texto completo.
           `aria-hidden` evita que la live region del padre (assistant-message)
-          anuncie el contenido dos veces (Finding G3 #2). */}
+          anuncie el contenido dos veces. */}
       <span className="sr-only" aria-hidden="true">
         {text}
       </span>

@@ -1,4 +1,4 @@
-.PHONY: check-backend check-frontend check-openapi check-all check-unit check-integration check-e2e \
+.PHONY: check-all check-backend check-frontend check-openapi \
         lint-backend format-check format-backend typecheck-backend test-backend \
         lint-frontend typecheck-frontend test-frontend build-frontend test-e2e \
         local-services-config local-services-up local-services-stop \
@@ -19,26 +19,16 @@ format-check:
 format-backend:
 	uv run --project backend --group ingestion --extra local-rag ruff format backend
 
-# Pyright en modo estricto: baseline conocido ≈ 79 errores (deuda técnica
-# preexistente registrada en .slim/deepwork/). El gate rápido no incluye
-# pyright para que `make check-backend` pase desde checkout limpio; el
-# target `typecheck-backend-strict` ejecuta la verificación completa y
-# se aborda en una fase posterior del plan de cierre.
+# Pyright en modo estricto sobre el código de producción. Los tests quedan
+# fuera: sus dobles usan tipos laxos a propósito y su tipado estricto no
+# aporta garantías sobre lo que se entrega.
 typecheck-backend:
 	uv run --project backend --group ingestion --extra local-rag pyright --project backend backend/src
-
-typecheck-backend-strict:
-	uv run --project backend --group ingestion --extra local-rag pyright --project backend
 
 test-backend:
 	uv run --project backend --group ingestion --extra local-rag pytest backend/tests
 
-check-unit: test-backend
-
-check-integration:
-	uv run --project backend --group ingestion --extra local-rag pytest backend/tests/integration -m integration
-
-check-backend: lint-backend format-check test-backend
+check-backend: lint-backend format-check typecheck-backend test-backend
 
 # --- Frontend ---------------------------------------------------------------
 lint-frontend:

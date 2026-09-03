@@ -385,9 +385,11 @@ def build_api(
 def _known_profiles() -> tuple[str, ...]:
     """Catalog of profile names the envelope accepts.
 
-    Phase 4 v1: the envelope validates the ``profile`` body field for
-    shape only; per-request profile override is not yet honored at
-    runtime. Mismatches return 422 with ``code=unsupported_profile``.
+    The envelope validates the ``profile`` body field against this
+    catalog and returns 422 with ``code=unsupported_profile`` when it
+    does not match. The profile that actually serves the request is the
+    one the composition root built with; the field pins the client to
+    that choice instead of silently answering from another index.
     Profiles are read from the YAML catalog directory when present.
     """
 

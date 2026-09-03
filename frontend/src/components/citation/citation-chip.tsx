@@ -12,7 +12,7 @@ export interface CitationChipProps extends ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 /**
- * CitationChip — Origin UI comp-265-inspired (spec UX v2).
+ * CitationChip — chip de cita, inspirado en el patrón de Origin UI.
  *
  * Botón pequeño que muestra el ID de evidencia en monospace, la página y
  * opcionalmente un label legible. Click → abre PDF overlay vía `onClick`.

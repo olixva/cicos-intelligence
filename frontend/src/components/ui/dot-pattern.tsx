@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn';
 
 /**
- * DotPattern — Magic UI primitive ported (spec UX v2).
+ * DotPattern — primitivo portado de Magic UI.
  *
  * Patrón decorativo sutil de puntos (5% claro / 8% oscuro según tokens).
  * Se renderiza como background-image radial-gradient sin imagen física.

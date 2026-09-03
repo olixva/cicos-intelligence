@@ -144,9 +144,9 @@ class LangGraphClaimWorkflow:
         # context is attached to the asyncio task before any awaited
         # ``responses.parse`` call fires inside ``_extract_facts``. The
         # ``langfuse.openai`` wrapper reads this OTEL context to nest its
-        # ``GENERATION`` spans under the workflow's trace (Oracle G4
-        # residual finding: orphan spans when only ``CallbackHandler`` is
-        # used because it dispatches via ``run_in_executor``).
+        # ``GENERATION`` spans under the workflow's trace. Relying only on
+        # ``CallbackHandler`` leaves orphan spans, because it dispatches
+        # through ``run_in_executor`` and loses the ambient context.
         span_cm: contextlib.AbstractContextManager[object] = (
             get_client().start_as_current_observation(
                 name="claim_workflow",

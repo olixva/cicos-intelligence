@@ -2,13 +2,13 @@
 
 The router exposes two endpoints under ``/api/v1/queries``:
 
-- ``POST /resolve`` — the closed-enum auto router (added in Phase 3).
+- ``POST /resolve`` — the closed-enum auto router.
 - ``POST /`` — the unified envelope that dispatches ``text`` to one of
   the three flows based on the body's ``mode`` field. ``mode=question``
   goes straight to the explicit question port; ``mode=claim`` goes
   straight to the explicit claim port; ``mode=auto`` invokes the
-  router. The envelope never invokes the router for explicit modes
-  (Oracle Gate 1 design rule).
+  router. The envelope never invokes the router for explicit modes:
+  an explicit mode is the caller's decision, not a hint.
 - ``POST /stream`` — bounded Server-Sent-Events stream with the same
   request body, emitting ``started``, ``stage``, ``completed`` and
   ``failed`` events.
@@ -51,8 +51,8 @@ from infrastructure.adapters.inbound.api.schemas.query import (
 def build_query_router(resolve_query: ResolveQuery) -> APIRouter:
     """Bind the resolve route solely to the closed-enum auto router port.
 
-    Preserved from Phase 3 (``9c99371`` / ``86638b7``). Mounted only when
-    ``resolve_query`` is injected into ``create_app``. The response
+    Mounted only when ``resolve_query`` is injected into
+    ``create_app``. The response
     shape is intentionally minimal — the caller receives the selected
     ``decision`` plus a short ``rationale`` and trace identifier.
     """
@@ -104,12 +104,12 @@ async def _execute_envelope(
 ) -> EnvelopeResponse:
     """Dispatch by mode and project into the envelope response.
 
-    Explicit modes bypass the auto router entirely (Oracle Gate 1).
+    Explicit modes bypass the auto router entirely.
 
     ``request_id`` is accepted as a parameter so the SSE generator can
-    pass the uuid it already emitted in the ``started`` event — Finding
-    G2 #2 (single uuid per request across ``started``, envelope and
-    ``failed``). When ``None`` (synchronous route) a fresh uuid4 is
+    pass the uuid it already emitted in the ``started`` event: one
+    request keeps a single identifier across ``started``, the envelope
+    and ``failed``. When ``None`` (synchronous route) a fresh uuid4 is
     generated here so the response still carries a server-side id.
     """
 

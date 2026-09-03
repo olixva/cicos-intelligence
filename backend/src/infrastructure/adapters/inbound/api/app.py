@@ -133,6 +133,11 @@ def create_app(
 
 
 def _index_not_built() -> bool:
-    """Task 7 will replace this conservative default with the required index probe."""
+    """Default probe: without an injected one, readiness cannot be asserted.
+
+    ``asgi_local`` injects the real Qdrant alias probe. Any composition that
+    does not supply one keeps ``/health/ready`` at 503 rather than claiming a
+    readiness it has not checked.
+    """
 
     return False

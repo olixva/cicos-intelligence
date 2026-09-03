@@ -28,7 +28,7 @@ Response (synchronous):
         "metadata": { "trace_id": "..." }
     }
 
-The explicit ``mode`` dispatch rule (per Oracle Gate 1): ``question``
+The explicit ``mode`` dispatch rule: ``question``
 goes straight to ``AnswerQuestion`` and never invokes the auto
 router; ``claim`` goes straight to ``AnalyzeClaim`` and never invokes
 the auto router; ``auto`` invokes ``ResolveQuery`` and the response's

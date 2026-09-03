@@ -122,7 +122,7 @@ export default function IndexRoute() {
     persistThreadState(stateRef.current, {});
   }, [state]);
 
-  // Show sidebar only at >= 1280px (spec UX v2).
+  // La barra lateral sólo aparece a partir de 1280px.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(min-width: 1280px)');
@@ -308,7 +308,7 @@ export default function IndexRoute() {
     return () => window.clearTimeout(t);
   }, [draftPrompt]);
 
-  // Finding G3 #1: `/api/v1/manual/pdf` exige el query param `version`
+  // `/api/v1/manual/pdf` exige el query param `version`
   // (el sha256 del documento). Sin él el backend responde 422 y pdfjs
   // falla con "Unexpected server response (422) while retrieving PDF".
   const pdfDocumentHash = state.openPdf?.evidence?.document_hash;
@@ -538,8 +538,8 @@ function dispatchToolCallsFromEnvelope(
   }
   if (!lastAssistant) return;
 
-  // Finding G1 #2: en modo 'auto' el plan inicial sólo tenía 'classify'.
-  // Aquí reescribimos el plan para que refleje el resolved_mode del
+  // En modo 'auto' el plan inicial sólo tiene 'classify'. Aquí se
+  // reescribe el plan para que refleje el resolved_mode del
   // envelope (claim → check_rules + apply_decision; question → retrieve;
   // clarification → sólo classify). El reducer cierra el classify
   // pendiente y añade los cards que faltan.

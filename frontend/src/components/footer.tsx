@@ -11,15 +11,14 @@ export interface FooterProps {
 /**
  * Footer — request_id, trace_id y link a Langfuse si está disponible.
  *
- * Decisión del spec UX: este footer debe ser siempre visible. Si no hay
+ * Este footer es siempre visible. Si no hay
  * respuesta todavía, mostramos el request_id que se enviará en el próximo
  * POST (uuid v4 generado en el cliente). El id fallback se genera **una
  * sola vez por montaje** del Footer (vía `useState` lazy init) para que
- * re-renders del padre no produzcan un id distinto en cada frame
- * (Finding G2 #1).
+ * re-renders del padre no produzcan un id distinto en cada frame.
  */
 export function Footer({ requestId, traceId, response }: FooterProps) {
-  // Finding G2 #1 — el id fallback se memoiza al montar el Footer.
+  // El id fallback se memoiza al montar el Footer.
   const [fallbackRequestId] = useState<string>(() => newRequestId());
   const resolvedRequestId = response?.request_id ?? requestId ?? fallbackRequestId;
   const resolvedTraceId =

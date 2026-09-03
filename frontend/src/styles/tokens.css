@@ -1,6 +1,5 @@
 /* =====================================================================
  * tokens.css — Design tokens (Allianz CICOS)
- * Sistema visual derivado del spec UX del @designer (sesión des-1).
  * Claro + oscuro + tipografía corporativa + espaciados + radios + sombras.
  * Todas las variables se exponen como CSS custom properties y son
  * consumidas por Tailwind vía `hsl(var(--token))` en tailwind.config.ts.
