@@ -1,145 +1,120 @@
-# Allianz local RAG
+# CICOS Intelligence
 
-This repository starts with a reproducible inspection of the supplied source manual.
+Sistema RAG local sobre el **Manual de convenios CIDE / ASCIDE / CICOS**
+(edición de noviembre de 2004, 111 páginas). Responde preguntas del manual
+citando las páginas que las sostienen, y analiza relatos de siniestro
+aplicando un conjunto de reglas firmadas derivadas de esa misma fuente.
 
-```bash
-uv run --project backend allianz inspect-manual \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
+La propiedad que gobierna todo el diseño: **cuando no hay evidencia para
+decidir, el sistema dice qué falta en lugar de inventar una conclusión**.
+
+---
+
+## Qué hace
+
+**Consulta documental.** Recuperación híbrida (densa + BM25 español, fusión
+RRF) sobre el manual, generación con citas obligatorias y una validación
+determinista posterior que recorta cualquier cita que el modelo no pueda
+sostener. La respuesta puede ser completa, parcial, sin evidencia suficiente o
+fuera de alcance.
+
+**Análisis de siniestros.** El modelo extrae hechos tipados del relato; la
+decisión la toman reglas deterministas: la puerta de aplicabilidad del
+Convenio, un ruleset de 14 reglas firmadas y la tabla de culpabilidad CIDE de
+18×18 transcrita a mano y atestada. Si falta un dato decisorio, el flujo se
+detiene y pregunta exactamente por él.
+
+**Enrutado automático.** Un clasificador con enum cerrado decide entre
+consulta, siniestro o petición de aclaración.
+
+**Trazabilidad completa.** Cada cita es un `evidence_id` que abre el PDF
+original en la página exacta. Cada regla evaluada informa de sus entradas, su
+resultado y las páginas que la respaldan. Cada ejecución deja su traza en
+Langfuse con enlace directo desde la interfaz.
+
+## Cómo está montado
+
+```
+prueba-allianz/
+├── backend/     FastAPI + LangGraph, arquitectura hexagonal   → backend/README.md
+├── frontend/    SPA React 19 + Vite                           → frontend/README.md
+├── data/
+│   ├── raw/         el manual original
+│   ├── rules/       artefactos firmados (ruleset, matriz CIDE, catálogo D.A.A.)
+│   └── evaluation/  golden set y sus releases congeladas
+├── docs/        documentación del sistema                     → docs/README.md
+├── ops/         configuración de los servicios locales
+├── compose.yaml Qdrant + Langfuse (Postgres, ClickHouse, Redis, MinIO)
+└── Makefile     puesta en marcha y verificación
 ```
 
-The command returns JSON with the SHA-256, filename, and PDF page count. It reads the
-source without writing to it. This verifies the source identity and that it is readable;
-it does not extract tables or provide RAG answers.
-
-## Baseline ingestion
+## Puesta en marcha
 
 ```bash
-uv run --project backend allianz ingest \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --parser pypdf \
-  --output data/extractions
-```
+# 1. Credenciales
+cp .env.example .env               # clave de OpenAI, modelos, Langfuse
+cp ops/local.env.example ops/local.env
 
-The composition root maps `pypdf` to `PypdfDocumentParser` and constructs its
-`FilesystemEvidenceRepository` with that parser's exact version (currently
-`pypdf-6.16.2`). It reads each source once, so the manifest hash and extracted pages
-come from the same bytes. The repository writes a complete temporary publication and
-renames it to `data/extractions/{sha256}/{parser-version}/`; retrieval is bound to that
-explicit parser version. The resulting `manifest.json` and `pages.jsonl` preserve every
-physical PDF page, including blank pages. See [the baseline review](docs/ingestion-baseline.md)
-for known extraction losses.
+# 2. Servicios locales (Qdrant + Langfuse)
+make local-services-up
 
-## Structured ingestion
-
-```bash
-uv run --project backend --group ingestion allianz prepare-ingestion-models \
-  --output "$HOME/.cache/allianz-rag/docling-artifacts-v1"
-
-uv run --project backend --group ingestion allianz ingest \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --parser docling \
-  --output data/extractions
-```
-
-The preparation command is the only ingestion path that uses the network. It downloads nine files
-from exact upstream revisions, verifies their pinned SHA-256 values, and publishes a 390 MB local
-bundle atomically. Normal ingestion validates that bundle and never downloads models implicitly.
-Set `ALLIANZ_DOCLING_ARTIFACTS` only when using a different local path.
-
-This explicit mode retains source-based elements, raw Docling JSON and Markdown, diagnostics, the
-exact original PDF, and an independent 144 dpi PNG for every physical page. The parser identity
-includes the effective model-bundle digest. The CLI prints asset hashes and sizes rather than
-binary content. A complete run over the supplied 111-page manual measured about 3.40 GiB peak RSS
-on the reviewed macOS environment. See the
-[parser comparison](docs/ingestion/parser-comparison.md) for the page 32 OCR limitation and the
-unverified page 101 matrix extraction.
-
-Run the backend quality checks with:
-
-```bash
-make check-backend
-```
-
-## Local operations
-
-### Bootstrap (one-time)
-
-```bash
-# 1. Bring up the local services (Qdrant, Langfuse, postgres, redis, clickhouse, minio)
-make local-services-config   # validate compose.yaml against ops/local.env
-make local-services-up       # docker compose up -d
-
-# 2. Inspect the source PDF
+# 3. Verificar la fuente, ingerirla y publicar el índice
 uv run --project backend allianz inspect-manual \
   data/raw/Manual-cide-ascide-y-cicos.pdf \
   --expected-sha256 b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344
 
-# 3. Ingest with pypdf (baseline) and publish
 uv run --project backend --group ingestion --extra local-rag allianz ingest \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --parser pypdf \
-  --output data/extractions
+  data/raw/Manual-cide-ascide-y-cicos.pdf --parser pypdf --output data/extractions
 
-# 4. (Optional) Ingest with docling for structured extraction + original.pdf
-uv run --project backend --group ingestion allianz prepare-ingestion-models \
-  --output "$HOME/.cache/allianz-rag/docling-artifacts-v1"
-uv run --project backend --group ingestion allianz ingest \
-  data/raw/Manual-cide-ascide-y-cicos.pdf \
-  --parser docling \
-  --output data/extractions
+uv run --project backend --extra local-rag allianz index \
+  --document-hash b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344 \
+  --parser pypdf --evidence-root data/extractions --profile baseline
 
-# 5. Index into Qdrant (alias `allianz-manual-active`)
-# (handled by build_api() at startup — see `make serve-backend`)
-
-# 6. Run backend checks
-make check-backend
+# 4. Arrancar
+make serve-backend    # http://127.0.0.1:8000
+make serve-frontend   # http://127.0.0.1:5173
 ```
 
-### Daily
+`make doctor` comprueba que los servicios, el alias del índice y las
+credenciales están en su sitio. El detalle completo, incluida la ingesta
+estructurada con Docling, está en [docs/operacion.md](docs/operacion.md).
+
+## Verificación
 
 ```bash
-make local-services-up                # if not running
-make serve-backend                    # backend on :8000
-pnpm --dir frontend dev              # frontend on :5173 (vite HMR)
-
-# Visit
-open http://127.0.0.1:5173/          # chat UI
-open http://127.0.0.1:8000/docs       # FastAPI Swagger
-open http://127.0.0.1:3000/           # Langfuse UI (login: see ops/local.env)
-open http://127.0.0.1:6333/dashboard  # Qdrant dashboard
+make check-all       # backend + frontend + contratos OpenAPI
 ```
 
-### Docker (alternative to local venv)
+| Gate | Qué cubre |
+|---|---|
+| `make check-backend` | ruff, formato, pyright estricto y 505 tests |
+| `make check-frontend` | eslint, tsc, 98 tests de Vitest y build de producción |
+| `make check-openapi` | que el contrato publicado y los tipos del cliente no hayan derivado |
+| `make test-e2e` | Playwright contra la aplicación real |
 
-```bash
-docker build -t allianz-backend -f backend/Dockerfile .
-docker build -t allianz-frontend -f frontend/Dockerfile .
-docker run --rm -p 8000:8000 --env-file ops/local.env allianz-backend
-docker run --rm -p 5173:5173 allianz-frontend
-```
+## Documentación
 
-### Doctor
+| | |
+|---|---|
+| [docs/arquitectura.md](docs/arquitectura.md) | Capas, flujos y decisiones de diseño |
+| [docs/ingesta-y-recuperacion.md](docs/ingesta-y-recuperacion.md) | Del PDF al índice consultable |
+| [docs/reglas-y-decision.md](docs/reglas-y-decision.md) | Reglas firmadas, tabla CIDE y entrevista |
+| [docs/api.md](docs/api.md) | Contrato HTTP |
+| [docs/evaluacion.md](docs/evaluacion.md) | Golden set, métricas y resultados |
+| [docs/operacion.md](docs/operacion.md) | Servicios, variables y comandos |
+| [backend/README.md](backend/README.md) | Backend en detalle |
+| [frontend/README.md](frontend/README.md) | Frontend en detalle |
 
-```bash
-make doctor   # allianz doctor — checks Qdrant alias, Langfuse env, etc.
-```
+## Alcance de la fuente
 
-## Estado y limitaciones
-
-El estado verificado, las brechas y el plan vigente están en
-**[`docs/ESTADO.md`](docs/ESTADO.md)**. Es el punto de entrada único.
-
-Limitaciones de la fuente y del alcance:
-
-- **El manual es la edición de noviembre de 2004.** Es la fuente evaluada; no es derecho vigente
-  ni una decisión operativa de Allianz.
-- **El manual no define qué maniobra representa cada casilla `A0`-`A17`** de la tabla de
-  culpabilidad. Son casillas del apartado 12 del parte amistoso europeo (D.A.A.), externo al
-  manual. Ningún catálogo que las traduzca puede citar el manual como fuente.
-- **El alcance del Convenio no es responsabilidad civil general.** El sistema evalúa
-  aplicabilidad y criterios convencionales; no emite una opinión general de responsabilidad.
-- **La tabla CIDE 18×18 exige doble transcripción independiente y attestation firmada** antes de
-  usarse para decidir. Ver `docs/rules/transcription-protocol.md`.
-- Extracción: la página 32 tiene una limitación de OCR y la matriz de la página 101 requiere
-  revisión visual. Ver [la comparativa de parsers](docs/ingestion/parser-comparison.md).
+- **El manual es la edición de noviembre de 2004.** Es la fuente evaluada; no
+  es derecho vigente ni una decisión operativa de Allianz.
+- **El manual no define qué maniobra representa cada casilla `A0`–`A17`.** Son
+  casillas del apartado 12 del parte amistoso europeo, un formulario externo al
+  manual; el catálogo que las traduce declara esa procedencia y no cita el
+  manual como fuente.
+- **El alcance del Convenio no es responsabilidad civil general.** El sistema
+  evalúa aplicabilidad y criterios convencionales; no emite una opinión general
+  de responsabilidad.
+- **La tabla CIDE 18×18 exige doble transcripción independiente y attestation
+  firmada** antes de usarse para decidir, y así está transcrita.

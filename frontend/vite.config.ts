@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 // Vite config — SPA estática servida por el mismo reverse-proxy que el backend
-// en producción (decisión D1). `VITE_API_BASE_URL=""` significa que las
+// en producción. `VITE_API_BASE_URL=""` significa que las
 // llamadas del frontend van a same-origin.
 //
 // En dev, vite sirve el frontend en :5173 mientras el backend uvicorn vive

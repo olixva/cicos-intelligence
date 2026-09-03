@@ -3,8 +3,8 @@ import { z } from 'zod';
 /**
  * Validador de variables de entorno en runtime.
  *
- * Decisión D1: el frontend no tiene secretos. La única variable esperada es
- * VITE_API_BASE_URL (string vacío = mismo origin, caso por defecto del
+ * El frontend no tiene secretos. La única variable esperada es
+ * VITE_API_BASE_URL (string vacío = mismo origen, caso por defecto tras el
  * reverse proxy).
  *
  * Zod falla rápido en build/dev si falta algo crítico. Usamos un schema

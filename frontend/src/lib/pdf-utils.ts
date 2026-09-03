@@ -1,7 +1,7 @@
 /**
  * pdf-utils — utilidades puras para proyección regions → viewport.
  *
- * Decisión D4: cuando `evidence.regions` está vacío, devolvemos un único
+ * Cuando `evidence.regions` está vacío, devolvemos un único
  * rectángulo que cubre toda la página. El componente `pdf-overlay` aplica
  * la overlay `#00378133` sobre el canvas en ese caso y emite
  * `console.warn('[pdf-overlay] evidence sin regiones, resaltando página completa', ...)`.

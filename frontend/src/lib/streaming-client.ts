@@ -10,11 +10,11 @@ import type {
 /**
  * streaming-client — POST + SSE para `/api/v1/queries/stream`.
  *
- * Decisión D2: usamos `fetch` + `ReadableStream` + `eventsource-parser@1`,
+ * Usa `fetch` + `ReadableStream` + `eventsource-parser`,
  * NUNCA `EventSource`. Razón: `EventSource` solo soporta GET, y el endpoint
  * es POST para permitir un body grande (`EnvelopeRequest`).
  *
- * Contrato SSE del backend (ver backend/.../routes/queries.py:213-262):
+ * Contrato SSE del backend (ver `routes/queries.py`):
  *   - event: started   → { request_id, mode }
  *   - event: stage     → { stage, request_id }
  *   - event: completed → EnvelopeResponse JSON completo

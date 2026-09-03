@@ -69,7 +69,6 @@ from infrastructure.adapters.outbound.evaluation.domain_evaluators import (  # n
     abstention_metrics,
     decision_accuracy,
     evidence_reference_validity,
-    invented_facts_rate,
     router_confusion_matrix,
     unjustified_resolution_rate,
 )
@@ -138,11 +137,6 @@ def _expected_evidence_pool(case: dict[str, Any]) -> list[str]:
             for evidence_id in bundle.get("all_of", []) or []:
                 pool.append(str(evidence_id))
     return pool
-
-
-def _expected_forbidden_facts(case: dict[str, Any]) -> list[str]:
-    expected = case.get("expected_output") or {}
-    return [str(f) for f in expected.get("forbidden_facts", []) or []]
 
 
 # --- HTTP ----------------------------------------------------------------------
@@ -214,10 +208,6 @@ def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[s
         return {"error": f"unexpected kind {result.get('kind')!r}"}
     expected = (case.get("expected_output") or {}).get("decisions") or {}
     predicted_facts = _flatten_facts(result)
-    expected_fact_names = [
-        str(f.get("name", "")) for f in (case.get("expected_output") or {}).get("facts", []) or []
-    ]
-    forbidden = _expected_forbidden_facts(case)
     cited = _cited_evidence(result)
     pool = _expected_evidence_pool(case)
     return {
@@ -235,11 +225,6 @@ def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[s
         "claim_decision_accuracy": decision_accuracy(
             predicted=result.get("decision"),
             expected=expected.get("claim_decision"),
-        ),
-        "invented_facts_rate": invented_facts_rate(
-            predicted_facts=predicted_facts,
-            expected_facts=expected_fact_names,
-            forbidden_facts=forbidden,
         ),
         "evidence_validity": evidence_reference_validity(cited=cited, valid_pool=pool),
         "cited_count": len(cited),

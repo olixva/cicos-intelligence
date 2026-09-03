@@ -6,11 +6,11 @@ import { env } from '@/env';
 /**
  * Cliente OpenAPI tipado.
  *
- * Decisión D1: misma origin. `VITE_API_BASE_URL=""` significa que las
+ * Mismo origen: `VITE_API_BASE_URL=""` significa que las
  * llamadas son relatives al origin del frontend (el reverse proxy del
  * backend está sirviendo `/api/v1/*`).
  *
- * Decisión D6: los tipos vienen de `src/types/api.gen.ts` regenerado
+ * Los tipos vienen de `src/types/api.gen.ts`, regenerado
  * en cada dev/build/test por `predev/prebuild/pretest`.
  *
  * Middleware X-Request-ID: cada llamada genera un uuid v4 si el caller

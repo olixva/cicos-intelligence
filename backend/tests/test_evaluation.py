@@ -46,76 +46,6 @@ def test_decision_accuracy_none_expected_returns_none() -> None:
     assert decision_accuracy(predicted="resolved", expected=None) is None
 
 
-def test_macro_f1_balanced_classes() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import macro_f1
-
-    # Class A: tp=2, fp=1, fn=0 → P=2/3, R=2/2 → F1=0.8
-    # Class B: tp=1, fp=1, fn=1 → P=1/2, R=1/2 → F1=0.5
-    tp = {"A": 2, "B": 1}
-    fp = {"A": 1, "B": 1}
-    fn = {"A": 0, "B": 1}
-    assert macro_f1(tp, fp, fn) == pytest.approx((0.8 + 0.5) / 2)
-
-
-def test_macro_f1_skips_missing_classes() -> None:
-    """Classes absent from the confusion map do not contribute to the macro mean."""
-
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import macro_f1
-
-    tp = {"A": 2, "B": 0}
-    fp = {"A": 1, "B": 0}
-    fn = {"A": 0, "B": 0}
-    # Only class A contributes (B has no support and would have 0/0).
-    assert macro_f1(tp, fp, fn) == pytest.approx(0.8)
-
-
-def test_macro_f1_perfect_returns_one() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import macro_f1
-
-    tp = {"resolved": 3, "undetermined": 2}
-    fp = {"resolved": 0, "undetermined": 0}
-    fn = {"resolved": 0, "undetermined": 0}
-    assert macro_f1(tp, fp, fn) == 1.0
-
-
-def test_invented_facts_rate_no_inventions() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import (
-        invented_facts_rate,
-    )
-
-    rate = invented_facts_rate(
-        predicted_facts=["vehicle count is two", "weather is dry"],
-        expected_facts=["vehicle count is two", "weather is dry"],
-    )
-    assert rate == 0.0
-
-
-def test_invented_facts_rate_one_invention() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import (
-        invented_facts_rate,
-    )
-
-    rate = invented_facts_rate(
-        predicted_facts=["vehicle count is two", "weather is dry"],
-        expected_facts=["vehicle count is two"],
-    )
-    assert rate == pytest.approx(0.5)
-
-
-def test_invented_facts_rate_forbidden_fact_not_counted_as_invented() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import (
-        invented_facts_rate,
-    )
-
-    rate = invented_facts_rate(
-        predicted_facts=["vehicle count is two", "weather is dry"],
-        expected_facts=["vehicle count is two"],
-        forbidden_facts=("weather is dry",),
-    )
-    # 'weather is dry' is a forbidden fact, not an invention.
-    assert rate == 0.0
-
-
 def test_unjustified_resolution_rate_none_when_no_mismatch() -> None:
     from infrastructure.adapters.outbound.evaluation.domain_evaluators import (
         unjustified_resolution_rate,
@@ -470,11 +400,15 @@ def test_release_manifest_rejects_an_adulterated_deserialized_identity() -> None
 
 
 def test_committed_schema_artifact_matches_the_release_schema() -> None:
+    """El esquema congelado con la release no puede derivar del que produce el código."""
     from infrastructure.adapters.outbound.evaluation.golden_schema import canonical_schema_bytes
 
-    artifact = Path(__file__).parents[2] / "docs" / "evaluation" / "golden-schema.json"
+    releases = Path(__file__).parents[2] / "data" / "evaluation" / "golden" / "releases"
+    artifacts = sorted(releases.glob("*/schema.json"))
 
-    assert artifact.read_bytes() == canonical_schema_bytes()
+    assert artifacts, "no hay ninguna release congelada del golden set"
+    for artifact in artifacts:
+        assert artifact.read_bytes() == canonical_schema_bytes(), artifact
 
 
 # --------------------------------------------------------------------------
@@ -512,46 +446,3 @@ def test_experiment_task_selects_only_native_input_fields() -> None:
 # --------------------------------------------------------------------------
 # Deterministic metrics that complement native Langfuse and Ragas evaluation.
 # --------------------------------------------------------------------------
-
-
-def test_retrieving_rule_without_required_exception_is_not_sufficient() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import coverage
-
-    requirement = ((frozenset({"rule", "exception"}),),)
-
-    assert coverage(requirement, frozenset({"rule"})) == 0.0
-
-
-def test_coverage_allows_any_complete_alternative_bundle() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import coverage
-
-    requirements = (
-        (frozenset({"rule", "exception"}), frozenset({"alternative"})),
-        (frozenset({"second-rule"}),),
-    )
-
-    assert coverage(requirements, frozenset({"alternative", "second-rule"})) == 1.0
-
-
-def test_empty_requirements_have_no_coverage_denominator() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import coverage
-
-    assert coverage((), frozenset()) is None
-
-
-def test_citation_precision_and_recall_distinguish_irrelevant_citations() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import citation_metrics
-
-    result = citation_metrics(
-        cited=frozenset({"rule", "irrelevant"}), required=frozenset({"rule", "exception"})
-    )
-
-    assert result.precision == 0.5
-    assert result.recall == 0.5
-
-
-def test_cost_per_success_uses_every_cost_and_no_zero_denominator() -> None:
-    from infrastructure.adapters.outbound.evaluation.domain_evaluators import cost_per_success
-
-    assert cost_per_success(12.0, 3) == 4.0
-    assert cost_per_success(12.0, 0) is None

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink, FileWarning, Copy } from 'lucide-react';
-// `X` lo trae el DialogContent de shadcn; no lo duplicamos aquí (T12).
+// `X` lo trae el DialogContent de shadcn; no lo duplicamos aquí.
 import {
   Dialog,
   DialogContent,
@@ -168,9 +168,9 @@ export function PdfOverlay({
     }
   }, [evidence]);
 
-    // Decisión D4: regions del envelope cuando llegan; si no, fallback
-  // EXPLÍCITO a página completa con aviso visible al usuario (no
-  // console.warn silencioso). Audit T12: nunca inventar coordenadas.
+  // Regiones del envelope cuando llegan; si no, fallback explícito a
+  // página completa con aviso visible al usuario, nunca coordenadas
+  // inventadas.
   const pageRegions = useMemo(
     () =>
       regions.filter(
@@ -262,7 +262,7 @@ export function PdfOverlay({
               </Button>
               {/* El botón de cierre vive en el DialogContent de shadcn (X
                   arriba a la derecha con focus return automático).
-                  Añadir otro aquí duplicaba el control — eliminado en T12. */}
+                  Añadir otro aquí duplicaría el control. */}
             </div>
           </div>
         </DialogHeader>
