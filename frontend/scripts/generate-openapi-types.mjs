@@ -15,7 +15,7 @@
 //                      regenera y compara. Sale con código 1 si hay diff.
 //                      Pensado para CI / pre-commit.
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import openapiTS, { astToString } from 'openapi-typescript';
@@ -116,6 +116,9 @@ async function run() {
     process.exit(1);
   }
 
+  // `src/types/` sólo contiene el fichero generado, que está gitignored, así
+  // que en un checkout limpio el directorio no existe y la escritura fallaría.
+  mkdirSync(dirname(OPENAPI_TS_PATH), { recursive: true });
   writeFileSync(OPENAPI_TS_PATH, next, 'utf8');
   log('info', `escrito ${OPENAPI_TS_PATH} (${next.length} bytes)`);
 }
