@@ -10,11 +10,9 @@ export interface EmptyStateProps {
 /**
  * EmptyState — bienvenida con ejemplos clickables. Click → inyecta el prompt.
  *
- * Las tarjetas eran `PulsatingButton`, que anima un `box-shadow` expandiéndose
- * 12 px hacia fuera en bucle infinito. Con una separación de 8 px los halos de
- * tarjetas contiguas se solapaban, y la animación permanente competía con el
- * propio texto. Ahora son tarjetas sobrias que sólo reaccionan al hover y al
- * foco, con altura uniforme para que la rejilla quede cuadrada.
+ * Las tarjetas son sobrias y sólo reaccionan al hover y al foco. La rejilla de
+ * seis columnas centra la quinta tarjeta sin estirarla: todos los ejemplos
+ * conservan el mismo ancho y una composición equilibrada.
  */
 export function EmptyState({ onSelect, cases }: EmptyStateProps) {
   return (
@@ -34,16 +32,16 @@ export function EmptyState({ onSelect, cases }: EmptyStateProps) {
           Selecciona un ejemplo para empezar.
         </p>
       </header>
-      <ul className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
+      <ul className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-6">
         {cases.map((ex, index) => (
           <li
             key={ex.case_id}
             className={
-              // Con cinco ejemplos en dos columnas el último dejaba un hueco.
-              // Ocupando el ancho completo la rejilla cierra bien.
+              // Cinco elementos se distribuyen 2 + 2 + 1; el último queda
+              // centrado y nunca ocupa una fila completa.
               index === cases.length - 1 && cases.length % 2 === 1
-                ? 'sm:col-span-2'
-                : undefined
+                ? 'sm:col-span-3 sm:col-start-2'
+                : 'sm:col-span-3'
             }
           >
             <button
@@ -51,16 +49,16 @@ export function EmptyState({ onSelect, cases }: EmptyStateProps) {
               onClick={() => onSelect(ex.text)}
               aria-label={`Probar ejemplo: ${ex.case_id}`}
               className={cn(
-                'flex h-full w-full flex-col gap-1 rounded-lg border border-border bg-background',
+                'flex min-h-32 h-full w-full flex-col gap-1 rounded-lg border border-border bg-background',
                 'px-3.5 py-3 text-left transition-colors',
                 'hover:border-primary/60 hover:bg-accent',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               )}
             >
               <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-                {ex.expected_intent === 'claim' ? 'Siniestro de demo' : 'Pregunta de demo'}
+                {ex.expected_intent === 'claim' ? 'Siniestro' : 'Pregunta'}
               </span>
-              <span className="text-pretty text-sm leading-snug text-foreground/90">
+              <span className="line-clamp-3 text-pretty text-sm leading-snug text-foreground/90">
                 {ex.text}
               </span>
             </button>

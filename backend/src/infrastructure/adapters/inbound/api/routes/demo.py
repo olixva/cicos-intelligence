@@ -21,18 +21,16 @@ class DemoCase(BaseModel):
 
 #: Los ejemplos que la interfaz ofrece, en este orden. El conjunto de
 #: desarrollo crece con la curación del golden set, pero la demo no debe
-#: crecer con él: se eligen casos en castellano que cubren los tres
-#: comportamientos que hay que poder enseñar —un siniestro que se resuelve,
-#: uno en el que abstenerse es la respuesta correcta, consultas documentales
-#: y una pregunta que la fuente no puede responder—. Un identificador que no
-#: exista en el conjunto se ignora en silencio: el catálogo de demo nunca
-#: debe tumbar la interfaz.
+#: crecer con él: se eligen casos en castellano que muestran dos consultas
+#: respondibles, un siniestro que necesita información adicional, uno no
+#: aplicable y otro resuelto. Un identificador que no exista en el conjunto se
+#: ignora en silencio: el catálogo de demo nunca debe tumbar la interfaz.
 DEFAULT_DEMO_CASE_IDS: tuple[str, ...] = (
-    "accident-04-lane-change-es",
     "consulta-es-01-alcoholemia",
+    "consulta-synth-21-atestado-ascide-cierra",
+    "siniestro-synth-47-adv-sin-datos",
     "accident-02-pile-up-es",
-    "consulta-es-02-mas-de-dos-vehiculos",
-    "fuera-de-alcance-es-01-baremo-lesiones",
+    "accident-04-lane-change-es",
 )
 
 

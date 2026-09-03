@@ -3,7 +3,18 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from infrastructure.adapters.inbound.api.routes.demo import build_demo_router
+from infrastructure.adapters.inbound.api.routes.demo import DEFAULT_DEMO_CASE_IDS, build_demo_router
+
+
+def test_default_demo_catalogue_covers_the_five_demonstration_outcomes() -> None:
+    """La demo ordena dos preguntas y tres siniestros con desenlaces distintos."""
+    assert DEFAULT_DEMO_CASE_IDS == (
+        "consulta-es-01-alcoholemia",
+        "consulta-synth-21-atestado-ascide-cierra",
+        "siniestro-synth-47-adv-sin-datos",
+        "accident-02-pile-up-es",
+        "accident-04-lane-change-es",
+    )
 
 
 def test_demo_cases_expose_only_safe_development_fields(tmp_path: Path) -> None:
