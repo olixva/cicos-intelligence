@@ -1,107 +1,117 @@
 # Guion de demo — Allianz CICOS Claims Intelligence
 
-Recreado el 2026-09-02. Recorrido en directo para la presentación de 30–45 minutos, apoyado en
-`docs/entrega/arquitectura.md`. Todos los comandos son reproducibles localmente.
+Actualizado el 2026-09-03 para acompañar a `docs/entrega/presentacion.pptx` (44 láminas) y a
+`docs/entrega/arquitectura.md`. Las cuatro paradas de este guion son las cuatro láminas del
+bloque **04 · Demo en vivo** del deck; cada lámina lleva además este guion en sus notas de
+orador. Todos los comandos son reproducibles en local.
+
+**Reparto de los 45 minutos**: 4 min problema · 4 min plan y riesgos · 10 min arquitectura ·
+**14 min demo** · 5 min evaluación y límites · 8 min preguntas.
 
 ## 0. Arranque (antes de la sesión)
 
 ```bash
 make local-services-config && make local-services-up   # Qdrant, Langfuse, postgres, redis, clickhouse, minio
-make serve-backend    # backend en :8000, mapea claves de Langfuse desde ops/local.env
-make serve-frontend   # frontend en :5173
+make serve-backend    # API en :8000
+make serve-frontend   # cliente en :5173
+curl localhost:8000/health/ready                       # {"status": "ready"}
 ```
 
-Comprobar `GET /health/ready` → `{"status": "ready"}` antes de arrancar.
+Tener abiertas, además del cliente: la interfaz de Langfuse en otra pestaña, `docs/ESTADO.md`,
+`data/rules/ruleset.v1.json` y `data/evaluation/golden/development.jsonl`. Si la sala pregunta
+por algo, es más rápido enseñarlo que describirlo.
 
-## 1. Contexto (3 min)
+## Demo 1 — Enrutado y consulta documental (3 min)
 
-- Enunciado: RAG sobre `Manual-cide-ascide-y-cicos.pdf` (111 páginas, nov. 2004) que responde
-  preguntas del manual y analiza accidentes.
-- Alcance explícito: no es normativa vigente, no hay autenticación multiusuario, no se opera con
-  siniestros reales.
-- Tres modos: Automático (por defecto), Consultar manual, Analizar siniestro.
-
-## 2. Modo Automático — enrutamiento (5 min)
-
-En la pantalla principal, enviar una pregunta puramente documental sin mencionar un accidente:
+En **modo Automático**, sin elegir recorrido:
 
 > «¿Qué establece el manual sobre la alcoholemia?»
 
-Mostrar: `Modo detectado: Consulta del manual`, la respuesta con citas, apertura del PDF en la
-página 9. Señalar que el router no responde al contenido, sólo clasifica.
+Qué señalar, en este orden:
 
-Luego enviar un relato de accidente hipotético para mostrar que el router también acierta con
-narrativas sin datos completos, sin forzar una aclaración innecesaria.
+1. La etiqueta de modo detectado (**Consulta del manual**) *antes* de leer la respuesta: el
+   enrutado nunca es una caja negra.
+2. La respuesta llega por bloques y cada bloque trae su cita.
+3. Pulsar la cita: se abre el PDF original por la **página 9 de 111**, junto a la respuesta.
 
-## 3. Consulta documental explícita (5 min)
+Si preguntan por el resaltado: con el índice activo (pypdf) no hay coordenadas verificadas, así
+que se abre la página completa en lugar de fingir un resaltado. El perfil Docling sí las tiene
+— es la decisión de la lámina de parsers.
 
-Cambiar a "Pregunta". Preguntar algo con referencias cruzadas, p. ej. sobre adelantamientos y
-prioridad de paso. Mostrar:
+## Demo 2 — El siniestro que sí se resuelve (4 min)
 
-- Bloques de respuesta con citas explícitas por afirmación.
-- Apertura del PDF junto a la respuesta; sin coordenadas verificadas, navega a la página sin
-  fingir un resaltado.
-- Estados `answered`/`partial`/`insufficient_evidence`/`out_of_scope` si aparece alguno.
+Modo **Siniestro**, ejemplo de demo `accident-04-lane-change-es` (no escribirlo a mano: se
+ahorran 40 segundos).
 
-## 4. Análisis de siniestro — el caso que se resuelve (8 min)
+Qué señalar:
 
-Cambiar a "Siniestro" y usar el ejemplo de demo `accident-04-lane-change`:
+1. **Hechos extraídos con atribución**: `vehicle_count`, `direct_collision`,
+   `lane_change_acknowledged_by_both`, `lane_change_vehicle`, `contradictory_versions` — cada
+   uno indica de dónde sale («según relato», «según ambos conductores»).
+2. La tarjeta **Reglas evaluadas** desplegada: las 14 reglas del artefacto firmado, las que
+   casan y las que declaran `no comprobable con los datos aportados`. Esa ausencia es
+   información.
+3. **Decisión emitida**: `ASCIDE · El Convenio es aplicable · Resuelto`, culpable el vehículo
+   que cambia de carril, citando la norma subsidiaria **b.10** (pág. 75) con su texto literal.
 
-> «While changing lanes on the highway, Car A sideswipes Car B. Car A claims that Car B was in
-> their blind spot and did not signal, while Car B claims that Car A did not check their
-> mirrors before changing lanes.»
+Remate: «El modelo no ha decidido esto. Ha rellenado tres hechos y el motor ha aplicado una
+norma firmada que cualquiera puede leer en el artefacto.»
 
-Mostrar en el resultado:
+## Demo 3 — Abstenerse con criterio, y pedir el dato exacto (5 min)
 
-- `Reglas evaluadas` expandido: hechos extraídos (`lane_change_acknowledged_by_both=true`,
-  `contradictory_versions=true`, `lane_change_vehicle=A`), atribución y texto literal de origen.
-- `Decisión emitida`: **Convenio aplicable · ASCIDE · resuelto** — culpable el Coche A, citando
-  la norma subsidiaria b.10 (pág. 75) con el texto exacto del manual.
-- Enlace "Ver en Langfuse" a la traza real de esa ejecución.
+La parada más importante de las cuatro. Si hay que recortar tiempo, recortar la 1, no ésta.
 
-Explicar brevemente que este es el único de los cinco casos originales del enunciado que se
-resuelve de forma determinista con los datos del relato — y por qué eso es correcto, no una
-limitación oculta.
+1. **Fuera del Convenio con fundamento** — `accident-02-pile-up-es` (colisión múltiple, cinco
+   vehículos): se declara `not_applicable` citando la pág. 56 (dos vehículos en colisión
+   directa) y la pág. 57 (colisión en cadena). Es el caso que más sorprende: parece el más
+   grave y se cae por la puerta de entrada.
+2. **La interrupción en directo** — un relato que declara explícitamente las casillas del
+   apartado 12 («en el parte marcamos A2 y B4»). El grafo se detiene y pide el hecho de la
+   observación impresa bajo la tabla, con su texto literal: *«A2 + B4 ⇒ culpable B, salvo que el
+   conductor de A abra la puerta»*.
+3. **Las dos ramas de la excepción** — responder primero «abrió la puerta el conductor de B»:
+   resuelve a B. Repetir con «la abrió el de A»: la excepción retira la atribución y queda
+   indeterminado, sin inventar quién responde.
+4. **Fuera de alcance** — la pregunta de demo sobre el baremo de lesiones: el sistema se
+   abstiene **sin dar cifras**, en vez de improvisar un baremo que el manual no contiene.
 
-## 5. Análisis de siniestro — abstención con criterio (5 min)
+## Demo 4 — Trazabilidad y operación (2 min)
 
-Usar `accident-02-pile-up` (cinco vehículos, colisión en cadena):
+1. Abrir la traza del caso de la demo 2 desde el enlace **«Ver en Langfuse»** de la propia
+   respuesta: nodos del grafo, llamadas al modelo, coste y latencia por etapa.
+2. El `session_id` agrupando todos los pasos del hilo, incluida la interrupción y su reanudación.
+3. **Modo administrador**: hash verificado del documento, 111 páginas, extracciones publicadas
+   (pypdf y Docling) y previsualización paginada de lo que realmente se indexó.
 
-> «During heavy rain, a multi-vehicle pile-up occurs on the highway involving five cars…»
+Remate: la misma traza que mira quien opera el sistema es la que alimenta la evaluación.
 
-Mostrar que el sistema declara `not_applicable` citando la página 56 (dos vehículos exigidos) y
-las páginas 57–58 (colisión en cadena), sin inventar una conclusión. Contrastar con
-`accident-01-rear-end`: aplicable, pero `undetermined` en cuanto a culpa porque faltan las
-casillas DAA (A0–A17) de la declaración amistosa — mostrar que el sistema pide exactamente ese
-dato, no una respuesta genérica.
+## Después de la demo — qué se cuenta con láminas
 
-## 6. Visor de evidencias y trazabilidad (4 min)
+- **Golden set**: 110 casos (`allianz golden validate` → `errors: []`, `item_count: 110`),
+  congelados como release `synthetic-expansion-110-2026-09-03`. Anatomía de un caso: no guarda
+  una respuesta, guarda requisitos, alternativas aceptables, prohibiciones y paquetes de
+  evidencia AND/OR.
+- **Protocolo de evaluación** y su estado real: qué está construido, qué está en curso y qué
+  está pendiente por decisión (el holdout se abre una sola vez).
+- **Límites declarados**: manual de 2004, lesiones y vía penal fuera de alcance, las casillas
+  de la D.A.A. no se infieren, el golden no tiene revisión de un experto humano, no hay holdout
+  y `ascide-b11-roundabout` sigue sin condición verificable.
 
-- Pulsar una cita: PDF junto a la respuesta, número de página física vs. etiqueta impresa.
-- Modo administrador: estado de ingesta, hash verificado, 111 páginas, extracción publicada
-  (pypdf y Docling), previsualización de extracciones paginada.
-- Langfuse: abrir la traza enlazada, mostrar `session_id` agrupando los pasos de un hilo, coste
-  y latencia por etapa.
+## Preguntas previsibles y dónde está la respuesta
 
-## 7. Golden set y evaluación (5 min)
+| Pregunta | Dónde |
+|---|---|
+| «¿Esto no lo está inventando el modelo?» | Lámina del motor de reglas + tarjeta *Reglas evaluadas* en la demo 2. |
+| «¿Y si el manual cambia de versión?» | Cadena de custodia de la ingesta: hash verificado y publicación atómica. |
+| «¿Por qué no usáis Docling si es mejor?» | Lámina de parsers: se activa por evaluación, no por disponibilidad. |
+| «¿Cómo sabéis que no empeora al reindexar?» | Firma de índice de 13 campos y rollback probado. |
+| «¿Qué métricas tenéis?» | Lámina de protocolo, con la caja de estado real. No inventar números. |
+| «¿Cuánto cuesta una consulta?» | Langfuse, desglose por etapa de la traza abierta en la demo 4. |
 
-- `data/evaluation/golden/development.jsonl`: los 5 casos con schema completo, citas reales,
-  revisión de tres pasos por IA documentada (`metadata.review`), declarando explícitamente que
-  no hay revisión de un experto humano del dominio.
-- `allianz golden validate` en vivo: `item_count: 5`, cero errores.
-- Release congelada `v1-interview-2026-09-02` publicada como dataset en Langfuse.
+## Si algo falla en directo
 
-## 8. Límites y próximos pasos (3 min)
-
-- 7 de 14 reglas del ruleset siguen documentadas pero no verificables automáticamente (matriz
-  18×18 incluida); se explica el patrón usado para completar la primera (`b.10`) y que el mismo
-  patrón se replica para el resto.
-- Índice Docling/structured publicado pero no promovido a demo: falta la comparación de
-  evaluación baseline-vs-structured.
-- Golden set limitado a los 5 casos de entrevista; falta ampliar con generación Ragas + revisión
-  y congelar una reserva.
-
-## 9. Preguntas y respuestas
-
-Reservar el tiempo restante. Tener a mano: `docs/ESTADO.md` (estado verificado), el ruleset
-firmado, y la traza de Langfuse del caso resuelto.
+- Sin servicios: `make local-services-up` y `curl localhost:8000/health/ready`.
+- Sin respuesta del modelo: cambiar a los ejemplos de demo, que están verificados, y explicar
+  el recorrido con la lámina de la interfaz (lleva la captura real del razonamiento).
+- Sin red: las láminas 16 y 18 contienen capturas reales del producto — la demo se puede
+  contar sin el sistema delante, aunque pierde fuerza.

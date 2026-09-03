@@ -37,7 +37,7 @@ function hexagonal(pres, ctx) {
     x: 3.62, y: 2.8, w: 6.1, h: 0.26, align: 'center',
     fontFace: F.head, fontSize: 11, bold: true, charSpacing: 1.4, color: C.navy,
   });
-  tb(s, 'casos de uso · servicios · 5 puertos de entrada · 13 puertos de salida', {
+  tb(s, 'casos de uso · servicios · 5 puertos de entrada · 12 puertos de salida', {
     x: 3.62, y: 3.06, w: 6.1, h: 0.24, align: 'center', fontSize: 11, color: C.navy,
   });
 
@@ -98,7 +98,7 @@ function hexagonal(pres, ctx) {
     '· El dominio contiene los modelos del Convenio y las reglas. No importa nada externo:',
     '  ni FastAPI, ni LangGraph, ni el SDK de OpenAI, ni el cliente de Qdrant.',
     '· La aplicación define los puertos: 5 de entrada (responder pregunta, analizar siniestro,',
-    '  resolver consulta, ingerir documento, inspeccionar manual) y 13 de salida.',
+    '  resolver consulta, ingerir documento, inspeccionar manual) y 12 de salida.',
     '· La infraestructura los implementa. Un nombre funcional conecta cada puerto con el',
     '  directorio de su adaptador, así que la correspondencia se ve en el árbol de ficheros.',
     '',
@@ -135,7 +135,7 @@ function intercambiable(pres, ctx) {
     tb(s, why, { x: x + 0.26, y: y0 + 2.2, w: cw - 0.52, h: 1.0, fontSize: 11.5, color: C.pale, lineSpacingMultiple: 1.06 });
   });
 
-  band(s, '13 puertos de salida y 5 de entrada. Ninguna decisión del Convenio cambia si mañana se sustituye el proveedor de modelos, el índice o el orquestador.', { tone: 'dark', y: 6.24 });
+  band(s, '12 puertos de salida y 5 de entrada. Ninguna decisión del Convenio cambia si mañana se sustituye el proveedor de modelos, el índice o el orquestador.', { tone: 'dark', y: 6.24 });
 
   notes(s, [
     'INTERCAMBIABILIDAD (55 s).',
@@ -710,7 +710,7 @@ function estadoReglas(pres, ctx) {
       ['cide-requires-two-vehicles', 'ok', 'Dos vehículos intervinientes · p. 56'],
       ['cide-requires-direct-collision', 'ok', 'Colisión directa entre ellos · p. 56'],
       ['third-vehicle-identified-…', 'ok', 'Un tercero identificado lo excluye'],
-      ['chain-collision-excludes-…', 'ok', 'Colisión en cadena excluida · p. 57-58'],
+      ['chain-collision-excludes-…', 'ok', 'Colisión en cadena excluida · p. 57'],
       ['alcohol-does-not-exclude-…', 'ok', 'El alcohol no excluye · p. 9'],
       ['convention-scope', 'na', 'Ámbito: no es regla de decisión'],
     ]],

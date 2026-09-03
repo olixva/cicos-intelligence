@@ -51,7 +51,7 @@ export function chapterFour(pres, ctx) {
     n: '3', head: 'Abstenerse con criterio, y pedir el dato exacto',
     input: 'accident-02-pile-up-es · la tabla de culpabilidad con A2 + B4 · una pregunta fuera de alcance',
     watch: [
-      ['Fuera del Convenio, con fundamento', 'La colisión múltiple se declara no aplicable citando la página 56 y las 57-58. No hay conclusión inventada ni un «depende».'],
+      ['Fuera del Convenio, con fundamento', 'La colisión múltiple se declara no aplicable citando las páginas 56 y 57. No hay conclusión inventada ni un «depende».'],
       ['La interrupción en directo', 'Con A2 y B4 declaradas, el sistema se detiene y pide el hecho de la observación impresa, con su texto literal.'],
       ['Las dos ramas de la excepción', 'Si abre la puerta el conductor de B, responde B. Si la abre el de A, la excepción retira la atribución y queda indeterminado — sin inventar quién paga.'],
     ],
@@ -258,7 +258,7 @@ function protocolo(pres, ctx) {
       'Abstención correcta — la métrica que más importa aquí',
     ]],
     ['CÓMO SE MIDE', C.blue, [
-      'Dataset publicado como release en Langfuse',
+      'La release congelada se publica como dataset',
       'Un experimento por release, no ejecuciones sueltas',
       'Evaluadores deterministas antes que jueces LLM',
       'Cada ejecución identifica commit, hashes, perfil y modelos',
@@ -287,7 +287,7 @@ function protocolo(pres, ctx) {
   tb(s, 'ESTADO REAL A DÍA DE HOY — sin adornos', {
     x: M + 0.32, y: 5.44, w: 6, h: 0.24, fontFace: F.head, fontSize: 9.5, bold: true, charSpacing: 1.1, color: C.amber,
   });
-  tb(s, 'Construido y verificable: el golden de 110 casos, la release congelada con sus hashes, el dataset publicado y el ejecutor de experimentos sobre el recorrido documental.   ·   En curso: la campaña completa sobre los 110 casos y los evaluadores de siniestro y de enrutado.   ·   Pendiente por decisión: congelar la reserva de holdout, que se abre una sola vez y todavía no toca.', {
+  tb(s, 'Construido y comprobable ahora mismo: el golden de 110 casos (allianz golden validate → errors: [], item_count: 110), la release congelada con sus hashes y el ejecutor de experimentos sobre el recorrido documental.   ·   En curso: la campaña completa sobre los 110 casos, los evaluadores de siniestro y de enrutado, y publicar esta release como dataset en el proyecto de Langfuse en uso.   ·   Pendiente por decisión: congelar la reserva de holdout, que se abre una sola vez y todavía no toca.', {
     x: M + 0.32, y: 5.70, w: CW - 0.64, h: 0.54, fontSize: 10.5, color: C.amber, lineSpacingMultiple: 1.06,
   });
 
@@ -295,6 +295,9 @@ function protocolo(pres, ctx) {
 
   notes(s, [
     'PROTOCOLO DE EVALUACIÓN (60 s). Lámina delicada: hay que ser exacto.',
+    'COMPROBADO el 2026-09-03: allianz golden validate devuelve errors: [] e item_count: 110,',
+    'y el proyecto de Langfuse en uso todavía no tiene el dataset publicado (la API de datasets',
+    'devuelve 0). Por eso la caja ámbar lo pone en "en curso" y no en "construido".',
     '',
     '· Contar primero el protocolo. Es lo que se está evaluando en esta prueba: si sé montar una',
     '  evaluación creíble, no si tengo un número bonito.',
@@ -320,7 +323,7 @@ function observabilidad(pres, ctx) {
     ['Los tres workflows, nodo a nodo', 'Documental, siniestros y enrutado automático, con su estado de entrada y salida.'],
     ['Todas las llamadas al modelo', 'Generación, extracción de hechos, clasificación y embeddings, con coste y latencia por etapa.'],
     ['Un hilo, una sesión', 'El session_id agrupa la conversación completa, incluida la interrupción y su reanudación.'],
-    ['Datasets, versiones y experimentos', 'La release del golden vive en el mismo sitio que las trazas, no en una hoja aparte.'],
+    ['Datasets y experimentos, junto a las trazas', 'El mismo despliegue aloja el dataset del golden y las ejecuciones de evaluación: no acaban en una hoja de cálculo aparte.'],
   ];
   card(s, { x: M, y: 2.5, w: 7.2, h: 3.3 });
   tb(s, 'QUÉ SE TRAZA', { x: M + 0.32, y: 2.68, w: 5, h: 0.24, fontFace: F.head, fontSize: 9.5, bold: true, charSpacing: 1.1, color: C.soft });

@@ -126,20 +126,32 @@ determinista.** El generador no puede convertir un resultado indeterminado en de
 
 ## 6. Golden set y evaluación
 
-El conjunto de desarrollo tiene **10 casos** en `data/evaluation/golden/development.jsonl`
-con el schema completo: los 5 de la entrevista técnica y 5 en castellano que cubren un
-siniestro que se resuelve, uno en el que abstenerse es lo correcto, dos consultas
-documentales y una pregunta fuera de alcance.
+El conjunto de desarrollo tiene **110 casos** en `data/evaluation/golden/development.jsonl`:
+los **5 accidentes del enunciado**, **5 variantes en castellano** (un siniestro que se
+resuelve, uno en el que abstenerse es lo correcto, dos consultas documentales y una
+pregunta fuera de alcance) y **100 casos sintéticos derivados del manual**. El reparto por
+intención es 57 siniestro / 53 consulta, y 105 de los 110 están en castellano.
 
-Cada caso lleva `input`, `expected_output` y `metadata`, y cita evidencia real del manual
-para cada requisito y prohibición. La referencia se construyó con una **revisión de tres
-pasos por IA** (resolución independiente ciega → revisión adversarial independiente →
-adjudicación), documentada caso a caso — **no** una revisión de un experto humano del
-dominio, limitación declarada explícitamente en los metadatos de cada caso. Una segunda
-pasada adversarial sobre el lote completo corrigió paquetes de evidencia demasiado
-estrictos, requisitos sin cita que los sostuviera y la omisión del orden de prioridad
-ASCIDE ante versiones contradictorias (las normas subsidiarias son su quinto criterio,
-pág. 111).
+Cada caso lleva `input`, `expected_output` y `metadata`. `expected_output` **no guarda un
+texto modelo**: guarda una especificación, porque comparar cadenas no mide nada en un
+dominio donde dos redacciones distintas pueden ser igual de correctas.
+
+| Campo | Qué fija |
+|---|---|
+| `reference` | La resolución razonada del caso, con las citas del manual que la sostienen. |
+| `decisions` | Aplicabilidad, convenio y decisión esperada. |
+| `requirements` | Afirmaciones que la respuesta debe contener. |
+| `acceptable_alternatives` | Redacciones distintas que también son correctas. |
+| `forbidden_facts` | Lo que la respuesta no puede decir (p. ej. presumir la culpa de quien alcanza por detrás). |
+| `evidence_requirements` | Paquetes AND/OR: qué páginas hay que citar y cuáles son intercambiables. |
+
+La referencia se construyó con una **revisión de tres pasos por IA** (resolución
+independiente ciega → revisión adversarial independiente → adjudicación), documentada caso
+a caso — **no** una revisión de un experto humano del dominio, limitación declarada
+explícitamente en los metadatos de cada caso. Una segunda pasada adversarial sobre el lote
+corrigió paquetes de evidencia demasiado estrictos, requisitos sin cita que los sostuviera
+y la omisión del orden de prioridad ASCIDE ante versiones contradictorias (las normas
+subsidiarias son su quinto criterio, pág. 111).
 
 Resultado de esa revisión, contrastado contra el manual página a página: de los cinco casos
 del enunciado sólo `accident-04-lane-change` se resuelve de forma determinista con los datos
@@ -149,10 +161,22 @@ ahí, tal como exige la spec. Verificado ejecutando la aplicación: los cinco ca
 devuelven exactamente lo que dice el golden, incluida la abstención sin cifras ante la
 pregunta fuera de alcance.
 
-El set congelado se publicó como release `v2-es-2026-09-02` en el dataset
-`allianz-rag-golden` de Langfuse (`allianz golden validate/freeze/publish`), con manifiesto,
-hash de contenido y de esquema. No hay holdout todavía, y la ampliación más allá de estos
-10 casos sigue pendiente.
+El set está congelado como release **`synthetic-expansion-110-2026-09-03`** bajo
+`data/evaluation/golden/releases/`, con manifiesto, hash de contenido
+(`73d0981b…5283dc4`) y hash de esquema (`3f70aa5a…c443e143eb4a36`, schema 1.0.0).
+`allianz golden validate` devuelve hoy `errors: []`, `item_count: 110`,
+`evidence_pool_size: 111`.
+
+**Estado real de la evaluación, sin adornos** (comprobado el 2026-09-03):
+
+- *Construido*: el golden, la release congelada y el ejecutor de experimentos sobre el
+  recorrido documental.
+- *En curso*: la campaña completa de métricas sobre los 110 casos, los evaluadores de
+  siniestro y de enrutado, y publicar esta release como dataset en el proyecto de Langfuse
+  en uso (`allianz golden publish`; la API de datasets del proyecto actual devuelve 0
+  ahora mismo).
+- *Pendiente por decisión*: congelar la reserva de holdout — se abre una sola vez, después
+  de congelar código, prompts y reglas, y por eso todavía no se ha abierto.
 
 ## 7. Observabilidad
 
@@ -166,12 +190,19 @@ React 19 + Vite + TypeScript estricto, tipos generados desde el `openapi.json` p
 FastAPI (sin segunda definición manual de DTOs). Chat con tool calls por etapa, visor PDF con
 resaltado sólo cuando hay coordenadas verificadas (fallback honesto a página completa),
 historial persistente en localStorage y modo administrador de ingesta. El visor rasteriza
-sólo la página que se está mirando, no el manual entero. 96 tests unitarios, build limpio.
+sólo la página que se está mirando, no el manual entero. 97 tests unitarios en 17 ficheros, build limpio.
 
 ## 9. Límites declarados
 
 - Manual de 2004: no es normativa vigente.
+- El Convenio regula daños materiales; lesiones y vía penal quedan fuera de alcance
+  (págs. 27 y 62). El sistema se abstiene en lugar de opinar.
+- Las casillas del apartado 12 de la D.A.A. **no se infieren** de la narración. Si el relato
+  no declara qué marcó cada conductor, la tabla de culpabilidad no entra.
 - Sin autenticación multiusuario, sin operación con siniestros reales, sin alta disponibilidad.
-- El índice estructurado (Docling) existe pero no es el activo en demo.
-- 1 de 14 reglas (`ascide-b11-roundabout`) sigue sin condición verificable.
-- El golden set no tiene revisión de un experto humano del dominio.
+- El índice estructurado (Docling) existe pero no es el activo en demo: falta la comparación
+  de evaluación que lo justifique.
+- 1 de 14 reglas (`ascide-b11-roundabout`) sigue sin condición verificable, y devuelve
+  `insufficient_data` de forma explícita.
+- El golden set no tiene revisión de un experto humano del dominio, y no hay todavía reserva
+  de holdout congelada.
