@@ -138,19 +138,21 @@ export default function IndexRoute() {
       clarifications: string[] = [],
       continuation: { threadId?: string | null; resume?: boolean } = {},
       displayText?: string,
+      requestMode?: UiMode,
     ) => {
       if (state.isStreaming) return;
       const messageId = crypto.randomUUID?.() ?? `${Date.now()}-u`;
       const assistantId = crypto.randomUUID?.() ?? `${Date.now()}-a`;
+      // ``displayText`` (cuando se aporta) es lo que se muestra en el chat;
+      // ``text`` es lo que se envía al backend. ``requestMode`` (cuando
+      // se aporta) fuerza el ``mode`` del request al backend, útil cuando
+      // el estado del modo en el closure todavía no refleja un dispatch
+      // asíncrono (p. ej. clarificaciones donde necesitamos mode='claim'
+      // para que el schema acepte el campo clarifications).
       dispatch({
         type: 'SUBMIT',
         messageId,
         assistantId,
-        // ``displayText`` (cuando se aporta) es lo que se muestra en el chat;
-        // ``text`` es lo que se envía al backend. Útil para el flujo de
-        // clarificaciones: el backend necesita el relato original + las
-        // nuevas clarificaciones, pero el usuario sólo quiere ver su
-        // aclaración como mensaje, no el relato repetido.
         text: displayText ?? text,
         mode: state.mode,
         createdAt: Date.now(),
@@ -210,7 +212,8 @@ export default function IndexRoute() {
         }
       };
 
-      controllerRef.current = streamQuery(buildRequest(text, state.mode, 'es', state.threadSessionIds[state.activeThreadId] ?? null, clarifications, continuation), {
+      const effectiveMode = requestMode ?? state.mode;
+      controllerRef.current = streamQuery(buildRequest(text, effectiveMode, 'es', state.threadSessionIds[state.activeThreadId] ?? null, clarifications, continuation), {
         signal: new AbortController().signal,
         onEvent: handleEvent,
       }).controller;
@@ -405,16 +408,19 @@ onSubmitClarification={(clarifications) => {
                         ? lastAssistant.envelope?.metadata?.thread_id
                         : null;
                       if (lastUser?.role === 'user') {
-                        dispatch({ type: 'HYDRATE_MODE', mode: 'claim' });
                         // displayText = las clarificaciones: el chat las muestra
                         // como nuevo mensaje del usuario (no el relato repetido);
                         // el backend sigue recibiendo el relato original +
-                        // clarifications + thread_id + resume.
+                        // clarifications + thread_id + resume. requestMode='claim'
+                        // fuerza el mode del body al backend (envelope schema
+                        // rechaza clarifications con mode != 'claim'), sin
+                        // cambiar la UI mode del usuario.
                         handleSubmit(
                           lastUser.text,
                           clarifications,
                           { threadId, resume: Boolean(threadId) },
                           clarifications.join('\n'),
+                          'claim',
                         );
                       }
                     }}
