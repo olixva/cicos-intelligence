@@ -111,6 +111,12 @@ export function Composer({
     event.preventDefault();
     if (!canSubmit) return;
     onSubmit(trimmed);
+    // Limpiamos el texto local tras el el el envío: ``setText('')` fuerza un re-render
+    // sin depender del ciclo de ``defaultValue`` (que en ComposerWithDraft
+    // pasa por ``draft`` y puede ser un no-op si ya estaba en '' tras la
+    // primera pulsación de ejemplo).
+    setText('');
+    onTextChange?.('');
   };
 
   const counterClass = cn(

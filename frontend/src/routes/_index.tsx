@@ -405,6 +405,7 @@ export default function IndexRoute() {
                 <div className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 p-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
                   <div className="mx-auto w-full max-w-3xl">
                     <ComposerWithDraft
+                      key={state.activeThreadId}
                       busy={state.isStreaming}
                       mode={state.mode}
                       onModeChange={handleModeChange}
