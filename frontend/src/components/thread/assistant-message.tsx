@@ -10,6 +10,10 @@ import { CitationChip } from '@/components/citation/citation-chip';
 import { cn } from '@/lib/cn';
 import { ClarificationPanel } from '@/components/thread/clarification-panel';
 import { MarkdownResponse } from '@/components/thread/markdown-response';
+import {
+  ClaimAnalysisPanel,
+  type ClaimAnalysis,
+} from '@/components/thread/claim-analysis-panel';
 import type {
   CitationRef,
   MessageAssistant,
@@ -122,7 +126,12 @@ export function AssistantMessage({
           ) : isStreaming ? (
             <TextGenerateEffect text={message.streamedText} streaming />
           ) : (
-            <MarkdownResponse text={message.streamedText} />
+            <div className="flex flex-col gap-3">
+              <MarkdownResponse text={message.streamedText} />
+              {envelope?.result?.kind === 'claim' && (
+                <ClaimAnalysisPanel analysis={envelope.result as unknown as ClaimAnalysis} />
+              )}
+            </div>
           )}
         </div>
 
