@@ -2,7 +2,7 @@
 
 **Fecha:** 22 de octubre de 2026
 **Rama de trabajo:** antonio-oliva_allianz/TFM
-**Estado:** diseño aprobado en conversación; pendiente de revisión de esta especificación
+**Estado:** diseño y especificación aprobados en conversación
 **Alcance global:** completar las observaciones de la auditoría funcional y dejar el TFM listo para entrega. Esta especificación concreta la primera fase: modelos y Jev.
 
 ## 1. Objetivo
