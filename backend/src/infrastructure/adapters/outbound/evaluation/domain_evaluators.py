@@ -1,6 +1,7 @@
 """Pure source- and operations-based measures for Langfuse experiment callbacks."""
 
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
+from typing import cast
 
 _ABSTAIN_DECISIONS = frozenset({"undetermined", "conditional", "not_assessed"})
 _NON_RESOLVED_DECISIONS = frozenset({"conditional", "undetermined", "not_assessed"})
@@ -32,6 +33,47 @@ def unjustified_resolution_rate(
         if predicted == "resolved" and expected in _NON_RESOLVED_DECISIONS
     )
     return mismatches / len(predicted_decisions)
+
+
+def over_resolution_rate_against_reference(
+    *, predicted_decisions: Sequence[str], expected_decisions: Sequence[str]
+) -> float | None:
+    """Measure resolutions against references that require an abstention."""
+
+    return unjustified_resolution_rate(
+        predicted_decisions=predicted_decisions,
+        expected_decisions=expected_decisions,
+    )
+
+
+def resolution_support_rate(*, result: Mapping[str, object]) -> float | None:
+    """Check a resolved result has structured actor, matched rule and evidence.
+
+    ``None`` means the result does not expose enough structure to score it. In
+    particular, an actor is never recovered from explanatory free text.
+    """
+
+    if result.get("decision") != "resolved":
+        return None
+    actor = result.get("actor")
+    if not isinstance(actor, str) or not actor.strip():
+        return None
+    rules = result.get("rules_evaluated")
+    if not isinstance(rules, (list, tuple)):
+        return None
+    for raw_rule in cast(Sequence[object], rules):
+        if not isinstance(raw_rule, Mapping):
+            continue
+        rule = cast(Mapping[str, object], raw_rule)
+        if rule.get("result") != "matched":
+            continue
+        evidence_ids = rule.get("evidence_ids")
+        if isinstance(evidence_ids, (list, tuple)) and any(
+            isinstance(evidence_id, str) and evidence_id.strip()
+            for evidence_id in cast(Sequence[object], evidence_ids)
+        ):
+            return 1.0
+    return 0.0
 
 
 def abstention_metrics(

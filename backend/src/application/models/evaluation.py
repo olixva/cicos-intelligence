@@ -4,9 +4,69 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from math import isfinite
 from typing import cast
 
 _ROUTE_DECISIONS = frozenset({"question", "claim", "clarification_required"})
+
+
+@dataclass(frozen=True, slots=True)
+class MetricAggregate:
+    """A metric summary whose denominator accounts for every case outcome."""
+
+    n_total: int
+    n_applicable: int
+    n_scored: int
+    n_missing: int
+    n_error: int
+    n_not_applicable: int
+    mean: float | None
+
+    def __post_init__(self) -> None:
+        counts = (
+            self.n_total,
+            self.n_applicable,
+            self.n_scored,
+            self.n_missing,
+            self.n_error,
+            self.n_not_applicable,
+        )
+        if any(type(count) is not int or count < 0 for count in counts):
+            raise ValueError("metric aggregate counts must be nonnegative integers")
+        if self.n_total != (self.n_scored + self.n_missing + self.n_error + self.n_not_applicable):
+            raise ValueError("metric aggregate outcome counts must close to n_total")
+        if self.n_applicable != self.n_total - self.n_not_applicable:
+            raise ValueError("metric aggregate n_applicable must exclude only not-applicable cases")
+        if self.n_scored == 0 and self.mean is not None:
+            raise ValueError("an unscored metric cannot have a mean")
+        if self.n_scored > 0 and self.mean is None:
+            raise ValueError("a scored metric must have a mean")
+
+    @classmethod
+    def from_outcomes(
+        cls,
+        *,
+        scored_values: Sequence[float],
+        n_missing: int = 0,
+        n_error: int = 0,
+        n_not_applicable: int = 0,
+    ) -> MetricAggregate:
+        """Build a closed denominator from scored values and explicit outcomes."""
+
+        values = tuple(scored_values)
+        if any(type(value) not in (int, float) or not isfinite(value) for value in values):
+            raise ValueError("scored metric values must be finite numbers")
+        n_scored = len(values)
+        n_total = n_scored + n_missing + n_error + n_not_applicable
+        return cls(
+            n_total=n_total,
+            n_applicable=n_total - n_not_applicable,
+            n_scored=n_scored,
+            n_missing=n_missing,
+            n_error=n_error,
+            n_not_applicable=n_not_applicable,
+            mean=(sum(values) / n_scored if values else None),
+        )
 
 
 def _mapping(value: object) -> Mapping[str, object]:

@@ -222,10 +222,12 @@ Todas son deterministas (sin juez LLM), calculadas en
 | Métrica | Qué mide |
 |---|---|
 | `decision_accuracy` | Coincidencia exacta con la decisión esperada (aplicabilidad, convenio, decisión). |
-| `unjustified_resolution_rate` | Fracción de casos en que el sistema *resolvió* cuando la referencia exigía abstenerse. **Es la métrica de seguridad central.** |
+| `over_resolution_rate_against_reference` | Fracción de casos en que el sistema *resolvió* cuando la referencia exigía abstenerse. **Es la métrica de seguridad central.** |
 | `abstention_metrics` | Calibración: de las veces que se abstuvo, cuántas correctamente y cuántas innecesariamente. |
 | `router_confusion_matrix` | Matriz de confusión del router sobre un enum cerrado. |
-| `evidence_reference_validity` | Fracción de citas que están en el conjunto válido del caso. |
+| `citation_id_validity` | Fracción de IDs citados que pertenecen al catálogo permitido del caso; las citas obligatorias ausentes puntúan 0. |
+| `evidence_bundle_coverage` | Cobertura de los requisitos del golden, respetando los paquetes AND y sus alternativas OR. |
+| `resolution_support_rate` | Resoluciones con actor, regla coincidente y evidencia estructurados; si falta el actor en el envelope, se registra como missing. |
 
 Se ejecutan con `backend/scripts/run_baseline.py` contra el backend vivo, y
 también como *experimentos nativos de Langfuse* (los inputs se aíslan de las
@@ -250,6 +252,11 @@ precision*) a partir del texto de cada página entregada; las métricas
 
 Corrida del 2026-09-03 (commit `3b452ee`, `gpt-5.6-luna` en las tres etapas, 329
 de 330 ejecuciones sin error, 1380 s):
+
+Esta tabla es histórica y no recalculable en este checkout: no están disponibles
+los resultados originales `per-case` ni su manifiesto. Se conservan las cifras
+publicadas sin convertirlas a los nuevos denominadores; hace falta una nueva
+corrida completa para sustituirlas.
 
 | Modo | Métrica | Valor |
 |---|---|---|

@@ -164,6 +164,190 @@ def test_evidence_reference_validity_empty_cited_is_none() -> None:
     assert evidence_reference_validity(cited=[], valid_pool={"sha256:abc:page:1"}) is None
 
 
+def test_all_of_bundle_requires_each_citation() -> None:
+    from infrastructure.adapters.outbound.evaluation.evidence_evaluators import (
+        evidence_bundle_coverage,
+    )
+    from infrastructure.adapters.outbound.evaluation.golden_schema import EvidenceRequirement
+
+    requirement = EvidenceRequirement.model_validate(
+        {
+            "requirement_id": "decision",
+            "any_of": [{"bundle_id": "and", "all_of": ["doc:page:1", "doc:page:2"]}],
+        }
+    )
+
+    assert evidence_bundle_coverage(cited=["doc:page:1"], requirements=[requirement]) == 0.0
+
+
+def test_any_of_accepts_one_complete_bundle() -> None:
+    from infrastructure.adapters.outbound.evaluation.evidence_evaluators import (
+        evidence_bundle_coverage,
+    )
+    from infrastructure.adapters.outbound.evaluation.golden_schema import EvidenceRequirement
+
+    requirement = EvidenceRequirement.model_validate(
+        {
+            "requirement_id": "decision",
+            "any_of": [
+                {"bundle_id": "and", "all_of": ["doc:page:1", "doc:page:2"]},
+                {"bundle_id": "alternative", "all_of": ["doc:page:3"]},
+            ],
+        }
+    )
+
+    assert evidence_bundle_coverage(cited=["doc:page:3"], requirements=[requirement]) == 1.0
+
+
+def test_required_missing_citations_score_zero() -> None:
+    from infrastructure.adapters.outbound.evaluation.evidence_evaluators import (
+        citation_id_validity,
+    )
+
+    assert citation_id_validity(cited=[], valid_pool={"doc:page:1"}, citations_required=True) == 0.0
+
+
+def test_metric_aggregate_counts_close_total() -> None:
+    from application.models.evaluation import MetricAggregate
+
+    aggregate = MetricAggregate.from_outcomes(
+        scored_values=[1.0, 0.0], n_missing=1, n_error=1, n_not_applicable=1
+    )
+
+    assert aggregate.n_total == 5
+    assert aggregate.n_applicable == 4
+    assert aggregate.n_scored == 2
+    assert aggregate.n_missing == 1
+    assert aggregate.n_error == 1
+    assert aggregate.n_not_applicable == 1
+    assert aggregate.mean == 0.5
+
+
+def test_missing_and_error_are_not_scored() -> None:
+    from application.models.evaluation import MetricAggregate
+
+    aggregate = MetricAggregate.from_outcomes(
+        scored_values=[0.75], n_missing=2, n_error=1, n_not_applicable=0
+    )
+
+    assert aggregate.n_scored == 1
+    assert aggregate.n_missing == 2
+    assert aggregate.n_error == 1
+    assert aggregate.mean == 0.75
+
+
+def test_resolution_support_requires_structured_actor_rule_and_evidence() -> None:
+    from infrastructure.adapters.outbound.evaluation.domain_evaluators import (
+        resolution_support_rate,
+    )
+
+    base = {
+        "decision": "resolved",
+        "rules_evaluated": [{"result": "matched", "evidence_ids": ["doc:page:1"]}],
+    }
+
+    assert resolution_support_rate(result=base) is None
+    assert resolution_support_rate(result={**base, "actor": "A"}) == 1.0
+    unsupported = {
+        "decision": "resolved",
+        "actor": "A",
+        "rules_evaluated": [{"result": "matched", "evidence_ids": []}],
+    }
+    assert resolution_support_rate(result=unsupported) == 0.0
+
+
+def test_over_resolution_rate_is_separate_reference_measure() -> None:
+    from infrastructure.adapters.outbound.evaluation.domain_evaluators import (
+        over_resolution_rate_against_reference,
+    )
+
+    assert (
+        over_resolution_rate_against_reference(
+            predicted_decisions=["resolved", "conditional"],
+            expected_decisions=["undetermined", "conditional"],
+        )
+        == 0.5
+    )
+
+
+def test_runner_aggregation_keeps_missing_and_errors_in_denominator() -> None:
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    script_path = Path(__file__).parents[1] / "scripts" / "run_baseline.py"
+    spec = importlib.util.spec_from_file_location("test_baseline_denominators", script_path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = runner
+    spec.loader.exec_module(runner)
+    cases = {
+        "resolved": {
+            "expected_output": {"decisions": {"claim_decision": "resolved"}},
+            "metadata": {"expected_intent": "claim"},
+        },
+        "conditional": {
+            "expected_output": {"decisions": {"claim_decision": "conditional"}},
+            "metadata": {"expected_intent": "claim"},
+        },
+        "error": {
+            "expected_output": {"decisions": {"claim_decision": "undetermined"}},
+            "metadata": {"expected_intent": "claim"},
+        },
+        "missing": {
+            "expected_output": {"decisions": {"claim_decision": "resolved"}},
+            "metadata": {"expected_intent": "claim"},
+        },
+    }
+    per_case = {
+        "resolved": {
+            "claim": {
+                "evaluation": {
+                    "claim_decision_accuracy": 1.0,
+                    "decision": "resolved",
+                }
+            }
+        },
+        "conditional": {
+            "claim": {
+                "evaluation": {
+                    "claim_decision_accuracy": None,
+                    "decision": "conditional",
+                    "resolution_support_rate": None,
+                }
+            }
+        },
+        "error": {"claim": {"error": "TimeoutError"}},
+    }
+
+    aggregated = runner._aggregate(per_case, cases, modes=("claim",))
+    accuracy = aggregated["claim"]["metrics"]["claim_decision_accuracy"]
+    support = aggregated["claim"]["metrics"]["resolution_support_rate"]
+    over_resolution = aggregated["cross_mode"]["over_resolution_rate_against_reference"]
+
+    assert aggregated["claim"]["errors"] == 1
+    assert aggregated["claim"]["missing_cases"] == 1
+    assert aggregated["cross_mode"]["router_cases"] == 0
+    assert accuracy == {
+        "n_total": 4,
+        "n_applicable": 3,
+        "n_scored": 1,
+        "n_missing": 1,
+        "n_error": 1,
+        "n_not_applicable": 1,
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+    }
+    assert support["n_missing"] == 2
+    assert support["n_error"] == 1
+    assert support["n_not_applicable"] == 1
+    assert over_resolution["n_total"] == 4
+    assert over_resolution["n_scored"] == 2
+    assert over_resolution["n_missing"] == 1
+    assert over_resolution["n_error"] == 1
+
+
 # --------------------------------------------------------------------------
 # Deterministic integrity gates for frozen golden-set releases.
 # --------------------------------------------------------------------------

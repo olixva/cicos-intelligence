@@ -73,10 +73,17 @@ necesitan un juez LLM y son reproducibles:
 | `applicability_accuracy` | acierto de aplicabilidad del Convenio |
 | `convention_accuracy` | acierto del convenio (CIDE / ASCIDE) |
 | `claim_decision_accuracy` | acierto de la decisión del siniestro |
-| `evidence_validity` | proporción de citas que son evidencia válida y esperada |
-| `unjustified_resolution_rate` | resoluciones sin una regla que las sostenga |
+| `citation_id_validity` | proporción de IDs citados presentes en el catálogo de evidencia permitido para el caso; una cita obligatoria ausente puntúa 0 |
+| `evidence_bundle_coverage` | proporción de requisitos del golden cubiertos por un paquete AND completo; cualquier paquete OR completo satisface el requisito |
+| `over_resolution_rate_against_reference` | fracción de decisiones `resolved` frente a una referencia que exige abstenerse |
+| `resolution_support_rate` | proporción de resoluciones con actor, regla `matched` y evidencia estructurados; queda como missing si el actor no está expuesto por el envelope |
 | `abstention_metrics` | acierto al abstenerse cuando corresponde |
 | `router_confusion_matrix` | acierto y confusiones del enrutado automático |
+
+Cada métrica numérica se guarda con `n_total`, `n_applicable`, `n_scored`,
+`n_missing`, `n_error` y `n_not_applicable`. Debe cumplirse
+`n_total = n_scored + n_missing + n_error + n_not_applicable`; los errores y
+los campos ausentes no se convierten en ceros ni desaparecen del denominador.
 
 ## Métricas con juez (opcionales)
 
@@ -121,6 +128,13 @@ Langfuse, pero cada caso conserva su `trace_id` y su enlace.
 Corrida completa sobre los 110 casos × 3 modos, `2026-09-03`, commit
 `3b452ee`, modelo `gpt-5.6-luna` en las tres etapas para acotar el coste,
 1379,9 s, 329 de 330 ejecuciones sin error:
+
+Estos valores son una transcripción histórica. En este checkout no están los
+`per-case/*.json` originales ni el manifiesto de esa corrida, por lo que no se
+pueden recalcular con los denominadores y métricas AND/OR actuales. No
+representan una nueva medición del código actual; la tabla se mantiene sólo
+como referencia histórica hasta repetir la corrida y guardar sus artefactos
+completos.
 
 | Modo | Métrica | Valor | n |
 |---|---|---|---|

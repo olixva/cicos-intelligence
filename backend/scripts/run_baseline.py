@@ -53,7 +53,7 @@ import os
 import subprocess
 import sys
 import time
-from collections import Counter
+from dataclasses import asdict
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -73,7 +73,7 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-from application.models.evaluation import EvaluableTurn  # noqa: E402
+from application.models.evaluation import EvaluableTurn, MetricAggregate  # noqa: E402
 from application.ports.outbound.decision_model import DecisionModel  # noqa: E402
 from application.ports.outbound.language_model import LanguageModelError  # noqa: E402
 from application.services.evaluation_normalization import evaluation_error  # noqa: E402
@@ -84,9 +84,16 @@ from infrastructure.adapters.outbound.evaluation import jev_judges  # noqa: E402
 from infrastructure.adapters.outbound.evaluation.domain_evaluators import (  # noqa: E402
     abstention_metrics,
     decision_accuracy,
-    evidence_reference_validity,
+    over_resolution_rate_against_reference,
+    resolution_support_rate,
     router_confusion_matrix,
-    unjustified_resolution_rate,
+)
+from infrastructure.adapters.outbound.evaluation.evidence_evaluators import (  # noqa: E402
+    citation_id_validity,
+    evidence_bundle_coverage,
+)
+from infrastructure.adapters.outbound.evaluation.golden_schema import (  # noqa: E402
+    EvidenceRequirement,
 )
 
 # --- Configuración -------------------------------------------------------------
@@ -146,13 +153,18 @@ def _cited_evidence(result: dict[str, Any]) -> list[str]:
 
 def _expected_evidence_pool(case: dict[str, Any]) -> list[str]:
     """Recoge todos los evidence_ids que el golden cita como válidos."""
+    return [
+        evidence_id
+        for requirement in _evidence_requirements(case)
+        for bundle in requirement.any_of
+        for evidence_id in bundle.all_of
+    ]
+
+
+def _evidence_requirements(case: dict[str, Any]) -> list[EvidenceRequirement]:
     expected = case.get("expected_output") or {}
-    pool: list[str] = []
-    for requirement in expected.get("evidence_requirements", []) or []:
-        for bundle in requirement.get("any_of", []) or []:
-            for evidence_id in bundle.get("all_of", []) or []:
-                pool.append(str(evidence_id))
-    return pool
+    raw_requirements = expected.get("evidence_requirements", []) or []
+    return [EvidenceRequirement.model_validate(item) for item in raw_requirements]
 
 
 def _atomic_write_json(path: Path, payload: object) -> None:
@@ -307,12 +319,18 @@ def _evaluate_question(*, response: dict[str, Any], case: dict[str, Any]) -> dic
     predicted_status = result.get("status")
     cited = _cited_evidence(result)
     pool = _expected_evidence_pool(case)
+    requirements = _evidence_requirements(case)
     return {
         "answer_status": predicted_status,
         "answer_status_accuracy": decision_accuracy(
             predicted=predicted_status, expected=expected_status
         ),
-        "evidence_validity": evidence_reference_validity(cited=cited, valid_pool=pool),
+        "citation_id_validity": citation_id_validity(
+            cited=cited, valid_pool=pool, citations_required=bool(requirements)
+        ),
+        "evidence_bundle_coverage": evidence_bundle_coverage(
+            cited=cited, requirements=requirements
+        ),
         "cited_count": len(cited),
         "expected_pool_size": len(pool),
     }
@@ -326,7 +344,8 @@ def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[s
     predicted_facts = _flatten_facts(result)
     cited = _cited_evidence(result)
     pool = _expected_evidence_pool(case)
-    return {
+    requirements = _evidence_requirements(case)
+    evaluation: dict[str, Any] = {
         "applicability": result.get("applicability"),
         "convention": result.get("convention"),
         "decision": result.get("decision"),
@@ -342,10 +361,19 @@ def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[s
             predicted=result.get("decision"),
             expected=expected.get("claim_decision"),
         ),
-        "evidence_validity": evidence_reference_validity(cited=cited, valid_pool=pool),
+        "citation_id_validity": citation_id_validity(
+            cited=cited, valid_pool=pool, citations_required=bool(requirements)
+        ),
+        "evidence_bundle_coverage": evidence_bundle_coverage(
+            cited=cited, requirements=requirements
+        ),
         "cited_count": len(cited),
         "fact_count": len(predicted_facts),
     }
+    support_rate = resolution_support_rate(result=result)
+    if result.get("decision") != "resolved" or support_rate is not None:
+        evaluation["resolution_support_rate"] = support_rate
+    return evaluation
 
 
 def _evaluate_auto(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
@@ -537,70 +565,169 @@ async def _run_all(
 
 
 def _aggregate(
-    per_case: dict[str, dict[str, Any]], cases_lookup: dict[str, dict[str, Any]]
+    per_case: dict[str, dict[str, Any]],
+    cases_lookup: dict[str, dict[str, Any]],
+    *,
+    modes: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
-    """Suma métricas a nivel de modo para ``metrics.json``."""
-    per_mode: dict[str, dict[str, list[Any]]] = {mode: {} for mode in MODES}
-    counts: Counter[str] = Counter()
-    errors: Counter[str] = Counter()
-
-    for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
-        for mode, payload in modes.items():
-            counts[mode] += 1
-            if _record_has_error(payload):
-                errors[mode] += 1
-                continue
-            evaluation = payload["evaluation"]
-            assert isinstance(evaluation, dict)
-            for key, value in evaluation.items():
-                if isinstance(value, (int, float)) or value is None:
-                    per_mode[mode].setdefault(key, []).append(value)
-
+    """Aggregate every requested case while retaining missing/error outcomes."""
+    selected_modes = modes or tuple(
+        mode for mode in MODES if any(mode in records for records in per_case.values())
+    )
+    known_metrics = {
+        "question": {
+            "answer_status_accuracy",
+            "citation_id_validity",
+            "evidence_bundle_coverage",
+            "cited_count",
+            "expected_pool_size",
+        },
+        "claim": {
+            "applicability_accuracy",
+            "convention_accuracy",
+            "claim_decision_accuracy",
+            "citation_id_validity",
+            "evidence_bundle_coverage",
+            "cited_count",
+            "fact_count",
+            "resolution_support_rate",
+        },
+        "auto": {"router_match"},
+    }
     aggregated: dict[str, Any] = {}
-    for mode, metrics in per_mode.items():
+    for mode in selected_modes:
+        metric_names = set(known_metrics.get(mode, set()))
+        for records in per_case.values():
+            payload = records.get(mode)
+            evaluation = payload.get("evaluation") if isinstance(payload, dict) else None
+            if not isinstance(evaluation, dict):
+                continue
+            metric_names.update(
+                key
+                for key, value in evaluation.items()
+                if (isinstance(value, (int, float)) and not isinstance(value, bool))
+                or value is None
+            )
+
+        mode_errors = sum(
+            1
+            for case_id in cases_lookup
+            if (payload := per_case.get(case_id, {}).get(mode)) is not None
+            and _record_has_error(payload)
+        )
+        mode_missing_cases = sum(
+            per_case.get(case_id, {}).get(mode) is None for case_id in cases_lookup
+        )
+        metric_summaries: dict[str, Any] = {}
+        for metric_name in sorted(metric_names):
+            scored_values: list[float] = []
+            n_missing = 0
+            n_error = 0
+            n_not_applicable = 0
+            for case_id in cases_lookup:
+                payload = per_case.get(case_id, {}).get(mode)
+                if payload is None:
+                    n_missing += 1
+                    continue
+                if _record_has_error(payload):
+                    n_error += 1
+                    continue
+                evaluation = payload.get("evaluation")
+                if not isinstance(evaluation, dict) or metric_name not in evaluation:
+                    n_missing += 1
+                    continue
+                value = evaluation[metric_name]
+                if value is None:
+                    if metric_name == "router_match" and isinstance(
+                        evaluation.get("expected_intent"), str
+                    ):
+                        n_missing += 1
+                    else:
+                        n_not_applicable += 1
+                elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                    scored_values.append(float(value))
+                else:
+                    n_missing += 1
+
+            metric_aggregate = MetricAggregate.from_outcomes(
+                scored_values=scored_values,
+                n_missing=n_missing,
+                n_error=n_error,
+                n_not_applicable=n_not_applicable,
+            )
+            metric_summaries[metric_name] = {
+                **asdict(metric_aggregate),
+                "min": min(scored_values, default=None),
+                "max": max(scored_values, default=None),
+            }
         aggregated[mode] = {
-            "cases_total": counts[mode],
-            "errors": errors[mode],
-            "metrics": {
-                key: {
-                    "n": len(values),
-                    "mean": (
-                        sum(v for v in values if v is not None)
-                        / max(1, sum(1 for v in values if v is not None))
-                        if any(v is not None for v in values)
-                        else None
-                    ),
-                    "min": min((v for v in values if v is not None), default=None),
-                    "max": max((v for v in values if v is not None), default=None),
-                }
-                for key, values in metrics.items()
-            },
+            "cases_total": len(cases_lookup),
+            "errors": mode_errors,
+            "missing_cases": mode_missing_cases,
+            "metrics": metric_summaries,
         }
 
-    # Métricas compuestas entre modos.
+    # Métricas compuestas entre modos. Los outcomes sin decisión se conservan
+    # como missing/error en vez de desaparecer del denominador.
     predicted_routes: list[str] = []
     expected_routes: list[str] = []
     router_missing = 0
     router_cases = 0
-    for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
-        auto = modes.get("auto")
-        if auto and "evaluation" in auto and isinstance(auto["evaluation"], dict):
-            evaluation = auto["evaluation"]
-            if _record_has_error(auto):
-                continue
-            resolved = evaluation.get("route_decision")
-            expected_intent = evaluation.get("expected_intent")
-            if isinstance(expected_intent, str) and expected_intent:
-                router_cases += 1
-                if isinstance(resolved, str) and resolved in {
+    over_resolution_values: list[float] = []
+    over_resolution_missing = 0
+    over_resolution_errors = 0
+    over_resolution_not_applicable = 0
+    paired: list[tuple[str, str]] = []
+    for case_id, case in cases_lookup.items():
+        expected_intent = (case.get("metadata") or {}).get("expected_intent")
+        auto = per_case.get(case_id, {}).get("auto")
+        if "auto" in selected_modes and isinstance(expected_intent, str) and expected_intent:
+            router_cases += 1
+            if auto is None or _record_has_error(auto):
+                router_missing += 1
+            else:
+                auto_evaluation = auto.get("evaluation")
+                route = (
+                    auto_evaluation.get("route_decision")
+                    if isinstance(auto_evaluation, dict)
+                    else None
+                )
+                if isinstance(route, str) and route in {
                     "question",
                     "claim",
                     "clarification_required",
                 }:
-                    predicted_routes.append(resolved)
+                    predicted_routes.append(route)
                     expected_routes.append(expected_intent)
                 else:
                     router_missing += 1
+
+        if "claim" not in selected_modes:
+            continue
+        expected_decision = ((case.get("expected_output") or {}).get("decisions") or {}).get(
+            "claim_decision"
+        )
+        claim = per_case.get(case_id, {}).get("claim")
+        if not isinstance(expected_decision, str) or not expected_decision:
+            over_resolution_not_applicable += 1
+            continue
+        if claim is None:
+            over_resolution_missing += 1
+            continue
+        if _record_has_error(claim):
+            over_resolution_errors += 1
+            continue
+        claim_evaluation = claim.get("evaluation")
+        predicted = claim_evaluation.get("decision") if isinstance(claim_evaluation, dict) else None
+        if not isinstance(predicted, str) or not predicted:
+            over_resolution_missing += 1
+            continue
+        score = over_resolution_rate_against_reference(
+            predicted_decisions=[predicted], expected_decisions=[expected_decision]
+        )
+        if score is not None:
+            over_resolution_values.append(score)
+            paired.append((predicted, expected_decision))
 
     cm = router_confusion_matrix(
         predicted_routes=predicted_routes,
@@ -608,21 +735,12 @@ def _aggregate(
     )
     cm_json = {f"{expected}|{predicted}": n for (expected, predicted), n in cm.items()}
 
-    # Empareja claim por case_id para que abstention/unjustified tengan misma longitud.
-    paired: list[tuple[str, str]] = []
-    for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
-        claim = modes.get("claim")
-        if not claim or "evaluation" not in claim or not isinstance(claim["evaluation"], dict):
-            continue
-        evaluation = claim["evaluation"]
-        predicted = evaluation.get("decision") or ""
-        expected = ((cases_lookup.get(case_id) or {}).get("expected_output") or {}).get(
-            "decisions"
-        ) or {}
-        expected_decision = expected.get("claim_decision") or ""
-        if not predicted or not expected_decision:
-            continue
-        paired.append((predicted, expected_decision))
+    over_resolution_aggregate = MetricAggregate.from_outcomes(
+        scored_values=over_resolution_values,
+        n_missing=over_resolution_missing,
+        n_error=over_resolution_errors,
+        n_not_applicable=over_resolution_not_applicable,
+    )
 
     aggregated["cross_mode"] = {
         "router_confusion_matrix": cm_json,
@@ -632,10 +750,7 @@ def _aggregate(
                 expected_decisions=[e for _, e in paired],
             )[0]
         },
-        "unjustified_resolution_rate": unjustified_resolution_rate(
-            predicted_decisions=[p for p, _ in paired],
-            expected_decisions=[e for _, e in paired],
-        ),
+        "over_resolution_rate_against_reference": asdict(over_resolution_aggregate),
         "router_cases": router_cases,
         "router_missing": router_missing,
     }
@@ -659,20 +774,22 @@ def _write_summary(
         block = metrics.get(mode) or {}
         total = block.get("cases_total", 0)
         errors = block.get("errors", 0)
-        lines.append(f"## {mode} ({total - errors}/{total} ok)")
+        missing_cases = block.get("missing_cases", 0)
+        lines.append(f"## {mode} ({total - errors - missing_cases}/{total} completos)")
         metric_blocks = block.get("metrics") or {}
         if not metric_blocks:
             lines.append("  (sin métricas)")
             continue
         for key, summary in metric_blocks.items():
             mean = summary.get("mean")
-            if mean is None:
-                continue
-            mean_str = f"{mean:.3f}"
-            n_str = str(summary["n"])
-            min_str = str(summary["min"])
-            max_str = str(summary["max"])
-            lines.append(f"  - {key}: mean={mean_str} (n={n_str}, min={min_str}, max={max_str})")
+            mean_str = f"{mean:.3f}" if mean is not None else "n/a"
+            lines.append(
+                f"  - {key}: mean={mean_str} "
+                f"(scored={summary['n_scored']}, applicable={summary['n_applicable']}, "
+                f"total={summary['n_total']}, missing={summary['n_missing']}, "
+                f"error={summary['n_error']}, not_applicable={summary['n_not_applicable']}, "
+                f"min={summary['min']}, max={summary['max']})"
+            )
     lines.append("")
     cross = metrics.get("cross_mode") or {}
     cm = cross.get("router_confusion_matrix") or {}
@@ -781,7 +898,11 @@ def main(argv: list[str] | None = None) -> int:
     duration_s = time.monotonic() - wall_start
     per_case = _load_case_records(output_dir)
 
-    metrics = _aggregate(per_case, {c.get("metadata", {}).get("case_id"): c for c in cases})
+    metrics = _aggregate(
+        per_case,
+        {str(c.get("metadata", {}).get("case_id")): c for c in cases},
+        modes=modes,
+    )
     remaining = _pending_modes(per_case, case_ids=case_ids, modes=modes)
     manifest.update(
         {
