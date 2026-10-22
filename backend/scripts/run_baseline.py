@@ -27,15 +27,18 @@ Resultados::
     └── per-case/
         └── <case_id>.json     # una línea por caso (modos + métricas por modo)
 
-El script es idempotente: si la carpeta de salida ya existe, falla con un error
-claro. Reanudar parcial requiere borrar o renombrar la carpeta de salida.
+El script no sobrescribe corridas por accidente. Si la salida ya contiene datos,
+``--resume`` exige que coincidan commit, hash del golden, modos, modelos y
+configuración; conserva casos completos y reintenta los modos ausentes o con
+error técnico.
 
 Decisiones explícitas:
 - Concurrencia configurable (default 4, igual que ``ALLIANZ_LANGFUSE_MAX_CONCURRENCY``).
 - Errores por caso no detienen el bucle; se cuentan y se reportan en
-  ``metrics.json``.
+  ``metrics.json``. ``--resume`` retoma modos incompletos usando el mismo
+  manifiesto de identidad.
 - Model override: el script no toca variables; arráncalo con
-  ``OPENAI_ANSWER_MODEL=gpt-5.6-luna OPENAI_CLAIM_EXTRACTION_MODEL=gpt-5.6-luna``
+  ``OPENAI_ANSWER_MODEL=gpt-6-luna OPENAI_CLAIM_EXTRACTION_MODEL=gpt-6-luna``
   antes de levantar el backend para iterar barato.
 - No publica nada a Langfuse: este runner es local, deja los traces en el
   backend (``trace_id`` y ``langfuse_url`` quedan en cada per-case).
@@ -50,12 +53,13 @@ import os
 import subprocess
 import sys
 import time
-import traceback
 from collections import Counter
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from uuid import uuid4
 
 import httpx
 
@@ -69,8 +73,10 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+from application.models.evaluation import EvaluableTurn  # noqa: E402
 from application.ports.outbound.decision_model import DecisionModel  # noqa: E402
 from application.ports.outbound.language_model import LanguageModelError  # noqa: E402
+from application.services.evaluation_normalization import evaluation_error  # noqa: E402
 from infrastructure.adapters.outbound.decision_model.jev_client import (  # noqa: E402
     JevDecisionModel,
 )
@@ -147,6 +153,106 @@ def _expected_evidence_pool(case: dict[str, Any]) -> list[str]:
             for evidence_id in bundle.get("all_of", []) or []:
                 pool.append(str(evidence_id))
     return pool
+
+
+def _atomic_write_json(path: Path, payload: object) -> None:
+    """Replace one JSON file atomically so interruption cannot truncate it."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    try:
+        temporary.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        os.replace(temporary, path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def _write_case_mode(output_dir: Path, case_id: str, mode: str, payload: dict[str, Any]) -> None:
+    """Atomically merge one finished mode into its case record."""
+
+    case_path = output_dir / "per-case" / f"{case_id}.json"
+    if case_path.exists():
+        current = json.loads(case_path.read_text(encoding="utf-8"))
+        if not isinstance(current, dict):
+            raise ValueError(f"per-case record {case_id!r} is not a JSON object")
+    else:
+        current = {}
+    current[mode] = payload
+    _atomic_write_json(case_path, current)
+
+
+def _load_case_records(output_dir: Path) -> dict[str, dict[str, Any]]:
+    records: dict[str, dict[str, Any]] = {}
+    per_case_dir = output_dir / "per-case"
+    if not per_case_dir.exists():
+        return records
+    for path in sorted(per_case_dir.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError(f"per-case record {path.name!r} is not a JSON object")
+        records[path.stem] = payload
+    return records
+
+
+def _record_has_error(payload: dict[str, Any] | None) -> bool:
+    if payload is None or "error" in payload:
+        return True
+    evaluation = payload.get("evaluation")
+    return not isinstance(evaluation, dict) or evaluation_error(evaluation) is not None
+
+
+def _pending_modes(
+    per_case: dict[str, dict[str, Any]], *, case_ids: tuple[str, ...], modes: tuple[str, ...]
+) -> list[tuple[str, str]]:
+    """Return missing or failed case/mode pairs in stable input order."""
+
+    return [
+        (case_id, mode)
+        for case_id in case_ids
+        for mode in modes
+        if _record_has_error(per_case.get(case_id, {}).get(mode))
+    ]
+
+
+def _run_identity(
+    *,
+    label: str,
+    cases: list[dict[str, Any]],
+    modes: tuple[str, ...],
+    concurrency: int,
+    base_url: str,
+    judge: str,
+) -> dict[str, Any]:
+    return {
+        "label": label,
+        "commit": _git_commit(),
+        "golden_sha256": sha256(GOLDEN_PATH.read_bytes()).hexdigest(),
+        "case_count": len(cases),
+        "modes": list(modes),
+        "concurrency": concurrency,
+        "base_url": base_url,
+        "judge": judge,
+        "models": {
+            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "<unset>"),
+            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "<unset>"),
+            "router": os.environ.get("ALLIANZ_ROUTER_MODEL", "<unset>"),
+        },
+    }
+
+
+def _read_resume_state(
+    output_dir: Path, expected_identity: dict[str, Any]
+) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    manifest_path = output_dir / "manifest.json"
+    if not manifest_path.exists():
+        raise ValueError("cannot resume: manifest.json is missing")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict) or manifest.get("run_identity") != expected_identity:
+        raise ValueError("cannot resume: run identity does not match manifest.json")
+    return manifest, _load_case_records(output_dir)
 
 
 # --- HTTP ----------------------------------------------------------------------
@@ -243,12 +349,20 @@ def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[s
 
 
 def _evaluate_auto(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
-    resolved = response.get("resolved_mode")
+    turn = EvaluableTurn.from_envelope(response, requested_mode="auto")
     expected_intent = (case.get("metadata") or {}).get("expected_intent")
     return {
-        "resolved_mode": resolved,
+        "resolved_mode": response.get("resolved_mode"),
+        "route_decision": turn.route_decision,
+        "result_kind": turn.result_kind,
+        "needs_input": turn.needs_input,
+        "terminal_status": turn.terminal_status,
         "expected_intent": expected_intent,
-        "router_match": decision_accuracy(predicted=resolved, expected=expected_intent),
+        "router_match": (
+            decision_accuracy(predicted=turn.route_decision, expected=expected_intent)
+            if turn.route_decision is not None
+            else None
+        ),
     }
 
 
@@ -322,6 +436,14 @@ async def _run_one(
                 mode=mode,
                 session_id=f"baseline-{case_id}-{mode}",
             )
+        turn = EvaluableTurn.from_envelope(response, requested_mode=mode)
+        if turn.technical_error is not None:
+            return (
+                case_id,
+                mode,
+                {"error": turn.technical_error},
+                time.monotonic() - start,
+            )
         if mode == "question":
             evaluation = _evaluate_question(response=response, case=case)
             if judge is not None and "error" not in evaluation:
@@ -341,19 +463,32 @@ async def _run_one(
             evaluation = _evaluate_claim(response=response, case=case)
         else:
             evaluation = _evaluate_auto(response=response, case=case)
+        evaluation_failure = evaluation_error(evaluation)
+        payload: dict[str, Any] = {
+            "response": response,
+            "turn": {
+                "route_decision": turn.route_decision,
+                "result_kind": turn.result_kind,
+                "needs_input": turn.needs_input,
+                "terminal_status": turn.terminal_status,
+            },
+            "evaluation": evaluation,
+        }
+        if evaluation_failure is not None:
+            payload["error"] = evaluation_failure
         return (
             case_id,
             mode,
-            {"response": response, "evaluation": evaluation},
+            payload,
             time.monotonic() - start,
         )
     except (httpx.HTTPError, json.JSONDecodeError, KeyError, ValueError) as error:  # noqa: BLE001
+        turn = EvaluableTurn.from_error(error)
         return (
             case_id,
             mode,
             {
-                "error": repr(error),
-                "traceback": traceback.format_exc(limit=4),
+                "error": turn.technical_error,
             },
             time.monotonic() - start,
         )
@@ -366,14 +501,34 @@ async def _run_all(
     concurrency: int,
     base_url: str,
     judge: DecisionModel | None = None,
+    pending_modes: list[tuple[str, str]] | None = None,
+    output_dir: Path | None = None,
 ) -> list[tuple[str, str, dict[str, Any], float]]:
     semaphore = asyncio.Semaphore(concurrency)
+    selected_modes = set(pending_modes) if pending_modes is not None else None
+
+    async def run_and_persist(
+        client: httpx.AsyncClient, *, case: dict[str, Any], mode: str
+    ) -> tuple[str, str, dict[str, Any], float]:
+        result = await _run_one(client, semaphore, case=case, mode=mode, judge=judge)
+        if output_dir is not None:
+            case_id, result_mode, payload, elapsed_s = result
+            _write_case_mode(
+                output_dir,
+                case_id,
+                result_mode,
+                {**payload, "elapsed_s": elapsed_s},
+            )
+        return result
+
     async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
         await _wait_for_ready(client)
         tasks = [
-            asyncio.create_task(_run_one(client, semaphore, case=case, mode=mode, judge=judge))
+            asyncio.create_task(run_and_persist(client, case=case, mode=mode))
             for case in cases
             for mode in modes
+            if selected_modes is None
+            or ((case.get("metadata") or {}).get("case_id") or "unknown", mode) in selected_modes
         ]
         return await asyncio.gather(*tasks)
 
@@ -392,12 +547,11 @@ def _aggregate(
     for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
         for mode, payload in modes.items():
             counts[mode] += 1
-            if "error" in payload:
+            if _record_has_error(payload):
                 errors[mode] += 1
                 continue
             evaluation = payload["evaluation"]
-            if not isinstance(evaluation, dict):
-                continue
+            assert isinstance(evaluation, dict)
             for key, value in evaluation.items():
                 if isinstance(value, (int, float)) or value is None:
                     per_mode[mode].setdefault(key, []).append(value)
@@ -424,17 +578,29 @@ def _aggregate(
         }
 
     # Métricas compuestas entre modos.
-    predicted_routes = []
-    expected_routes = []
+    predicted_routes: list[str] = []
+    expected_routes: list[str] = []
+    router_missing = 0
+    router_cases = 0
     for case_id, modes in per_case.items():  # noqa: B007 — case_id reservado para trazabilidad futura
         auto = modes.get("auto")
         if auto and "evaluation" in auto and isinstance(auto["evaluation"], dict):
             evaluation = auto["evaluation"]
-            resolved = evaluation.get("resolved_mode") or ""
-            expected_intent = evaluation.get("expected_intent") or ""
-            if resolved and expected_intent:
-                predicted_routes.append(resolved)
-                expected_routes.append(expected_intent)
+            if _record_has_error(auto):
+                continue
+            resolved = evaluation.get("route_decision")
+            expected_intent = evaluation.get("expected_intent")
+            if isinstance(expected_intent, str) and expected_intent:
+                router_cases += 1
+                if isinstance(resolved, str) and resolved in {
+                    "question",
+                    "claim",
+                    "clarification_required",
+                }:
+                    predicted_routes.append(resolved)
+                    expected_routes.append(expected_intent)
+                else:
+                    router_missing += 1
 
     cm = router_confusion_matrix(
         predicted_routes=predicted_routes,
@@ -470,7 +636,8 @@ def _aggregate(
             predicted_decisions=[p for p, _ in paired],
             expected_decisions=[e for _, e in paired],
         ),
-        "router_cases": len(predicted_routes),
+        "router_cases": router_cases,
+        "router_missing": router_missing,
     }
     return aggregated
 
@@ -529,7 +696,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--modes", default=",".join(MODES), help="Modos separados por coma.")
     parser.add_argument(
-        "--output", required=True, help="Carpeta de salida (debe estar vacía o inexistente)."
+        "--output", required=True, help="Carpeta nueva de salida o corrida parcial para reanudar."
+    )
+    parser.add_argument(
+        "--resume", action="store_true", help="Reanuda una corrida con identidad idéntica."
     )
     parser.add_argument("--label", default="baseline", help="Etiqueta corta de la corrida.")
     parser.add_argument("--concurrency", type=int, default=4)
@@ -546,65 +716,92 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     output_dir = Path(args.output).resolve()
-    if output_dir.exists() and any(output_dir.iterdir()):
-        raise SystemExit(f"Output dir {output_dir} no está vacía; bórrala o cámbiale el nombre.")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "per-case").mkdir(exist_ok=True)
-
     modes = tuple(m for m in args.modes.split(",") if m in MODES)
     if not modes:
         raise SystemExit(f"--modes debe contener al menos uno de {MODES}")
 
     cases = _load_golden(args.limit)
+    identity = _run_identity(
+        label=args.label,
+        cases=cases,
+        modes=modes,
+        concurrency=args.concurrency,
+        base_url=args.base_url,
+        judge=args.judge,
+    )
+    output_exists_with_data = output_dir.exists() and any(output_dir.iterdir())
+    if output_exists_with_data:
+        if not args.resume:
+            raise SystemExit(
+                f"Output dir {output_dir} ya contiene datos; usa --resume o elige otra carpeta."
+            )
+        try:
+            manifest, per_case = _read_resume_state(output_dir, identity)
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            raise SystemExit(str(error)) from error
+    else:
+        manifest = {
+            "label": args.label,
+            "started_at": datetime.now(UTC).isoformat(),
+            "run_identity": identity,
+            "status": "running",
+            "resume_count": 0,
+        }
+        per_case = {}
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "per-case").mkdir(exist_ok=True)
+    manifest["status"] = "running"
+    manifest["resume_count"] = int(manifest.get("resume_count", 0)) + int(output_exists_with_data)
+    _atomic_write_json(output_dir / "manifest.json", manifest)
+
+    case_ids = tuple(
+        str((case.get("metadata") or {}).get("case_id") or "unknown") for case in cases
+    )
+    pending = _pending_modes(per_case, case_ids=case_ids, modes=modes)
     print(
         f"[baseline] {len(cases)} casos, modos={modes}, concurrency={args.concurrency}, "
-        f"base_url={args.base_url}",
+        f"pendientes={len(pending)}, base_url={args.base_url}",
         flush=True,
     )
 
-    started_at = datetime.now(UTC)
     wall_start = time.monotonic()
-    raw_results = asyncio.run(
-        _run_all(
-            cases=cases,
-            modes=modes,
-            concurrency=args.concurrency,
-            base_url=args.base_url,
-            judge=JevDecisionModel() if args.judge == "jev" else None,
+    if pending:
+        asyncio.run(
+            _run_all(
+                cases=cases,
+                modes=modes,
+                concurrency=args.concurrency,
+                base_url=args.base_url,
+                judge=JevDecisionModel() if args.judge == "jev" else None,
+                pending_modes=pending,
+                output_dir=output_dir,
+            )
         )
-    )
     duration_s = time.monotonic() - wall_start
-
-    per_case: dict[str, dict[str, dict[str, Any]]] = {}
-    for case_id, mode, payload, elapsed_s in raw_results:
-        per_case.setdefault(case_id, {})[mode] = {**payload, "elapsed_s": elapsed_s}
+    per_case = _load_case_records(output_dir)
 
     metrics = _aggregate(per_case, {c.get("metadata", {}).get("case_id"): c for c in cases})
-
-    # Persistencia
-    commit = _git_commit()
-    manifest = {
-        "label": args.label,
-        "started_at": started_at.isoformat(),
-        "duration_s": duration_s,
-        "commit": commit,
-        "golden_path": str(GOLDEN_PATH),
-        "case_count": len(cases),
-        "modes": list(modes),
-        "concurrency": args.concurrency,
-        "base_url": args.base_url,
-        "models": {
-            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "<unset>"),
-            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "<unset>"),
-            "router": os.environ.get("ALLIANZ_ROUTER_MODEL", "<unset>"),
-        },
-    }
-    (output_dir / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    remaining = _pending_modes(per_case, case_ids=case_ids, modes=modes)
+    manifest.update(
+        {
+            "duration_s": duration_s,
+            "run_identity": identity,
+            "status": "complete" if not remaining else "partial",
+            "pending_case_modes": len(remaining),
+            "models": identity["models"],
+            "commit": identity["commit"],
+            "golden_path": str(GOLDEN_PATH),
+            "golden_sha256": identity["golden_sha256"],
+            "case_count": len(cases),
+            "modes": list(modes),
+            "concurrency": args.concurrency,
+            "base_url": args.base_url,
+            "judge": args.judge,
+        }
     )
-    (output_dir / "metrics.json").write_text(
-        json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _atomic_write_json(output_dir / "manifest.json", manifest)
+    _atomic_write_json(output_dir / "metrics.json", metrics)
     summary = _write_summary(
         metrics,
         cases_total=len(cases),
@@ -612,17 +809,17 @@ def main(argv: list[str] | None = None) -> int:
         label=args.label,
         duration_s=duration_s,
     )
-    (output_dir / "summary.txt").write_text(summary, encoding="utf-8")
+    summary_path = output_dir / "summary.txt"
+    temporary_summary = summary_path.with_name(f".{summary_path.name}.{uuid4().hex}.tmp")
+    temporary_summary.write_text(summary, encoding="utf-8")
+    os.replace(temporary_summary, summary_path)
 
-    for case_id, modes_payload in per_case.items():
-        (output_dir / "per-case" / f"{case_id}.json").write_text(
-            json.dumps(modes_payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-
-    print(f"[baseline] ok en {duration_s:.1f}s — {output_dir}", flush=True)
+    print(
+        f"[baseline] {'ok' if not remaining else 'parcial'} en {duration_s:.1f}s — {output_dir}",
+        flush=True,
+    )
     print(summary)
-    return 0
+    return 0 if not remaining else 1
 
 
 if __name__ == "__main__":
