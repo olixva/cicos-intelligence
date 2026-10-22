@@ -73,6 +73,10 @@ from application.models.evaluation import EvaluableTurn, MetricAggregate  # noqa
 from application.ports.outbound.decision_model import DecisionModel  # noqa: E402
 from application.ports.outbound.language_model import LanguageModelError  # noqa: E402
 from application.services.evaluation_normalization import evaluation_error  # noqa: E402
+from application.services.evaluation_runtime_config import (  # noqa: E402
+    assert_evaluation_runtime_matches,
+    evaluation_runtime_configuration,
+)
 from infrastructure.adapters.outbound.decision_model.jev_client import (  # noqa: E402
     JevDecisionModel,
 )
@@ -242,7 +246,7 @@ def _run_identity(
     base_url: str,
     judge: str,
 ) -> dict[str, Any]:
-    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "openai").strip().lower()
+    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "jev").strip().lower()
     router_model = (
         os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
         if router_backend == "jev"
@@ -252,13 +256,13 @@ def _run_identity(
         "backend": router_backend,
         "model": router_model,
         "min_confidence": (
-            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.6"))
+            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.4"))
             if router_backend == "jev"
             else None
         ),
     }
     input_guard_configuration = {
-        "backend": os.environ.get("ALLIANZ_INPUT_GUARD", "off").strip().lower(),
+        "backend": os.environ.get("ALLIANZ_INPUT_GUARD", "jev").strip().lower(),
         "injection_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_INJECTION", "0.9")),
         "off_topic_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")),
     }
@@ -281,7 +285,12 @@ def _run_identity(
             "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
             "router": router_model,
         },
+        "effective_configuration": evaluation_runtime_configuration(),
     }
+
+
+def _assert_backend_configuration(expected: dict[str, Any], actual: dict[str, Any]) -> None:
+    assert_evaluation_runtime_matches(expected, actual)
 
 
 def _read_resume_state(
@@ -318,7 +327,12 @@ async def _post_envelope(
     return response.json()
 
 
-async def _wait_for_ready(client: httpx.AsyncClient, *, attempts: int = 30) -> None:
+async def _wait_for_ready(
+    client: httpx.AsyncClient,
+    *,
+    attempts: int = 30,
+    expected_configuration: dict[str, Any] | None = None,
+) -> None:
     """Espera a que ``/health/ready`` responda 200 con ``status == ready``."""
     last_error: str = ""
     for _ in range(attempts):
@@ -327,6 +341,12 @@ async def _wait_for_ready(client: httpx.AsyncClient, *, attempts: int = 30) -> N
             if response.status_code == 200:
                 body = response.json()
                 if body.get("status") == "ready":
+                    if expected_configuration is not None:
+                        config_response = await client.get("/health/config", timeout=2.0)
+                        config_response.raise_for_status()
+                        _assert_backend_configuration(
+                            expected_configuration, config_response.json()
+                        )
                     return
         except (httpx.HTTPError, json.JSONDecodeError) as error:
             last_error = repr(error)
@@ -573,6 +593,7 @@ async def _run_all(
     judge: DecisionModel | None = None,
     pending_modes: list[tuple[str, str]] | None = None,
     output_dir: Path | None = None,
+    expected_configuration: dict[str, Any] | None = None,
 ) -> list[tuple[str, str, dict[str, Any], float]]:
     semaphore = asyncio.Semaphore(concurrency)
     selected_modes = set(pending_modes) if pending_modes is not None else None
@@ -592,7 +613,7 @@ async def _run_all(
         return result
 
     async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
-        await _wait_for_ready(client)
+        await _wait_for_ready(client, expected_configuration=expected_configuration)
         tasks = [
             asyncio.create_task(run_and_persist(client, case=case, mode=mode))
             for case in cases
@@ -806,7 +827,8 @@ def _aggregate(
         "over_resolution_rate_against_reference": asdict(over_resolution_aggregate),
         "router_cases": router_cases,
         "router_missing": router_missing,
-        "router_accuracy_all_labeled": {
+        "router_end_to_end_accuracy_all_labeled": {
+            "scope": "auto pipeline: dispatch and response availability as well as route",
             "n_labeled": router_cases,
             "n_predicted": router_cases - router_missing,
             "n_missing_or_error": router_missing,
@@ -853,11 +875,11 @@ def _write_summary(
             )
     lines.append("")
     cross = metrics.get("cross_mode") or {}
-    router_accuracy = cross.get("router_accuracy_all_labeled") or {}
+    router_accuracy = cross.get("router_end_to_end_accuracy_all_labeled") or {}
     accuracy = router_accuracy.get("accuracy")
     accuracy_text = f"{accuracy:.3f}" if isinstance(accuracy, (int, float)) else "n/a"
     lines.append(
-        "## router_accuracy_all_labeled "
+        "## router_end_to_end_accuracy_all_labeled "
         f"accuracy={accuracy_text} ({router_accuracy.get('n_correct', 0)}/"
         f"{router_accuracy.get('n_labeled', 0)}; "
         f"missing_or_error={router_accuracy.get('n_missing_or_error', 0)})"
@@ -963,6 +985,7 @@ def main(argv: list[str] | None = None) -> int:
                 judge=JevDecisionModel() if args.judge == "jev" else None,
                 pending_modes=pending,
                 output_dir=output_dir,
+                expected_configuration=identity["effective_configuration"],
             )
         )
     duration_s = time.monotonic() - wall_start

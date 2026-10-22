@@ -877,6 +877,39 @@ def test_health_is_local_and_catalog_alone_does_not_make_the_api_ready(
     assert checks == 1
 
 
+def test_health_configuration_exposes_effective_models_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from infrastructure.adapters.inbound.api.app import create_app
+
+    monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "jev")
+    monkeypatch.setenv("TYPESAFE_DEFAULT_MODEL", "jev-latest")
+    monkeypatch.setenv("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.4")
+    monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "jev")
+    monkeypatch.setenv("ALLIANZ_JEV_GUARD_INJECTION", "0.9")
+    monkeypatch.setenv("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")
+    monkeypatch.setenv("OPENAI_ANSWER_MODEL", "gpt-6-luna")
+    monkeypatch.setenv("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6-luna")
+    monkeypatch.setenv("OPENAI_API_KEY", "must-not-be-exposed")
+    monkeypatch.setenv("TYPESAFE_API_KEY", "must-not-be-exposed")
+
+    response = TestClient(create_app()).get("/health/config")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "router": {"backend": "jev", "model": "jev-latest", "min_confidence": 0.4},
+        "input_guard": {
+            "backend": "jev",
+            "injection_threshold": 0.9,
+            "off_topic_threshold": 0.95,
+        },
+        "models": {"answer": "gpt-6-luna", "extraction": "gpt-6-luna"},
+    }
+    assert "must-not-be-exposed" not in response.text
+
+
 def test_resolve_citations_preserves_requested_order(tmp_path: Path) -> None:
     """Sorting citation IDs would detach answer references from their evidence order."""
     from application.services.citations import resolve_citations

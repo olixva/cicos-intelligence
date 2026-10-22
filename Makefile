@@ -103,7 +103,7 @@ provision-prompts:
 		python backend/scripts/provision_langfuse_prompts.py
 
 serve-backend: provision-prompts
-	@$(BACKEND_ENV) $(LOCAL_ENV) uv run --project backend --extra local-rag \
+	@$(BACKEND_ENV) $(LOCAL_ENV) uv run --project backend --group ingestion --extra local-rag \
 		uvicorn asgi_local:app --factory --host 127.0.0.1 --port 8000
 
 # Ejecuta evaluaciones con el mismo `.env` y `ops/local.env` que serve-backend.

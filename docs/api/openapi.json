@@ -1670,6 +1670,30 @@
         ]
       }
     },
+    "/health/config": {
+      "get": {
+        "description": "Expose model IDs and thresholds for evaluation provenance, never secrets.",
+        "operationId": "configuration_health_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Configuration Health Config Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Configuration",
+        "tags": [
+          "health"
+        ]
+      }
+    },
     "/health/live": {
       "get": {
         "operationId": "live_health_live_get",

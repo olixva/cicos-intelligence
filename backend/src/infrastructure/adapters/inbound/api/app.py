@@ -12,6 +12,7 @@ from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.resolve_query import ResolveQuery
 from application.ports.outbound.evidence_repository import EvidenceRepository
 from application.ports.outbound.input_guard import InputGuard
+from application.services.evaluation_runtime_config import evaluation_runtime_configuration
 from application.services.ingestion_jobs import IngestionJobService
 from infrastructure.adapters.inbound.api.routes.admin_ingestion import (
     IngestionRunner,
@@ -77,6 +78,7 @@ def create_app(
     index_ready = required_index_ready or _index_not_built
 
     app = FastAPI(title="Allianz CICOS Claims Intelligence", version="0.1.0")
+    runtime_configuration = evaluation_runtime_configuration()
 
     def live() -> dict[str, str]:
         return {"status": "live"}
@@ -92,6 +94,12 @@ def create_app(
 
     app.add_api_route("/health/live", live, methods=["GET"], tags=["health"])
     app.add_api_route("/health/ready", ready, methods=["GET"], tags=["health"])
+
+    def configuration() -> dict[str, object]:
+        """Expose model IDs and thresholds for evaluation provenance, never secrets."""
+        return runtime_configuration
+
+    app.add_api_route("/health/config", configuration, methods=["GET"], tags=["health"])
     app.include_router(
         build_manual_router(
             catalog=catalog,

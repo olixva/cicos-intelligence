@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import importlib.util
 import json
@@ -9,6 +10,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import httpx
 import pytest
 
 
@@ -214,6 +216,39 @@ def test_run_identity_records_router_provider_model_and_threshold(
     }
 
 
+def test_run_identity_defaults_to_jev_router_and_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = _baseline_module()
+    for name in (
+        "ALLIANZ_ROUTER_BACKEND",
+        "TYPESAFE_DEFAULT_MODEL",
+        "ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE",
+        "ALLIANZ_INPUT_GUARD",
+        "ALLIANZ_JEV_GUARD_INJECTION",
+        "ALLIANZ_JEV_GUARD_OFF_TOPIC",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    identity = runner._run_identity(
+        label="defaults",
+        cases=[],
+        modes=("auto",),
+        concurrency=1,
+        base_url="http://test",
+        judge="none",
+    )
+
+    assert identity["router"] == {
+        "backend": "jev",
+        "model": "jev-latest",
+        "min_confidence": 0.4,
+    }
+    assert identity["input_guard"] == {
+        "backend": "jev",
+        "injection_threshold": 0.9,
+        "off_topic_threshold": 0.95,
+    }
+
+
 def test_router_promotion_accuracy_counts_missing_routes_and_errors_as_incorrect() -> None:
     runner = _baseline_module()
     cases = {
@@ -246,7 +281,8 @@ def test_router_promotion_accuracy_counts_missing_routes_and_errors_as_incorrect
 
     metrics = runner._aggregate(per_case, cases, modes=("auto",))
 
-    assert metrics["cross_mode"]["router_accuracy_all_labeled"] == {
+    assert metrics["cross_mode"]["router_end_to_end_accuracy_all_labeled"] == {
+        "scope": "auto pipeline: dispatch and response availability as well as route",
         "n_labeled": 3,
         "n_predicted": 1,
         "n_missing_or_error": 2,
@@ -254,6 +290,64 @@ def test_router_promotion_accuracy_counts_missing_routes_and_errors_as_incorrect
         "n_incorrect": 2,
         "accuracy": pytest.approx(1 / 3),
     }
+    assert "router_accuracy_all_labeled" not in metrics["cross_mode"]
+
+
+def test_runner_rejects_backend_configuration_mismatch() -> None:
+    runner = _baseline_module()
+    expected = {
+        "router": {"backend": "jev", "model": "jev-latest", "min_confidence": 0.4},
+        "input_guard": {
+            "backend": "jev",
+            "injection_threshold": 0.9,
+            "off_topic_threshold": 0.95,
+        },
+        "models": {"answer": "gpt-6-luna", "extraction": "gpt-6-luna"},
+    }
+    actual = {
+        **expected,
+        "router": {"backend": "openai", "model": "gpt-6-luna", "min_confidence": None},
+    }
+
+    with pytest.raises(RuntimeError, match="router.backend"):
+        runner._assert_backend_configuration(expected, actual)
+
+
+def test_runner_checks_live_configuration_before_sending_cases() -> None:
+    runner = _baseline_module()
+    expected = {
+        "router": {"backend": "jev", "model": "jev-latest", "min_confidence": 0.4},
+        "input_guard": {
+            "backend": "jev",
+            "injection_threshold": 0.9,
+            "off_topic_threshold": 0.95,
+        },
+        "models": {"answer": "gpt-6-luna", "extraction": "gpt-6-luna"},
+    }
+
+    async def response(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/health/ready":
+            return httpx.Response(200, json={"status": "ready"})
+        return httpx.Response(
+            200,
+            json={
+                **expected,
+                "router": {
+                    "backend": "openai",
+                    "model": "gpt-6-luna",
+                    "min_confidence": None,
+                },
+            },
+        )
+
+    async def check() -> None:
+        async with httpx.AsyncClient(
+            base_url="http://test", transport=httpx.MockTransport(response)
+        ) as client:
+            with pytest.raises(RuntimeError, match="router.backend"):
+                await runner._wait_for_ready(client, attempts=1, expected_configuration=expected)
+
+    asyncio.run(check())
 
 
 def test_jev_judge_failures_are_counted_without_invalidating_deterministic_case() -> None:

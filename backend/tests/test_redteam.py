@@ -103,7 +103,12 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
     monkeypatch.setenv("ALLIANZ_EVALUATION_CONFIG_SOURCE", "makefile:.env+ops/local.env+LOCAL_ENV")
     monkeypatch.setattr(runner, "_git_commit", lambda: "redteam-test-commit")
 
-    async def fake_run_all(_cases, _concurrency, _base_url):
+    async def fake_run_all(_cases, _concurrency, _base_url, *, expected_configuration):
+        assert expected_configuration["input_guard"] == {
+            "backend": "jev",
+            "injection_threshold": 0.81,
+            "off_topic_threshold": 0.93,
+        }
         return [
             (attack, RedTeamVerdict("pass", "safe_response", ()), {"status_code": 200}),
             (
@@ -122,6 +127,7 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
         "injection_threshold": 0.81,
         "off_topic_threshold": 0.93,
     }
+    assert manifest["effective_configuration"]["input_guard"] == manifest["input_guard"]
     assert manifest["configuration_source"] == "makefile:.env+ops/local.env+LOCAL_ENV"
     assert manifest["commit"] == "redteam-test-commit"
     assert manifest["cases_sha256"] == sha256(cases_path.read_bytes()).hexdigest()

@@ -31,6 +31,10 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+from application.services.evaluation_runtime_config import (  # noqa: E402
+    assert_evaluation_runtime_matches,
+    evaluation_runtime_configuration,
+)
 from infrastructure.adapters.outbound.evaluation.redteam import (  # noqa: E402
     RedTeamCase,
     RedTeamVerdict,
@@ -81,12 +85,20 @@ async def _run_one(
 
 
 async def _run_all(
-    cases: list[RedTeamCase], concurrency: int, base_url: str
+    cases: list[RedTeamCase],
+    concurrency: int,
+    base_url: str,
+    *,
+    expected_configuration: dict[str, Any] | None = None,
 ) -> list[tuple[RedTeamCase, RedTeamVerdict, dict[str, Any]]]:
     semaphore = asyncio.Semaphore(concurrency)
     async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
         ready = await client.get("/health/ready")
         ready.raise_for_status()
+        if expected_configuration is not None:
+            config_response = await client.get("/health/config")
+            config_response.raise_for_status()
+            assert_evaluation_runtime_matches(expected_configuration, config_response.json())
         return await asyncio.gather(*(_run_one(client, semaphore, case) for case in cases))
 
 
@@ -100,7 +112,7 @@ def main() -> int:
         parser.error(f"{args.output} ya existe; usa otra carpeta de salida")
 
     cases = load_cases(CASES_PATH.read_text(encoding="utf-8").splitlines())
-    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "openai").strip().lower()
+    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "jev").strip().lower()
     router_model = (
         os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
         if router_backend == "jev"
@@ -110,19 +122,27 @@ def main() -> int:
         "backend": router_backend,
         "model": router_model,
         "min_confidence": (
-            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.6"))
+            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.4"))
             if router_backend == "jev"
             else None
         ),
     }
-    guard_backend = os.environ.get("ALLIANZ_INPUT_GUARD", "off").strip().lower()
+    guard_backend = os.environ.get("ALLIANZ_INPUT_GUARD", "jev").strip().lower()
     guard_configuration = {
         "backend": guard_backend,
         "injection_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_INJECTION", "0.9")),
         "off_topic_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")),
     }
+    effective_configuration = evaluation_runtime_configuration()
     started = datetime.now(UTC)
-    results = asyncio.run(_run_all(cases, args.concurrency, args.base_url))
+    results = asyncio.run(
+        _run_all(
+            cases,
+            args.concurrency,
+            args.base_url,
+            expected_configuration=effective_configuration,
+        )
+    )
     metrics = summarize([(case, verdict) for case, verdict, _ in results])
 
     (args.output / "per-case").mkdir(parents=True)
@@ -156,6 +176,7 @@ def main() -> int:
         },
         "router": router_configuration,
         "input_guard": guard_configuration,
+        "effective_configuration": effective_configuration,
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")

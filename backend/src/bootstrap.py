@@ -284,7 +284,7 @@ def _resolve_published_parser(root: Path, document_hash: str, parser: str) -> st
 
 
 def _router_backend() -> str:
-    backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "openai").strip().lower()
+    backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "jev").strip().lower()
     if backend not in ("openai", "jev"):
         raise ValueError("ALLIANZ_ROUTER_BACKEND must be 'openai' or 'jev'")
     return backend
@@ -309,9 +309,9 @@ def build_decision_model() -> DecisionModel:
 
 
 def build_input_guard() -> InputGuard | None:
-    """Semantic input guard, enabled only with ``ALLIANZ_INPUT_GUARD=jev``."""
+    """Semantic input guard; Jev is standard and can be disabled explicitly."""
 
-    mode = os.environ.get("ALLIANZ_INPUT_GUARD", "off").strip().lower()
+    mode = os.environ.get("ALLIANZ_INPUT_GUARD", "jev").strip().lower()
     if mode == "off":
         return None
     if mode != "jev":
@@ -503,9 +503,9 @@ def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
 def build_resolve_query(profile_name: str) -> ResolveQuery:
     """Compose the closed-enum auto router against the same active index as questions and claims.
 
-    With ``ALLIANZ_ROUTER_BACKEND=jev`` the classifier is a typed-decision model
-    (``JevQueryClassifier``) and no router prompt is loaded. By default it is
-    backed by its own ``OpenAIRoutingLanguageModel``
+    The default classifier is Jev (``JevQueryClassifier``), a typed-decision
+    model that does not load a router prompt. With
+    ``ALLIANZ_ROUTER_BACKEND=openai`` it uses its own ``OpenAIRoutingLanguageModel``
     instance loaded with the dedicated ``auto-router`` prompt version
     (configurable via ``ALLIANZ_ROUTER_PROMPT_VERSION``); it uses a
     separate structured output schema (``RouteDecisionSchema``) so the
@@ -542,7 +542,7 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
 
         classifier = JevQueryClassifier(
             build_decision_model(),
-            min_confidence=_unit_environment_float("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", 0.6),
+            min_confidence=_unit_environment_float("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", 0.4),
         )
     else:
         prompt_name = os.environ.get("ALLIANZ_ROUTER_PROMPT_NAME", "auto-router")
