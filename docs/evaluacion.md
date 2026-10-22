@@ -71,6 +71,10 @@ requieren una llamada sintética. La extracción permanece en Sol hasta cerrar l
 comparación de seguridad Sol/Luna descrita en
 `docs/entrega/validacion-pendiente.md`.
 
+La llamada real y la comparación Sol/Luna siguen pendientes: no hay una clave
+de API ni un backend local disponible en esta ejecución. No se han creado
+artefactos de comparación ni se afirma que la cuenta tenga acceso a esos IDs.
+
 ## Métricas
 
 Los evaluadores deterministas

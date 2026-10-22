@@ -40,6 +40,12 @@ embeddings (`text-embedding-3-small`, 1536 dimensiones) va en
 `backend/configs/*.yaml`; cambiarlo cambia la firma del índice y obliga a
 reindexar.
 
+**Estado de esta ejecución:** el smoke de Responses API y la comparación
+Sol/Luna no se han podido ejecutar porque no hay clave configurada ni un backend
+local disponible. No hay manifiestos ni resultados A/B; el default de extracción
+se mantiene en `gpt-6.1-sol`. Repetir esta puerta cuando estén listos la clave,
+Qdrant, Langfuse, el índice y el backend.
+
 ## 1. Entorno
 
 ```bash

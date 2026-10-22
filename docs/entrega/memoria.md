@@ -58,6 +58,8 @@ haya pasado. Los modelos se configuran por variables de entorno
 `ALLIANZ_ROUTER_MODEL`) y el código coincide con `.env.example`. La validación
 de Responses API con salida estructurada queda pendiente de un humo sintético
 con la clave de la cuenta; los resultados reales se registrarán por separado.
+La comparación Sol/Luna de extracción tampoco se ha ejecutado; por eso el
+default permanece en Sol y no se presentan cifras nuevas de calidad o coste.
 
 Todas las llamadas usan la Responses API con **salida estructurada** (esquema
 cerrado, `extra="forbid"`) y `store=False`: el proveedor no retiene las
