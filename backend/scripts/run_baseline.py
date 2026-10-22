@@ -74,7 +74,9 @@ from application.ports.outbound.decision_model import DecisionModel  # noqa: E40
 from application.ports.outbound.language_model import LanguageModelError  # noqa: E402
 from application.services.evaluation_normalization import evaluation_error  # noqa: E402
 from application.services.evaluation_runtime_config import (  # noqa: E402
+    DEFAULT_DOCUMENT_HASH,
     assert_evaluation_runtime_matches,
+    evaluation_build_fingerprint,
     evaluation_runtime_configuration,
 )
 from infrastructure.adapters.outbound.decision_model.jev_client import (  # noqa: E402
@@ -246,29 +248,23 @@ def _run_identity(
     base_url: str,
     judge: str,
 ) -> dict[str, Any]:
-    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "jev").strip().lower()
-    router_model = (
-        os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
-        if router_backend == "jev"
-        else os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna")
+    commit = _git_commit()
+    repo_root = Path(__file__).resolve().parents[2]
+    build_fingerprint = evaluation_build_fingerprint(repo_root)
+    document_hash = os.environ.get("ALLIANZ_DOCUMENT_HASH", DEFAULT_DOCUMENT_HASH)
+    runtime_environment = dict(os.environ)
+    runtime_environment["ALLIANZ_BUILD_COMMIT"] = commit
+    runtime_environment["ALLIANZ_BUILD_FINGERPRINT"] = build_fingerprint
+    effective_configuration = evaluation_runtime_configuration(
+        runtime_environment,
+        active_index_identity={"index_signature": {"document_hash": document_hash}},
     )
-    router_configuration = {
-        "backend": router_backend,
-        "model": router_model,
-        "min_confidence": (
-            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.4"))
-            if router_backend == "jev"
-            else None
-        ),
-    }
-    input_guard_configuration = {
-        "backend": os.environ.get("ALLIANZ_INPUT_GUARD", "jev").strip().lower(),
-        "injection_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_INJECTION", "0.9")),
-        "off_topic_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")),
-    }
+    router_configuration = effective_configuration["router"]
+    input_guard_configuration = effective_configuration["input_guard"]
+    router_model = router_configuration["model"]
     return {
         "label": label,
-        "commit": _git_commit(),
+        "commit": commit,
         "golden_sha256": sha256(GOLDEN_PATH.read_bytes()).hexdigest(),
         "case_count": len(cases),
         "modes": list(modes),
@@ -280,12 +276,8 @@ def _run_identity(
         ),
         "input_guard": input_guard_configuration,
         "router": router_configuration,
-        "models": {
-            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
-            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
-            "router": router_model,
-        },
-        "effective_configuration": evaluation_runtime_configuration(),
+        "models": effective_configuration["models"] | {"router": router_model},
+        "effective_configuration": effective_configuration,
     }
 
 
@@ -1012,9 +1004,10 @@ def main(argv: list[str] | None = None) -> int:
         modes=modes,
     )
     remaining = _pending_modes(per_case, case_ids=case_ids, modes=modes)
+    total_duration_s = _record_run_duration(manifest, duration_s)
     manifest.update(
         {
-            "duration_s": _record_run_duration(manifest, duration_s),
+            "duration_s": total_duration_s,
             "run_identity": identity,
             "status": "complete" if not remaining else "partial",
             "pending_case_modes": len(remaining),
@@ -1039,7 +1032,7 @@ def main(argv: list[str] | None = None) -> int:
         cases_total=len(cases),
         modes=modes,
         label=args.label,
-        duration_s=duration_s,
+        duration_s=total_duration_s,
     )
     summary_path = output_dir / "summary.txt"
     temporary_summary = summary_path.with_name(f".{summary_path.name}.{uuid4().hex}.tmp")
@@ -1047,7 +1040,8 @@ def main(argv: list[str] | None = None) -> int:
     os.replace(temporary_summary, summary_path)
 
     print(
-        f"[baseline] {'ok' if not remaining else 'parcial'} en {duration_s:.1f}s — {output_dir}",
+        f"[baseline] {'ok' if not remaining else 'parcial'} en "
+        f"{total_duration_s:.1f}s — {output_dir}",
         flush=True,
     )
     print(summary)

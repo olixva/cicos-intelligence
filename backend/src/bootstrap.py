@@ -44,6 +44,16 @@ if TYPE_CHECKING:
 _SKIPPED_PORT_LOGGER = logging.getLogger(__name__)
 
 
+def _qdrant_url() -> str:
+    """Resolve one endpoint consistently for queries, readiness and ingestion."""
+
+    return (
+        os.environ.get("QDRANT_URL")
+        or os.environ.get("ALLIANZ_QDRANT_URL")
+        or "http://127.0.0.1:6333"
+    )
+
+
 def model_configuration(environ: Mapping[str, str] | None = None) -> dict[str, str]:
     """Resolve the active OpenAI model IDs without changing API call contracts."""
 
@@ -167,7 +177,7 @@ def build_answer_question(profile_name: str) -> AnswerQuestion:
         version=_positive_environment_integer("ALLIANZ_QUESTION_PROMPT_VERSION", 1),
     )
     retriever = QdrantRetriever(
-        client=AsyncQdrantClient(url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")),
+        client=AsyncQdrantClient(url=_qdrant_url()),
         embedding_provider=OpenAIEmbeddingProvider(
             model=profile.embedding_model, dimensions=profile.dimensions
         ),
@@ -242,7 +252,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
                 fact_names=fact_names(_rules.rules),
             ),
             retriever=QdrantRetriever(
-                client=AsyncQdrantClient(url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")),
+                client=AsyncQdrantClient(url=_qdrant_url()),
                 embedding_provider=OpenAIEmbeddingProvider(
                     model=profile.embedding_model, dimensions=profile.dimensions
                 ),
@@ -355,6 +365,7 @@ def build_api(
     claim_profile: str | None = None,
     resolve_query_profile: str | None = None,
     required_index_ready: Callable[[], bool] | None = None,
+    active_index_identity: Callable[[], dict[str, object] | None] | None = None,
 ) -> FastAPI:
     """Build the local HTTP adapter through its dependency-aware factory.
 
@@ -371,6 +382,8 @@ def build_api(
     ``None`` (default), the production safe-default of "not built" is
     used; local entry points such as ``asgi_local`` pass a probe that
     checks the Qdrant active alias.
+    ``active_index_identity`` reports the signed collection resolved behind
+    that alias for health and evaluation provenance.
     """
 
     from infrastructure.adapters.inbound.api.app import create_app
@@ -400,7 +413,7 @@ def build_api(
             evidence_root=ingestion_root,
             parser=parser,
             profile_name=ingestion_profile,
-            qdrant_url=os.environ.get("ALLIANZ_QDRANT_URL", "http://127.0.0.1:6333"),
+            qdrant_url=_qdrant_url(),
         )
 
     def extract_manual(source: Path) -> Extraction:
@@ -432,6 +445,7 @@ def build_api(
         allowed_profiles=_known_profiles(),
         input_guard=build_input_guard(),
         required_index_ready=required_index_ready,
+        active_index_identity=active_index_identity,
         admin_ingestion_service=ingestion_service,
         admin_ingestion_runner=ingestion_runner.run,
         admin_ingestion_repository=FilesystemEvidenceRepository(ingestion_root, "pypdf-6.16.2"),

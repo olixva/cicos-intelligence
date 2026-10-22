@@ -1672,7 +1672,7 @@
     },
     "/health/config": {
       "get": {
-        "description": "Expose model IDs and thresholds for evaluation provenance, never secrets.",
+        "description": "Expose model settings and safe build/index provenance, never credentials.",
         "operationId": "configuration_health_config_get",
         "responses": {
           "200": {

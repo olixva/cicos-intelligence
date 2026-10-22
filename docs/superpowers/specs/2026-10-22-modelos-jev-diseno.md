@@ -2,7 +2,7 @@
 
 **Fecha:** 22 de octubre de 2026
 **Rama de trabajo:** antonio-oliva_allianz/TFM
-**Estado:** diseño y especificación aprobados en conversación
+**Estado:** diseño aprobado; puertas live de Jev completadas el 22-10-2026
 **Alcance global:** completar las observaciones de la auditoría funcional y dejar el TFM listo para entrega. Esta especificación concreta la primera fase: modelos y Jev.
 
 ## 1. Objetivo
@@ -11,7 +11,7 @@ Actualizar los modelos OpenAI del proyecto y decidir con mediciones reproducible
 
 ## 2. Contexto observado
 
-La rama TFM ya incluye un cliente HTTP para Jev y adaptadores para tres usos: router, guardarraíl semántico y jueces de evaluación. Router y guardarraíl están apagados o usan OpenAI por defecto. El cliente, el contrato remoto, los umbrales, la calidad en español y la política de uso real todavía necesitan validación contra el servicio.
+La rama TFM ya incluye un cliente HTTP para Jev y adaptadores para tres usos: router, guardarraíl semántico y jueces de evaluación. En el diseño router y guard estaban apagados o usaban OpenAI por defecto. El cliente y las puertas de router/guard se validaron contra el servicio el 22-10-2026; el juez y el umbral en un golden independiente siguen pendientes.
 
 La auditoría global contiene trabajo adicional sobre evaluación, reglas, evidencia, persistencia, interfaz, operación y documentación. Se conservará ese alcance para las fases siguientes. Las tareas que reparan normalización y denominadores de evaluación son un requisito previo para confiar en las comparaciones que determinan valores por defecto.
 
@@ -28,7 +28,7 @@ La línea base de esta rama se ejecutó antes de escribir esta especificación: 
 | Router OpenAI | gpt-6-luna | Referencia de comparación cuando Jev se evalúe o no esté habilitado |
 | Embeddings | text-embedding-3-small, 1536 dimensiones | Sin cambios ni reindexación en esta fase |
 
-Los IDs corresponden al catálogo oficial vigente. La asignación favorece Sol para respuestas con citas y prueba Luna donde la reducción nominal de coste puede ser relevante. El coste real se registrará por corrida; no se inferirá a partir de precios de catálogo como si fuera gasto observado.
+Los IDs corresponden al catálogo oficial vigente. La asignación favorece Sol para respuestas con citas y usa Luna en la campaña solicitada. La estimación de coste del router se calcula con tokens medidos y tarifa pública, y se identifica como una estimación de lista, no como facturación observada.
 
 ### 3.2 Usos de Jev
 
@@ -71,7 +71,7 @@ Las claves se obtienen sólo de variables de entorno: OPENAI_API_KEY y TYPESAFE_
 ## 5. Criterios de aceptación
 
 - Los valores por defecto, variables de entorno y documentación describen los modelos realmente seleccionados.
-- Las llamadas reales a ambos modelos OpenAI y a Jev cumplen sus contratos; los tests unitarios cubren salidas inválidas, errores HTTP, timeout y ausencia de clave.
+- La llamada real al modelo OpenAI seleccionado en esta campaña (Luna) y a Jev cumple sus contratos; Sol no se probó por instrucción del usuario. Los tests unitarios cubren salidas inválidas, errores HTTP, timeout y ausencia de clave.
 - El router Jev sólo queda predeterminado si iguala o supera la referencia OpenAI en el golden adjudicado.
 - El guardarraíl Jev sólo queda predeterminado si la campaña no tiene ataques exitosos y el sobre-rechazo no supera la referencia.
 - La extracción usa Luna sólo si no aparecen nuevas resoluciones injustificadas y no empeoran materialmente las métricas adjudicadas; de otro modo usa Sol.
@@ -81,11 +81,20 @@ Las claves se obtienen sólo de variables de entorno: OPENAI_API_KEY y TYPESAFE_
 - make check-all y make test-e2e pasan en la rama final; las pruebas con servicios/API se informan por separado de las pruebas locales.
 - La memoria no conserva marcadores de validación pendiente para las comprobaciones que sí se hayan ejecutado.
 
-## 6. Fuera de esta fase
+## 6. Resultado de las puertas live (22-10-2026)
+
+- **Cliente:** un humo sintético `noul` + `choice` devolvió `jev-1.14.0`, probabilidades válidas y uso de 368 tokens de entrada / 50 de salida.
+- **Router:** repetición final en el commit `75da6320266f857e717fa9b846c44baaa0f4c746`, mismo golden de 110 casos, índice y concurrencia 4: el flujo `auto` obtuvo 97/110 con Jev `0,4` y 94/110 con OpenAI Luna, sin errores finales tras reintentar un caso HTTP en cada campaña. El nombre de la métrica aclara que incluye disponibilidad downstream, no sólo clasificación. Se adopta `jev-latest` con umbral `0,4`; OpenAI Luna permanece seleccionable. El umbral se eligió con el mismo golden, no un holdout independiente. Las matrices, tokens, manifiestos y límites están en `docs/evaluacion.md`.
+- **Guard:** nuevas corridas en ese commit con `off` y Jev dieron 0/27 ataques exitosos y 0/3 sobre-rechazos; Jev con umbrales `0,9`/`0,95` se adopta por defecto. La muestra benigna es limitada.
+- **Coste:** usando tarifas públicas del 22-10-2026 y tokens medidos, el router Jev `0,4` estima cerca de 72 % menos que OpenAI Luna por decisión. No es una factura ni el coste total de respuesta/extracción.
+- **Datos:** sólo se enviaron entradas sintéticas. TypeSafe declara que no entrena con solicitudes/respuestas, pero la retención depende del acuerdo y cualquier ZDR; revisar antes de usar relatos reales.
+- **Pendiente:** comparar extracción Sol/Luna, validar el umbral en un holdout independiente y calibrar el juez Jev con personas. Los errores técnicos de las corridas quedan en el denominador y no se ocultan.
+
+## 7. Fuera de esta fase
 
 Las correcciones del motor de decisión de siniestros, catálogo DAA, precedencias normativas, recuperación de tablas, persistencia multi-turno, estado conversacional de frontend, publicación de datasets en Langfuse, controles de despliegue y el resto de la auditoría continúan como fases posteriores. No se cambiarán reglas funcionales ni firmas de índice como parte de la actualización de modelos.
 
-## 7. Referencias técnicas
+## 8. Referencias técnicas
 
 - Catálogo OpenAI: https://developers.openai.com/api/docs/models
 - Precios OpenAI: https://developers.openai.com/api/docs/pricing

@@ -20,6 +20,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from dataclasses import asdict
 from typing import cast
 
 from bootstrap import build_api
@@ -27,30 +28,37 @@ from bootstrap import build_api
 _ACTIVE_ALIAS = "allianz-manual-active"
 
 
-def _qdrant_alias_is_published() -> bool:
-    """Return True iff the local Qdrant exposes a non-empty collection behind the active alias.
+def _qdrant_active_index_identity() -> dict[str, object] | None:
+    """Resolve the active alias to its collection and signed index metadata.
 
-    The probe is a single GET against ``/aliases`` plus a follow-up
-    ``/collections/{name}`` only when the alias resolves. We treat any
-    network or parsing error as "not ready" so the frontend sees a
-    consistent 503 instead of a 500 when Qdrant is down.
+    Network, parsing and signature errors yield ``None``. The health route
+    then exposes missing provenance, and ``/health/ready`` remains not ready.
     """
 
-    qdrant_url = os.environ.get("ALLIANZ_QDRANT_URL", "http://127.0.0.1:6333").rstrip("/")
+    from infrastructure.adapters.outbound.retriever.qdrant_retriever import (
+        InvalidIndexDataError,
+        signature_from_metadata,
+    )
+
+    qdrant_url = (
+        os.environ.get("QDRANT_URL")
+        or os.environ.get("ALLIANZ_QDRANT_URL")
+        or "http://127.0.0.1:6333"
+    ).rstrip("/")
     try:
         with urllib.request.urlopen(f"{qdrant_url}/aliases", timeout=2) as response:
             payload = json.loads(response.read())
-    except urllib.error.URLError, TimeoutError, json.JSONDecodeError:
-        return False
+    except urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError:
+        return None
 
     if not isinstance(payload, dict):
-        return False
+        return None
     payload_data = cast(dict[str, object], payload)
     result_raw = payload_data.get("result", {})
     result = cast(dict[str, object], result_raw) if isinstance(result_raw, dict) else {}
     aliases = result.get("aliases", [])
     if not isinstance(aliases, list):
-        return False
+        return None
     alias_entries = cast(list[object], aliases)
     active: dict[str, object] | None = None
     for raw_alias in alias_entries:
@@ -61,27 +69,48 @@ def _qdrant_alias_is_published() -> bool:
             active = alias
             break
     if active is None:
-        return False
+        return None
 
     target = active.get("collection_name")
     if not isinstance(target, str) or not target:
-        return False
+        return None
 
     try:
         with urllib.request.urlopen(f"{qdrant_url}/collections/{target}", timeout=2) as response:
             details = json.loads(response.read())
-    except urllib.error.URLError, TimeoutError, json.JSONDecodeError:
-        return False
+    except urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError:
+        return None
 
     if not isinstance(details, dict):
-        return False
+        return None
     details_data = cast(dict[str, object], details)
     details_result_raw = details_data.get("result", {})
     details_result = (
         cast(dict[str, object], details_result_raw) if isinstance(details_result_raw, dict) else {}
     )
     points_count = details_result.get("points_count", 0)
-    return isinstance(points_count, int) and points_count > 0
+    config_raw = details_result.get("config")
+    config = cast(dict[str, object], config_raw) if isinstance(config_raw, dict) else {}
+    metadata_raw = config.get("metadata")
+    metadata = cast(dict[str, object], metadata_raw) if isinstance(metadata_raw, dict) else None
+    if type(points_count) is not int or points_count <= 0 or metadata is None:
+        return None
+    try:
+        signature = signature_from_metadata(metadata)
+    except InvalidIndexDataError, ValueError:
+        return None
+    return {
+        "alias_name": _ACTIVE_ALIAS,
+        "collection_name": target,
+        "points_count": points_count,
+        "index_signature": asdict(signature),
+    }
+
+
+def _qdrant_alias_is_published() -> bool:
+    """Return True iff the active alias resolves to a signed, non-empty index."""
+
+    return _qdrant_active_index_identity() is not None
 
 
 def app():
@@ -90,4 +119,5 @@ def app():
     return build_api(
         profile_name="baseline",
         required_index_ready=_qdrant_alias_is_published,
+        active_index_identity=_qdrant_active_index_identity,
     )

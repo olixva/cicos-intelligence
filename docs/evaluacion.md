@@ -63,32 +63,93 @@ explícito para el humo de CI.
 
 ### Modelos configurados
 
-Los defaults actuales son `gpt-6.1-sol` para respuesta y extracción, y
-`gpt-6-luna` para el router OpenAI de referencia. Los IDs figuran en el
-[catálogo oficial](https://developers.openai.com/api/docs/models). Esta cuenta
-pasó humo sintético de Responses API con Luna en las tres etapas; Sol no se
-probó. La extracción permanece en Sol hasta cerrar la comparación de seguridad
-Sol/Luna descrita en
-`docs/entrega/validacion-pendiente.md`.
+Los defaults versionados son `gpt-6.1-sol` para respuesta y extracción, Jev
+(`jev-latest`) para router y guard, y `gpt-6-luna` como router OpenAI de
+referencia. Los IDs OpenAI figuran en el
+[catálogo oficial](https://developers.openai.com/api/docs/models). Según la
+instrucción del usuario, **todas las llamadas OpenAI de esta campaña usaron
+Luna**, incluida la extracción downstream; Sol no se probó. Los defaults de
+respuesta/extracción permanecen en Sol y su evaluación sigue pendiente.
 
 En `auto`, el envelope y los registros por caso conservan proveedor/modelo del
 router y sus tokens de entrada/salida cuando el proveedor los devuelve. Así se
-puede comparar el uso observado del router Jev y OpenAI sin estimar tokens
-ausentes ni inferir un coste monetario sin una tarifa configurada.
+compara el uso observado del router Jev y OpenAI sin inventar tokens ausentes.
+La estimación orientativa con tarifas públicas, separada del gasto facturado,
+se documenta en el A/B siguiente.
 
-Los adaptadores reales de respuesta, extracción y router pasaron un humo
-sintético de Responses API con `gpt-6-luna`. La campaña no llamó a Sol y no
-ejecutó el golden completo; la comparación Sol/Luna queda pendiente. Las
-respuestas se completaron, pero el exportador no pudo conectar con Langfuse en
-`127.0.0.1:3000`. Más tarde Qdrant y Langfuse se levantaron temporalmente para
-E2E y se verificó el índice existente; no se ejecutaron corridas golden ni
-red-team. Los servicios están detenidos ahora.
-El router sigue usando OpenAI (`gpt-6-luna`) por defecto. Jev no se promoverá
-hasta validar el cliente real y completar un A/B que incluya todos los casos y
-cuente los errores técnicos como fallos.
-El guardarraíl semántico Jev continúa opt-in (`ALLIANZ_INPUT_GUARD=off` por
-defecto): falta ejecutar el red-team real con `off` y `jev`; su promoción exige
-cero ataques exitosos y sobre-rechazo no mayor que la referencia `off`.
+El humo real de Jev (una llamada sintética, 22-10-2026) respondió `noul` y
+`choice` con `jev-1.14.0`, probabilidades válidas y uso de tokens. No se
+enviaron relatos reales ni datos personales.
+
+### A/B del router Jev
+
+La repetición final del modo `auto` se ejecutó en el commit
+`75da6320266f857e717fa9b846c44baaa0f4c746`, sobre los mismos 110 casos, el
+golden SHA-256 `837dfb6da86bcdf6cb7e2a1477623141b83c021f5c697910da5dfa1af074d874`
+y concurrencia 4. `/health/config` confirmó antes de cada campaña los modelos,
+el router y sus umbrales: Jev `0,4` o OpenAI `gpt-6-luna` como router, Jev como
+guard y Luna para respuesta y extracción. Los manifiestos registraron el commit
+del runner y el hash configurado del manual; aquella versión del endpoint no
+verificaba el build del servidor ni el destino/firma del alias activo de Qdrant.
+La comprobación reforzada de esos datos se añadió después y se verificó en la
+validación final descrita en `docs/entrega/validacion-pendiente.md`. Todas
+terminaron con los
+110 casos completos y cero errores sin resolver. Cada campaña tuvo un error
+HTTP transitorio en su primera pasada; `--resume` reintentó sólo ese caso.
+
+| Router | Acierto end-to-end | Errores finales | Tokens medios entrada/salida del router | Duración aproximada acumulada |
+|---|---:|---:|---:|---:|
+| OpenAI `gpt-6-luna` | 94/110 (0,855) | 0 | 332,782 / 75,309 | 358,4 s |
+| Jev `jev-latest`, `0,4` | 97/110 (0,882) | 0 | 476,491 / 41,027 | 297,3 s |
+
+La duración acumulada suma el primer intento parcial y el reintento. Los
+manifiestos nativos creados antes de corregir la acumulación automática sólo
+conservan en `duration_s` el tiempo del reintento; las aproximaciones de la
+tabla proceden de las dos salidas del runner. Los artefactos `per-case` sí
+contienen los 110 casos de cada campaña. El runner acumula segmentos de tiempo
+en nuevas reanudaciones desde el commit `16e2c82`.
+
+Matrices (`claim → claim/clarification/question; question →
+claim/clarification/question`): OpenAI `54/0/3; 13/0/40`; Jev `45/2/10;
+1/0/52`. Esta puerta usa `router_end_to_end_accuracy_all_labeled`: cuenta
+rutas observadas correctas y penaliza rutas ausentes o fallos técnicos de
+cualquier etapa del modo `auto`. Mide disponibilidad y acierto del flujo
+automático completo; no aísla el clasificador. La matriz sólo incorpora rutas
+observadas.
+
+El barrido exploratorio anterior comparó Jev a `0,4`, `0,6` y `0,8`; en esa
+pasada `0,6` obtuvo 92/110 y `0,8` 83/110. El golden sirvió tanto para elegir
+umbral como para medirlo, por lo que no equivale a un holdout independiente.
+La repetición final obtuvo 97/110 para Jev `0,4` frente a 94/110 para Luna;
+Jev queda como estándar, con la limitación de que el resultado es de un golden
+sintético y no garantiza la misma ventaja en producción.
+
+Los tokens anteriores son sólo del router; los tokenizadores de proveedores
+son distintos. Con las tarifas públicas consultadas el 22-10-2026 (Jev: `$0.042`
+por millón de tokens de entrada y salida gratuita; Luna Standard: `$0.10` de
+entrada y `$0.50` de salida), el coste de lista estimado por decisión es
+`$0.000020` para Jev `0,4` y `$0.000071` para Luna, aproximadamente **72 % menos
+para el router**. No es una factura observada y no estima el coste completo del
+flujo de respuesta/extracción. Fuentes: [TypeSafe](https://typesafe.ai/) y
+[OpenAI Pricing](https://developers.openai.com/api/docs/pricing).
+
+### Red-team del guardarraíl
+
+Con el commit `75da6320266f857e717fa9b846c44baaa0f4c746`, los mismos 30 casos (27 ataques, 3 controles benignos),
+el router Jev `0,4` y concurrencia 4, se ejecutó primero `off` y luego el guard
+Jev con umbrales de inyección `0,9` y fuera de tema `0,95`. En ambos: tasa de
+éxito del atacante `0/27`; sobre-rechazo `0/3`. Las diez categorías (inyección
+directa, filtrado de prompt, delimitadores, citas falsas, fuera de ámbito,
+anulación de reglas, ofuscación, exfiltración, inyección al router y robustez)
+registraron cero ataques exitosos. El guard Jev pasa su puerta y queda como
+default. La muestra de controles benignos es pequeña; el resultado no demuestra
+cero sobre-rechazo en producción.
+
+TypeSafe declara que no entrena con solicitudes/respuestas, pero su retención
+depende del acuerdo, los datos y cualquier arreglo ZDR; por eso sólo se usaron
+entradas sintéticas. Revisar el
+[tratamiento y retención de datos](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained)
+antes de enviar relatos reales.
 
 ## Métricas
 
@@ -108,7 +169,7 @@ Los evaluadores deterministas
 | `resolution_support_rate` | proporción de resoluciones con actor, regla `matched` y evidencia estructurados; queda como missing si el actor no está expuesto por el envelope |
 | `abstention_metrics` | acierto al abstenerse cuando corresponde |
 | `router_confusion_matrix` | acierto y confusiones del enrutado automático |
-| `router_accuracy_all_labeled` | exactitud sobre todos los casos auto con etiqueta; errores y rutas ausentes cuentan como incorrectos. La matriz de confusión sigue mostrando sólo rutas observadas. |
+| `router_end_to_end_accuracy_all_labeled` | acierto del flujo `auto` completo sobre todos los casos etiquetados; rutas ausentes y errores técnicos de cualquier etapa cuentan como fallos. No es una métrica aislada del clasificador. La matriz de confusión sólo muestra rutas observadas. |
 
 Cada métrica numérica se guarda con `n_total`, `n_applicable`, `n_scored`,
 `n_missing`, `n_error` y `n_not_applicable`. Debe cumplirse

@@ -892,13 +892,16 @@ def test_health_configuration_exposes_effective_models_without_credentials(
     monkeypatch.setenv("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")
     monkeypatch.setenv("OPENAI_ANSWER_MODEL", "gpt-6-luna")
     monkeypatch.setenv("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6-luna")
+    monkeypatch.delenv("ALLIANZ_BUILD_COMMIT", raising=False)
+    monkeypatch.delenv("ALLIANZ_BUILD_FINGERPRINT", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "must-not-be-exposed")
     monkeypatch.setenv("TYPESAFE_API_KEY", "must-not-be-exposed")
 
     response = TestClient(create_app()).get("/health/config")
 
     assert response.status_code == 200
-    assert response.json() == {
+    configuration = response.json()
+    assert {key: configuration[key] for key in ("router", "input_guard", "models")} == {
         "router": {"backend": "jev", "model": "jev-latest", "min_confidence": 0.4},
         "input_guard": {
             "backend": "jev",
@@ -907,7 +910,48 @@ def test_health_configuration_exposes_effective_models_without_credentials(
         },
         "models": {"answer": "gpt-6-luna", "extraction": "gpt-6-luna"},
     }
+    assert configuration["provenance"]["build_commit"] is None
+    assert configuration["provenance"]["build_fingerprint"] is None
+    assert configuration["provenance"]["active_index_identity"] is None
     assert "must-not-be-exposed" not in response.text
+
+
+def test_health_configuration_distinguishes_configured_document_from_active_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from infrastructure.adapters.inbound.api.app import create_app
+
+    document_hash = "a" * 64
+    monkeypatch.setenv("ALLIANZ_BUILD_COMMIT", "server-build-123")
+    monkeypatch.setenv("ALLIANZ_BUILD_FINGERPRINT", "worktree-fingerprint")
+    monkeypatch.setenv("ALLIANZ_DOCUMENT_HASH", "c" * 64)
+
+    response = TestClient(create_app(active_version=document_hash)).get("/health/config")
+
+    assert response.status_code == 200
+    assert response.json()["provenance"] == {
+        "build_commit": "server-build-123",
+        "build_fingerprint": "worktree-fingerprint",
+        "configured_document_hash": "c" * 64,
+        "active_index_identity": None,
+    }
+
+
+def test_health_configuration_reports_the_active_qdrant_alias_identity() -> None:
+    from infrastructure.adapters.inbound.api.app import create_app
+
+    document_hash = "b" * 64
+    identity = {
+        "alias_name": "allianz-manual-active",
+        "collection_name": "allianz-test-collection",
+        "points_count": 118,
+        "index_signature": {"document_hash": document_hash, "embedding_model": "test-embedding"},
+    }
+
+    response = TestClient(create_app(active_index_identity=lambda: identity)).get("/health/config")
+
+    assert response.status_code == 200
+    assert response.json()["provenance"]["active_index_identity"] == identity
 
 
 def test_resolve_citations_preserves_requested_order(tmp_path: Path) -> None:

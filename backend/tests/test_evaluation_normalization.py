@@ -6,9 +6,10 @@ import asyncio
 import importlib
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import httpx
 import pytest
@@ -193,12 +194,15 @@ def test_run_identity_records_router_provider_model_and_threshold(
     assert identity["models"]["answer"] == "gpt-6.1-sol"
     assert identity["models"]["extraction"] == "gpt-6.1-sol"
     assert identity["models"]["router"] == "jev-test-model"
+    assert identity["router"] == identity["effective_configuration"]["router"]
     assert identity["configuration_source"] == "makefile:.env+ops/local.env+LOCAL_ENV"
     assert identity["input_guard"] == {
         "backend": "jev",
         "injection_threshold": 0.81,
         "off_topic_threshold": 0.93,
     }
+    assert identity["input_guard"] == identity["effective_configuration"]["input_guard"]
+    assert identity["effective_configuration"]["provenance"]["build_commit"] == identity["commit"]
 
     monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "openai")
     openai_identity = runner._run_identity(
@@ -247,6 +251,95 @@ def test_run_identity_defaults_to_jev_router_and_guard(monkeypatch: pytest.Monke
         "injection_threshold": 0.9,
         "off_topic_threshold": 0.95,
     }
+
+
+def test_run_identity_uses_one_commit_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = _baseline_module()
+    commits = iter(("start-commit", "later-commit"))
+    monkeypatch.setattr(runner, "_git_commit", lambda: next(commits))
+
+    identity = runner._run_identity(
+        label="commit-snapshot",
+        cases=[],
+        modes=("question",),
+        concurrency=1,
+        base_url="http://test",
+        judge="none",
+    )
+
+    assert identity["effective_configuration"]["provenance"]["build_commit"] == identity["commit"]
+
+
+def test_worktree_fingerprint_changes_for_tracked_and_untracked_edits(tmp_path: Path) -> None:
+    runner = _baseline_module()
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "tests@example.invalid"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Tests"],
+        check=True,
+        capture_output=True,
+    )
+    source = tmp_path / "source.py"
+    source.write_text("value = 1\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "source.py"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-m", "base"],
+        check=True,
+        capture_output=True,
+    )
+
+    baseline = runner.evaluation_build_fingerprint(tmp_path)
+    source.write_text("value = 2\n", encoding="utf-8")
+    tracked_change = runner.evaluation_build_fingerprint(tmp_path)
+    (tmp_path / "untracked.py").write_text("value = 3\n", encoding="utf-8")
+    untracked_change = runner.evaluation_build_fingerprint(tmp_path)
+
+    assert len(baseline) == 64
+    assert tracked_change != baseline
+    assert untracked_change != tracked_change
+
+
+def test_runtime_match_checks_document_inside_qdrant_signature_but_allows_details() -> None:
+    from application.services.evaluation_runtime_config import (
+        assert_evaluation_runtime_matches,
+        evaluation_runtime_configuration,
+    )
+
+    document_hash = "c" * 64
+    expected = evaluation_runtime_configuration(
+        {
+            "ALLIANZ_BUILD_COMMIT": "build-1",
+            "ALLIANZ_BUILD_FINGERPRINT": "fingerprint-1",
+            "ALLIANZ_DOCUMENT_HASH": document_hash,
+        }
+    )
+    expected["provenance"]["active_index_identity"] = {
+        "index_signature": {"document_hash": document_hash}
+    }
+    actual = {
+        **expected,
+        "provenance": {
+            **expected["provenance"],
+            "active_index_identity": {
+                "alias_name": "allianz-manual-active",
+                "collection_name": "allianz-test-collection",
+                "points_count": 118,
+                "index_signature": {
+                    "document_hash": document_hash,
+                    "embedding_model": "text-embedding-3-small",
+                },
+            },
+        },
+    }
+
+    assert_evaluation_runtime_matches(expected, actual)
+    actual["provenance"]["active_index_identity"]["index_signature"]["document_hash"] = "d" * 64
+    with pytest.raises(RuntimeError, match="active_index_identity.index_signature.document_hash"):
+        assert_evaluation_runtime_matches(expected, actual)
 
 
 def test_router_promotion_accuracy_counts_missing_routes_and_errors_as_incorrect() -> None:
@@ -322,6 +415,57 @@ def test_resume_adds_run_time_instead_of_replacing_partial_duration() -> None:
     assert total == pytest.approx(128.5)
     assert manifest["duration_segments_s"] == [120.0, 8.5]
     assert manifest["duration_s"] == pytest.approx(128.5)
+
+
+def test_resumed_summary_reports_total_time_across_attempts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    runner = _baseline_module()
+    output = tmp_path / "resumed-run"
+    output.mkdir()
+    (output / "manifest.json").write_text("{}", encoding="utf-8")
+    identity = {
+        "effective_configuration": {},
+        "models": {},
+        "router": {},
+        "input_guard": {},
+        "commit": "test-commit",
+        "golden_sha256": "test-golden",
+        "configuration_source": "test",
+    }
+    monkeypatch.setattr(
+        runner,
+        "_parse_args",
+        lambda _argv: SimpleNamespace(
+            output=str(output),
+            modes="question",
+            label="resume-test",
+            concurrency=1,
+            base_url="http://test",
+            judge="none",
+            resume=True,
+            limit=None,
+        ),
+    )
+    monkeypatch.setattr(runner, "_load_golden", lambda _limit: [{"metadata": {"case_id": "c1"}}])
+    monkeypatch.setattr(runner, "_run_identity", lambda **_kwargs: identity)
+    monkeypatch.setattr(
+        runner,
+        "_read_resume_state",
+        lambda *_args: ({"duration_s": 120.0, "duration_segments_s": [120.0]}, {}),
+    )
+    monkeypatch.setattr(runner, "_pending_modes", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(runner, "_load_case_records", lambda _output: {})
+    monkeypatch.setattr(runner, "_aggregate", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        runner, "_write_summary", lambda *_args, duration_s, **_kwargs: f"duration={duration_s:.1f}"
+    )
+    monotonic = iter((100.0, 108.5))
+    monkeypatch.setattr(runner.time, "monotonic", lambda: next(monotonic))
+
+    assert runner.main([]) == 0
+
+    assert (output / "summary.txt").read_text(encoding="utf-8") == "duration=128.5"
 
 
 def test_runner_checks_live_configuration_before_sending_cases() -> None:

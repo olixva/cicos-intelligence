@@ -32,7 +32,9 @@ if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
 from application.services.evaluation_runtime_config import (  # noqa: E402
+    DEFAULT_DOCUMENT_HASH,
     assert_evaluation_runtime_matches,
+    evaluation_build_fingerprint,
     evaluation_runtime_configuration,
 )
 from infrastructure.adapters.outbound.evaluation.redteam import (  # noqa: E402
@@ -46,9 +48,7 @@ from infrastructure.adapters.outbound.evaluation.redteam import (  # noqa: E402
 
 CASES_PATH = Path(__file__).resolve().parents[2] / "data/evaluation/redteam/cases.jsonl"
 DEFAULT_BASE_URL = os.environ.get("ALLIANZ_BASELINE_URL", "http://127.0.0.1:8000")
-DOCUMENT_HASH = os.environ.get(
-    "ALLIANZ_DOCUMENT_HASH", "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
-)
+DOCUMENT_HASH = os.environ.get("ALLIANZ_DOCUMENT_HASH", DEFAULT_DOCUMENT_HASH)
 PAGE_COUNT = int(os.environ.get("ALLIANZ_MANUAL_PAGES", "111"))
 TIMEOUT_S = 180.0
 
@@ -112,28 +112,19 @@ def main() -> int:
         parser.error(f"{args.output} ya existe; usa otra carpeta de salida")
 
     cases = load_cases(CASES_PATH.read_text(encoding="utf-8").splitlines())
-    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "jev").strip().lower()
-    router_model = (
-        os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
-        if router_backend == "jev"
-        else os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna")
+    commit = _git_commit()
+    repo_root = Path(__file__).resolve().parents[2]
+    build_fingerprint = evaluation_build_fingerprint(repo_root)
+    runtime_environment = dict(os.environ)
+    runtime_environment["ALLIANZ_BUILD_COMMIT"] = commit
+    runtime_environment["ALLIANZ_BUILD_FINGERPRINT"] = build_fingerprint
+    effective_configuration = evaluation_runtime_configuration(
+        runtime_environment,
+        active_index_identity={"index_signature": {"document_hash": DOCUMENT_HASH}},
     )
-    router_configuration = {
-        "backend": router_backend,
-        "model": router_model,
-        "min_confidence": (
-            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.4"))
-            if router_backend == "jev"
-            else None
-        ),
-    }
-    guard_backend = os.environ.get("ALLIANZ_INPUT_GUARD", "jev").strip().lower()
-    guard_configuration = {
-        "backend": guard_backend,
-        "injection_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_INJECTION", "0.9")),
-        "off_topic_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")),
-    }
-    effective_configuration = evaluation_runtime_configuration()
+    router_configuration = effective_configuration["router"]
+    guard_configuration = effective_configuration["input_guard"]
+    router_model = router_configuration["model"]
     started = datetime.now(UTC)
     results = asyncio.run(
         _run_all(
@@ -165,7 +156,7 @@ def main() -> int:
         "configuration_source": os.environ.get(
             "ALLIANZ_EVALUATION_CONFIG_SOURCE", "process environment"
         ),
-        "commit": _git_commit(),
+        "commit": commit,
         "concurrency": args.concurrency,
         "cases_sha256": sha256(CASES_PATH.read_bytes()).hexdigest(),
         "document": {"sha256": DOCUMENT_HASH, "page_count": PAGE_COUNT},

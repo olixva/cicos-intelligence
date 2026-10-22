@@ -44,6 +44,7 @@ def create_app(
     source_catalog: Mapping[str, RegisteredSource] | None = None,
     evidence_repository: EvidenceRepository | None = None,
     active_version: str | None = None,
+    active_index_identity: Callable[[], Mapping[str, object] | None] | None = None,
     required_index_ready: Callable[[], bool] | None = None,
     answer_question: AnswerQuestion | None = None,
     analyze_claim: AnalyzeClaim | None = None,
@@ -96,8 +97,15 @@ def create_app(
     app.add_api_route("/health/ready", ready, methods=["GET"], tags=["health"])
 
     def configuration() -> dict[str, object]:
-        """Expose model IDs and thresholds for evaluation provenance, never secrets."""
-        return runtime_configuration
+        """Expose model settings and safe build/index provenance, never credentials."""
+        provenance = dict(runtime_configuration["provenance"])
+        try:
+            provenance["active_index_identity"] = (
+                None if active_index_identity is None else active_index_identity()
+            )
+        except Exception:
+            provenance["active_index_identity"] = None
+        return {**runtime_configuration, "provenance": provenance}
 
     app.add_api_route("/health/config", configuration, methods=["GET"], tags=["health"])
     app.include_router(

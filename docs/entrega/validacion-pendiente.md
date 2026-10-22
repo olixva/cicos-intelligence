@@ -7,8 +7,9 @@ se detallan por separado.
 
 ## 0. Modelos seleccionados y acceso real
 
-Los defaults versionados son `gpt-6.1-sol` para respuesta y extracción y
-`gpt-6-luna` para el router OpenAI. Estos IDs figuran en el
+Los defaults versionados son `gpt-6.1-sol` para respuesta y extracción, Jev
+(`jev-latest`) para router y guard, y `gpt-6-luna` como router OpenAI de
+referencia. Estos IDs figuran en el
 [catálogo oficial](https://developers.openai.com/api/docs/models). Para la
 campaña actual, los overrides locales del `.env` ponen **todas las llamadas de
 prueba a OpenAI en `gpt-6-luna`**, según la decisión del usuario; no se llama a
@@ -41,15 +42,13 @@ embeddings (`text-embedding-3-small`, 1536 dimensiones) va en
 reindexar.
 
 **Estado de esta ejecución:** los adaptadores de respuesta, extracción de
-hechos y router completaron llamadas sintéticas con salida estructurada usando
-`gpt-6-luna`. No se llamó a `gpt-6.1-sol` ni se ejecutó el golden completo. La
-exportación de trazas a Langfuse no conectó con `127.0.0.1:3000`, aunque las tres
-respuestas de OpenAI fueron satisfactorias. Después, Qdrant y Langfuse locales
-estuvieron sanos para el E2E y se comprobó el alias de índice existente; no se
-reindexó ni se ejecutó el golden. Los servicios se detuvieron tras el E2E. Sigue
-pendiente la comparación Sol/Luna, que no se ejecutará mientras la campaña esté
-limitada a Luna. El default versionado de respuesta/extracción permanece en
-`gpt-6.1-sol`.
+hechos y router pasaron el humo estructurado con `gpt-6-luna`; después se ejecutó
+el golden `auto` completo para OpenAI Luna y Jev (detalle en §5). No se llamó a
+`gpt-6.1-sol`, según la instrucción del usuario, así que la comparación
+Sol/Luna de extracción sigue pendiente y los defaults versionados de respuesta
+y extracción permanecen en Sol. En el humo inicial el exportador de trazas no
+conectó con `127.0.0.1:3000`; Qdrant y Langfuse locales sí estuvieron sanos para
+E2E y el red-team. No se reindexó el manual.
 
 ## 1. Entorno
 
@@ -69,19 +68,25 @@ Comprobar: `curl -s localhost:8000/health/ready` devuelve `ready`.
 make check-all
 ```
 
-Con Qdrant levantado deben pasar también los 14 tests de `backend/tests/integration/`.
-Resultado esperado: todo en verde salvo, posiblemente,
-`test_cli.py::test_compare_parsers_writes_a_report_with_timings`, que **falla
-también en un checkout limpio** si no está preparado el bundle de modelos de
-Docling (`allianz prepare-ingestion-models`, ver `docs/ingesta-y-recuperacion.md`, o `ALLIANZ_DOCLING_ARTIFACTS`). Si falla,
-resolverlo o dejarlo documentado.
+Los tests de `backend/tests/integration/` también se incluyen en `check-all`.
+El test de conversión del manual real está opt-in mediante
+`ALLIANZ_INTEGRATION_PDF`; no se configura con un documento real en esta
+validación, por lo que se omite ese caso.
 
-**Resultado de esta ejecución (22-10-2026):** `make check-all` pasó: backend
-`568 passed, 1 skipped, 4 warnings`; frontend `98 passed`; lint, tipado, build y
-contrato OpenAPI correctos. `make test-e2e` pasó `2/2` después de arrancar Docker,
-Qdrant, Langfuse y el backend; `/health/ready` devolvió 200. La primera ejecución,
-con el backend apagado, falló al cargar sugerencias. Se usó el índice persistente
-existente, sin reindexar; servicios y backend se detuvieron al terminar.
+**Resultado de esta ejecución (22-10-2026):** `make check-all` pasó con backend
+`581 passed, 1 skipped, 2 warnings`; frontend `98 passed`; Ruff, formato,
+Pyright, build y contrato OpenAPI correctos. El build avisa de un bundle
+JavaScript mayor de 500 kB; los tests emitieron warnings de dependencias y de
+`act` de React. `make test-e2e` pasó `2/2` con Qdrant, Langfuse y el backend
+activo. Con el servidor arrancado desde `make serve-backend`, el preflight del
+runner coincidió con `GET /health/config`: router Jev `jev-latest` (`0,4`),
+guard Jev (`0,9`/`0,95`), OpenAI Luna para respuesta/extracción, commit del
+servidor y huella del árbol. La sonda consultó el mismo Qdrant que las consultas
+y resolvió `allianz-manual-active` a
+`allianz-9cef6a7a250f-d0ae02340071`, 118 puntos, firma completa y SHA-256 del
+manual esperado. `/health/ready` devolvió 200. Se usó el índice persistente, sin
+reindexar ni hacer llamadas nuevas a OpenAI. La huella se calcula sobre el árbol
+de trabajo, por lo que cambia al editar o confirmar cambios.
 
 ## 3. Re-medir la evaluación del RAG → memoria §3.4
 
@@ -104,91 +109,66 @@ del repositorio o decidir qué se adjunta a la entrega.
 
 ## 4. Campaña de red-teaming → memoria §7.1
 
-El runner registra en `manifest.json` el commit, hash del dataset, hash y páginas
-del manual, concurrencia, proveedor/modelo del router y backend/umbrales del
-guardarraíl. Los objetivos `make run-*` cargan `.env` y `ops/local.env` igual que
-`make serve-backend`. Si se usa `LOCAL_ENV` para variar una campaña, hay que
-pasar las mismas asignaciones al backend y al runner. Usa carpetas de salida
-nuevas. No se han generado resultados live de red-team: falta la clave TypeSafe
-y el backend está detenido. Los servicios se levantaron temporalmente sólo para
-E2E.
+**Ejecutada el 22-10-2026** sobre el mismo commit `75da6320266f857e717fa9b846c44baaa0f4c746`, los mismos 30 casos (27 ataques y 3 controles) y concurrencia 4. El manifiesto conserva el hash de casos `28fbf1d3dff67ff98a6fa1ac8bfc8ba04c8b659c05aea999c6679455e2b7374b`, el hash/páginas del manual, router y umbrales. El runner confirmó `/health/config` antes de enviar los casos para modelos y guard; la verificación del build local y de la firma/destino del alias Qdrant se añadió después y se comprobó en la validación final de arriba.
+
+| Guard | Ataques exitosos | Sobre-rechazo benigno | Resultado |
+|---|---:|---:|---|
+| `off` | 0/27 | 0/3 | referencia |
+| `jev` (inyección `0.9`, fuera de tema `0.95`) | 0/27 | 0/3 | pasa la puerta; guard Jev predeterminado |
+
+Las diez categorías registraron cero ataques exitosos. La muestra benigna es sólo de tres casos y no demuestra una tasa de rechazo real en producción. Resultados completos locales (ignorados por Git): `data/evaluation/results/2026-10-22-redteam-off-final/` y `data/evaluation/results/2026-10-22-redteam-jev-final/`.
+
+Para reproducir con salidas nuevas:
 
 ```bash
-# Terminal 1, desde la raíz: levantar el backend con el guard deseado.
-make serve-backend LOCAL_ENV="ALLIANZ_INPUT_GUARD=off"
-# Terminal 2: el runner carga la misma configuración y la registra.
-make run-redteam LOCAL_ENV="ALLIANZ_INPUT_GUARD=off" \
-  ARGS="--output data/evaluation/results/redteam-off-$(date +%F)"
-# Detener y reiniciar Terminal 1 con ALLIANZ_INPUT_GUARD=jev; después repetir:
-make serve-backend LOCAL_ENV="ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95"
-# Repetir con los mismos valores para registrar el mismo backend y umbrales:
-make run-redteam LOCAL_ENV="ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95" \
-  ARGS="--output data/evaluation/results/redteam-jev-$(date +%F)"
+# Terminal 1: router Jev a confianza 0.4, guard apagado.
+make serve-backend LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=jev ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE=0.4 ALLIANZ_INPUT_GUARD=off"
+# Terminal 2:
+make run-redteam LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=jev ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE=0.4 ALLIANZ_INPUT_GUARD=off" \
+  ARGS="--output data/evaluation/results/redteam-off-<id-nuevo>"
+# Reiniciar Terminal 1 y repetir el runner con el guard Jev:
+make serve-backend LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=jev ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE=0.4 ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95"
+make run-redteam LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=jev ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE=0.4 ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95" \
+  ARGS="--output data/evaluation/results/redteam-jev-<id-nuevo>"
 ```
 
-Sale con código 1 si algún ataque tiene éxito. Registrar en la memoria la tasa de
-éxito del atacante, el desglose por categoría y el sobre-rechazo. Revisar a mano
-`per-case/*.json` de cualquier fallo y de **una muestra de los que pasan**: los
-criterios son de cadena y de estado, y un «pass» no prueba que la respuesta sea
-buena. Si un ataque tiene éxito: o se corrige la defensa y se repite, o se
-documenta como hallazgo abierto; no se edita el caso para que pase.
-Comparar el mismo commit y la misma suite completa: Jev sólo se promueve si no
-hay ataques exitosos y `over_refusal_rate` no supera el valor de `off`. Mantener
-`ALLIANZ_INPUT_GUARD=off` como default mientras esta puerta esté pendiente.
+El guard regex sigue ejecutándose antes de Jev y el guard semántico falla abierto si el servicio no responde. El router no hace fallback silencioso.
 
 ## 5. Jev, el modelo de decisiones → memoria §2.1.1
 
-Jev está integrado como **opción apagada por defecto** y nunca se ha ejecutado
-contra el servicio real. El contrato se tomó del OpenAPI del SDK oficial
-(`POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer`,
-`{model, state, questions}` → `{model, answers, usage}`).
+**Estado: validado en servicio real y predeterminado para router y guard.** La llamada sintética de humo usó una pregunta `noul` y otra `choice`; devolvió modelo `jev-1.14.0`, respuestas tipadas/probabilidades válidas y uso de 368 tokens de entrada y 50 de salida. No se enviaron relatos reales ni datos personales. Todas las llamadas OpenAI de la campaña fueron a `gpt-6-luna`, incluida extracción; `gpt-6.1-sol` no se probó.
 
-**Estado de esta ejecución:** no hay `TYPESAFE_API_KEY` configurada ni backend
-local activo. No se ha enviado ninguna llamada ni se han generado resultados
-A/B. El router predeterminado se mantiene en `openai`.
+La repetición A/B de router `auto` se ejecutó sobre commit `75da6320266f857e717fa9b846c44baaa0f4c746`, los mismos 110 casos, golden SHA-256 `837dfb6da86bcdf6cb7e2a1477623141b83c021f5c697910da5dfa1af074d874`, índice y concurrencia 4. `/health/config` confirmó backend, modelos y guard antes de cada campaña. Esas campañas no tenían la verificación del build local ni de la firma/destino real del alias, que se añadió después. La métrica es end-to-end: los errores técnicos y las rutas ausentes cuentan como fallos; no mide el clasificador aislado.
 
-**Red.** Desde un equipo con proxy corporativo, `api.typesafe.ai` queda bloqueado
-(Zscaler devuelve 403). Ejecutar desde la VM propia, no desde la red de Allianz.
+| Backend / umbral | Aciertos | Exactitud | Errores | Tokens medios entrada/salida |
+|---|---:|---:|---:|---:|
+| OpenAI `gpt-6-luna` | 94/110 | 0.855 | 0 finales | 332.782 / 75.309 |
+| Jev `0.4` | 97/110 | 0.882 | 0 finales | 476.491 / 41.027 |
 
-**Datos.** TypeSafe no publica (que yo haya podido leer) su política de retención.
-Antes de enviarle nada, confirmarla; con el golden y las suites sintéticas no hay
-datos personales, pero con relatos reales sí.
+La primera pasada de cada campaña tuvo un error HTTP transitorio; `--resume`
+reintentó sólo ese caso y ambas corridas quedaron completas. Los tiempos
+acumulados observados son aproximadamente 358.4 s (Luna) y 297.3 s (Jev). En estos
+manifiestos, creados antes de corregir la suma de tiempos reanudados, `duration_s`
+conserva sólo el segmento del reintento; los tiempos publicados suman las salidas
+de ambas pasadas. El runner acumula segmentos en nuevas reanudaciones desde el
+commit `16e2c82`. El barrido exploratorio previo con Jev `0.6` y `0.8` dio
+92/110 y 83/110; no constituye holdout independiente.
 
-```bash
-export TYPESAFE_API_KEY=...      # clave de https://console.typesafe.ai (acceso anticipado)
-```
+El umbral `0.4` es el único que iguala la referencia; por ello Jev `jev-latest` y `0.4` son los valores estándar. OpenAI Luna sigue disponible con `ALLIANZ_ROUTER_BACKEND=openai`. Las matrices completas, duraciones y errores observados están en `docs/evaluacion.md`. Los timeouts que aparecieron en logs correspondieron al extractor OpenAI Luna downstream y se mantuvieron como fallos del flujo completo.
 
-1. **Humo del cliente.** Un `decide` real con una pregunta `noul` y otra `choice`;
-   comprobar que la respuesta cumple el contrato (si no, el único fichero a
-   ajustar es `decision_model/jev_client.py`) y fijar el modelo concreto en
-   `TYPESAFE_DEFAULT_MODEL` si se prefiere una versión a `jev-latest`.
-2. **Router, A/B con el golden.** Levantar el backend dos veces y ejecutar el
-   modo automático con cada uno:
-   ```bash
-   make serve-backend LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=openai"   # otra terminal:
-   make run-baseline LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=openai" \
-     ARGS="--modes auto --output data/evaluation/results/router-openai --label router-openai"
-   # repetir ambos comandos con ALLIANZ_ROUTER_BACKEND=jev -> router-jev
-   ```
-   Mismo commit, golden, índice, prompts y concurrencia en ambos procesos.
-   Comparar exactitud sobre todos los casos, matriz por clase, errores técnicos,
-   latencia y uso disponible (`router_input_tokens` / `router_output_tokens`);
-   los errores cuentan como fallos en `router_accuracy_all_labeled` y permanecen
-   en `n_total`. Barrer `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` (0,4 / 0,6 / 0,8)
-   en directorios nuevos. Sólo promover Jev si iguala o supera la exactitud de
-   OpenAI; mantener OpenAI como referencia seleccionable y no añadir fallback
-   silencioso.
-3. **Guardarraíl, con la suite de red-teaming.** Ejecutar el paso 4 con
-   `ALLIANZ_INPUT_GUARD=off` y con `jev`; comparar tasa de éxito del atacante y
-   sobre-rechazo de los controles. Ajustar `ALLIANZ_JEV_GUARD_INJECTION` y
-   `ALLIANZ_JEV_GUARD_OFF_TOPIC`. Guardar los manifiestos con cada umbral. Con el
-   guard activo, un ataque bloqueado responde `kind=clarification` con
-   `metadata.guardrail_source=decision_model`.
-4. **Juez, con calibración.** `run_baseline.py --modes question --judge jev`.
-   Etiquetar a mano ~30 pares (pregunta, página) y ~30 (bloque, páginas citadas)
-   y medir el acuerdo con las probabilidades de Jev. **No citar las cifras en la
-   memoria sin ese acuerdo.**
-5. Anotar en la memoria §2.1.1 los resultados y quitar la etiqueta «sin medir».
+**Coste de router, estimación de lista:** con la tarifa pública consultada el 22-10-2026 de Jev (`$0.042` por millón de tokens de entrada; salida gratis) y OpenAI Luna Standard (`$0.10` entrada / `$0.50` salida por millón), los tokens medios observados estiman `$0.000020` por decisión Jev frente a `$0.000071` Luna, cerca de 72 % menos para el router. No es facturación medida y excluye respuesta, extracción y otros componentes. Fuentes: [TypeSafe](https://typesafe.ai/) y [OpenAI Pricing](https://developers.openai.com/api/docs/pricing).
+
+**Artefactos nativos locales** (ignorados por Git):
+`data/evaluation/results/2026-10-22-router-openai-luna-final/` y
+`data/evaluation/results/2026-10-22-router-jev-04-final/` conservan manifiesto,
+métricas, resumen y los 110 archivos `per-case`. Las nuevas campañas red-team
+están en `2026-10-22-redteam-off-final/` y `2026-10-22-redteam-jev-final/`.
+El resumen antiguo `2026-10-22-router-openai-jev-04-reconstructed-summary.json`
+continúa etiquetado como reconstruido y no sustituye los resultados nativos.
+
+**Datos.** TypeSafe declara que no entrena con solicitudes/respuestas, pero retención y borrado dependen del acuerdo, los datos y cualquier arreglo ZDR. Confirmar las condiciones antes de enviar relatos reales: [tratamiento y retención de datos](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained). La validación live usó sólo texto sintético.
+
+**Juez de evaluación (pendiente, no bloquea la promoción):** `run_baseline.py --modes question --judge jev`; etiquetar manualmente unos 30 pares pregunta/página y 30 bloques/páginas citadas para medir acuerdo. Hasta entonces, mantener sus métricas exploratorias y opt-in.
 
 ## 6. Trazabilidad (comprobación manual) → memoria §5.1
 
@@ -219,5 +199,5 @@ construir la imagen. Si no arranca, es el primer sitio donde mirar.
       trabajó y solo la persona autora puede confirmarlo.
 - [ ] Cifras de tests y de commits de la memoria coherentes con la última
       ejecución.
-- [ ] Ningún secreto en el árbol: `git grep -n "sk-"` (solo debe salir el marcador `sk-lf-replace-with-local-value` de `ops/local.env.example`) y `.env` sin commitear.
+- [ ] Ninguna clave real del proveedor en el árbol ni en artefactos; los valores de ejemplo deben ser marcadores no válidos. Confirmar que `.env` permanece ignorado y fuera del índice de Git.
 - [ ] Exportar la memoria a PDF/Word si la entrega lo pide.

@@ -57,9 +57,9 @@ Está fuera del control de versiones.
 | `ALLIANZ_EXTRACTIONS_ROOT` / `ALLIANZ_EVIDENCE_PARSER` | publicación de evidencia que sirve el API |
 | `ALLIANZ_RULES_ROOT` | artefactos de reglas firmados |
 | `ALLIANZ_DOCLING_ARTIFACTS` | bundle local de modelos de Docling (opcional) |
-| `TYPESAFE_API_KEY` | acceso a Jev; sólo si se usa alguno de los usos de abajo |
-| `ALLIANZ_ROUTER_BACKEND` | `openai` (por defecto) o `jev` para el modo automático |
-| `ALLIANZ_INPUT_GUARD` | `off` (por defecto) o `jev` para el guardarraíl semántico |
+| `TYPESAFE_API_KEY` | acceso requerido por el router Jev y el guardarraíl semántico Jev |
+| `ALLIANZ_ROUTER_BACKEND` | `jev` por defecto; `openai` selecciona el router de referencia |
+| `ALLIANZ_INPUT_GUARD` | `jev` por defecto; `off` desactiva el guardarraíl semántico |
 
 ### Reparto de modelos
 
@@ -69,28 +69,34 @@ catálogo oficial de [modelos OpenAI](https://developers.openai.com/api/docs/mod
 - **Respuesta documental → `gpt-6.1-sol`.** Etapa juzgada por citas y abstención.
 - **Extracción de hechos → `gpt-6.1-sol`.** Se conserva Sol como default
   conservador hasta comparar Luna con el golden.
-- **Router OpenAI → `gpt-6-luna`.** Referencia compacta para la clasificación en
-  enum cerrado; Jev se activa de forma independiente con
-  `ALLIANZ_ROUTER_BACKEND=jev`.
+- **Router → Jev (`jev-latest`) por defecto.** Comparado con el mismo golden
+  que OpenAI Luna; confianza estándar `0.4`. OpenAI `gpt-6-luna` queda
+  seleccionable con `ALLIANZ_ROUTER_BACKEND=openai` como referencia.
 
 Los IDs de `.env.example` son defaults de configuración. El humo sintético de
 Responses API con `gpt-6-luna` pasó para respuesta, extracción y router; Sol no
 se probó y la extracción sólo se cambiará a `gpt-6-luna` si la comparación no
 añade resoluciones injustificadas ni una regresión material de seguridad.
+El endpoint local `GET /health/config` expone sólo IDs de modelos, umbrales,
+commit y huella SHA-256 del árbol de trabajo, hash documental configurado y la
+identidad firmada de la colección que resuelve el alias activo de Qdrant; nunca
+credenciales. Los runners comparan sus ajustes esperados con el snapshot del
+servidor y abortan antes de enviar casos si difieren el modelo, la guarda, el
+build o el hash del índice activo.
 
 ### Modelo de decisiones (Jev)
 
 [Jev](https://typesafe.ai) es un modelo discriminativo de TypeSafe: no genera
 texto, responde preguntas tipadas sobre un estado (probabilidad de sí, elección
 entre opciones cerradas). Encaja donde el trabajo es decidir sobre un conjunto
-cerrado, y se ha integrado en tres sitios, **todos opcionales y desactivados por
-defecto**:
+cerrado, y se ha integrado en tres sitios. Router y guard son los defaults
+validados; el juez de evaluación permanece opt-in:
 
 | Uso | Activación | Qué hace |
 |---|---|---|
-| Router del modo `auto` | `ALLIANZ_ROUTER_BACKEND=jev` | Una pregunta `choice` entre `question`, `claim` y `clarification_required`; por debajo de `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` pide aclaración. No carga el prompt `auto-router`. |
-| Guardarraíl de entrada | `ALLIANZ_INPUT_GUARD=jev` | Dos preguntas `noul` (intento de manipular al asistente; consulta ajena al dominio) que bloquean por encima de umbral, tras el filtro por expresiones regulares. **Falla abierto**: si Jev no responde, la petición sigue y se deja un aviso en el log. |
-| Juez de evaluación | `run_baseline.py --judge jev` | Añade *context precision* y *groundedness* al runner (ver `evaluacion.md`). |
+| Router del modo `auto` | Jev por defecto (`ALLIANZ_ROUTER_BACKEND=openai` para OpenAI) | Una pregunta `choice` entre `question`, `claim` y `clarification_required`; por debajo de confianza `0.4` pide aclaración. No carga el prompt `auto-router`. |
+| Guardarraíl de entrada | Jev por defecto (`ALLIANZ_INPUT_GUARD=off` para desactivarlo) | Dos preguntas `noul` (intento de manipular al asistente; consulta ajena al dominio) que bloquean por encima de umbrales `0.9` y `0.95`, tras el filtro por expresiones regulares. **Falla abierto**: si Jev no responde, la petición sigue y se deja un aviso en el log. |
+| Juez de evaluación | `run_baseline.py --judge jev` | Añade *context precision* y *groundedness* al runner (ver `evaluacion.md`); sigue opt-in hasta calibrarlo con etiquetas humanas. |
 
 El cliente (`infrastructure/adapters/outbound/decision_model/jev_client.py`) usa
 `httpx` contra `POST /v1/systemone` con el contrato del OpenAPI del SDK oficial,
@@ -99,15 +105,32 @@ Reintenta 408/429/5xx con espera acotada y respeta `Retry-After`; los errores
 técnicos usan la jerarquía de `LanguageModelError`, de modo que la API los
 traduce igual que los del LLM.
 
-**Estado: sin verificar contra el servicio real.** Se escribió y probó con
-dobles de transporte. Los umbrales por defecto no están calibrados, el modelo
-está en acceso anticipado, y TypeSafe no publica su política de retención de
-datos: no enviarle relatos reales con datos personales hasta confirmarla. Los
-pasos de validación están en `docs/entrega/validacion-pendiente.md`. El router
-OpenAI sigue como default hasta que Jev supere su A/B; si se promueve Jev, se
-conservará OpenAI como referencia explícita y no habrá fallback silencioso. El
-guardarraíl Jev también permanece apagado por defecto hasta registrar cero
-ataques exitosos y un sobre-rechazo no mayor que la referencia `off`.
+**Validación real (22-10-2026):** el cliente respondió `noul` y `choice` con
+`jev-1.14.0`; en la repetición del golden el flujo automático obtuvo 97/110
+con Jev `0.4` y 94/110 con OpenAI Luna, ambos completos tras reintentar un caso
+HTTP transitorio. El guard pasó red-team con `0/27` ataques exitosos y `0/3`
+controles benignos rechazados; por ello router y guard quedan como defaults.
+El golden también se usó para seleccionar el umbral, así que sigue pendiente un
+holdout independiente. Los manifiestos, resultados nativos y límites están en
+`docs/evaluacion.md`.
+No hay fallback silencioso del router; si el servicio Jev falla, el router
+devuelve un error controlado. El guard sigue fail-open y el filtro regex va
+antes de Jev.
+
+El proveedor publica actualmente `$0.042` por millón de tokens de entrada y
+salida gratuita; OpenAI publica `$0.10`/`$0.50` por millón de tokens de
+entrada/salida para Luna en Standard. Aplicando esas tarifas a los tokens
+medios observados en el router, la estimación de coste del router Jev `0.4` es
+aprox. 72 % inferior a la de OpenAI Luna por decisión. Es una estimación de
+lista, sólo del router; no es un coste facturado ni una estimación del flujo
+completo. Fuentes: [TypeSafe](https://typesafe.ai/) y
+[OpenAI Pricing](https://developers.openai.com/api/docs/pricing), consultadas
+el 22-10-2026.
+
+Sólo se enviaron preguntas sintéticas. TypeSafe declara que no entrena con
+solicitudes/respuestas, pero la retención depende del acuerdo y de cualquier
+condición ZDR; confirmar esas condiciones antes de enviar relatos reales:
+[tratamiento y retención de datos](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained).
 
 ## Puesta en marcha desde cero
 

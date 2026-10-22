@@ -46,24 +46,26 @@ siniestros con más de dos vehículos, cualquier documento distinto del manual.
 
 | Etapa | Modelo | Razón |
 |---|---|---|
-| Respuesta documental | `gpt-6.1-sol` (default propuesto) | Es la etapa que se juzga: precisión de la cita y fidelidad al contexto. |
-| Extracción de hechos del siniestro | `gpt-6.1-sol` (default propuesto) | Se conserva Sol hasta comparar Luna con el golden y revisar métricas de seguridad. |
-| Router `auto` de OpenAI | `gpt-6-luna` (referencia) | Clasificación en un enum cerrado de tres etiquetas; Jev se decide en una puerta independiente. |
+| Respuesta documental | `gpt-6.1-sol` (default versionado) | Es la etapa que se juzga: precisión de la cita y fidelidad al contexto. |
+| Extracción de hechos del siniestro | `gpt-6.1-sol` (default versionado) | Se conserva Sol hasta comparar Luna con el golden y revisar métricas de seguridad. |
+| Router `auto` | Jev `jev-latest` (default) | Superó OpenAI Luna en la repetición con umbral `0,4` (97/110 frente a 94/110); OpenAI queda como referencia seleccionable. |
 
 El criterio es el coste del error por etapa. Los IDs aparecen en el
 [catálogo oficial de OpenAI](https://developers.openai.com/api/docs/models). El
 humo sintético confirmó acceso de esta cuenta a `gpt-6-luna`; no se llamó a Sol.
-Los modelos se configuran por variables de entorno
+Durante todas las pruebas live OpenAI se limitó a Luna, según la instrucción
+del usuario. Los modelos se configuran por variables de entorno
 (`OPENAI_ANSWER_MODEL`, `OPENAI_CLAIM_EXTRACTION_MODEL`,
 `ALLIANZ_ROUTER_MODEL`) y el código coincide con `.env.example`. La validación
 de respuesta estructurada pasó en las tres etapas con Luna; la comparación
-Sol/Luna de extracción no se ha ejecutado. El default permanece en Sol y no se
-presentan cifras nuevas de calidad, latencia o coste.
+Sol/Luna de extracción no se ha ejecutado. El default permanece en Sol.
 
 Todas las llamadas usan la Responses API con **salida estructurada** (esquema
-cerrado, `extra="forbid"`) y `store=False`: el proveedor no retiene las
-consultas, y la respuesta del modelo no puede traer campos que el sistema no
-espera.
+cerrado, `extra="forbid"`) y `store=False` para no conservar estado de respuesta
+en la aplicación de Responses. Eso no equivale a Zero Data Retention: OpenAI
+documenta retención de hasta 30 días en logs de monitorización de abuso, sujeta
+a los controles y acuerdos de la organización ([controles de datos de la API](https://developers.openai.com/api/docs/guides/your-data)). La respuesta del
+modelo tampoco puede traer campos que el sistema no espera.
 
 ### 2.1.1 Un modelo de decisiones para las tareas de elegir
 
@@ -78,51 +80,85 @@ devuelve probabilidades, no texto.
 Por qué encaja: (1) **la salida es un valor de un conjunto cerrado**, así que un
 texto malicioso en el estado sólo puede desplazar una probabilidad, no producir
 contenido; (2) la **confianza es un dato**, lo que permite abstenerse por umbral
-en lugar de por prompt; (3) coste y latencia anunciados muy inferiores a los de un
-LLM (cifras del proveedor, sin verificar).
+en lugar de por prompt; (3) su tarifa pública de entrada es menor que la de
+OpenAI Luna y la salida no se factura. La comparación de este trabajo estima un
+coste de lista 72 % menor por decisión del router, sin incluir respuesta ni
+extracción downstream.
 
-Se usa en tres sitios, siempre **opcional y apagado por defecto** (el
-comportamiento sin configurar es idéntico al anterior):
+Se usa en tres sitios. El router y el guard son los defaults tras superar sus
+puertas; el juez sigue siendo opcional:
 
 | Uso | Dónde | Estado |
 |---|---|---|
-| Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | candidato al clasificador de OpenAI | Implementado y probado con dobles; **sin humo real ni A/B** |
-| Guardarraíl semántico de entrada (`ALLIANZ_INPUT_GUARD=jev`) | tras el filtro por regex; falla abierto | Implementado y probado con dobles; **sin red-team real; sigue apagado** |
+| Router del modo `auto` | Jev por defecto, confianza `0,4`; OpenAI `gpt-6-luna` es seleccionable | Repetición A/B: Jev `97/110` y OpenAI Luna `94/110`, flujo completo sin errores finales |
+| Guardarraíl semántico de entrada | Jev por defecto tras regex; falla abierto | Red-team real: `0/27` ataques exitosos y `0/3` controles benignos rechazados, igual que `off` |
 | Juez de evaluación (`run_baseline.py --judge jev`) | *context precision* y *groundedness* | Implementado; **sin calibrar contra humanos** |
 
-**Estado del router.** OpenAI (`gpt-6-luna`) se conserva como default y como
-referencia hasta completar el A/B real. El golden ya trae la intención esperada
-de cada caso y el runner calcula la matriz de confusión, la exactitud sobre
-todas las etiquetas y los tokens del router cuando el proveedor los devuelve.
-Se compararán ambos backends con el mismo commit y conjunto completo. Jev sólo
-pasará a ser default si su exactitud sobre todas las etiquetas iguala o supera
-OpenAI, con errores y rutas ausentes contados como fallos. OpenAI permanecerá
-seleccionable como referencia y no habrá fallback silencioso.
+**Estado del router.** La repetición final se ejecutó en el mismo commit
+`75da6320266f857e717fa9b846c44baaa0f4c746`, con el mismo golden de 110 casos,
+concurrencia 4 e índice. El `/health/config` del servidor coincidió con cada
+manifiesto en modelos y umbrales: Jev `jev-latest` a `0,4` o OpenAI Luna,
+guard Jev y Luna para respuesta y extracción. Los manifiestos registraron el
+commit del runner y el hash configurado del manual; esa versión del endpoint no
+verificaba el build del servidor ni el destino/firma del alias activo de Qdrant.
+La comprobación reforzada de build e índice se añadió después y se verificó en
+la validación final. Jev obtuvo
+`97/110` (`0,882`) y OpenAI Luna `94/110`
+(`0,855`); ambos resultados finales contienen 110 casos y cero errores sin
+resolver. En cada primera pasada hubo un error HTTP transitorio, que se reintentó
+con `--resume`. Las rutas ausentes y los errores técnicos cuentan como fallos
+en `router_end_to_end_accuracy_all_labeled`; la métrica describe el flujo
+`auto` completo, incluida disponibilidad de extracción y respuesta, no aísla
+el clasificador. Jev `0,4` queda como estándar; OpenAI Luna sigue seleccionable
+y no hay fallback silencioso. El barrido previo de umbrales `0,6` y `0,8` dio
+92/110 y 83/110 respectivamente, pero el golden también se usó para escoger el
+umbral: el holdout independiente sigue pendiente. Las matrices, tokens y
+denominadores están en `docs/evaluacion.md`.
 
-**Estado del guardarraíl.** `ALLIANZ_INPUT_GUARD=off` sigue siendo el default.
-Sólo se activará por defecto si la suite completa registra cero ataques exitosos
-y su sobre-rechazo no supera la corrida `off`, con el mismo commit y los mismos
-casos. La caída del proveedor sigue siendo fail-open; el filtro regex siempre se
-ejecuta antes y no llama a Jev cuando ya bloquea la entrada.
+**Estado del guardarraíl.** Jev queda como default: la suite idéntica `off` y
+`jev` obtuvo cero ataques exitosos y sobre-rechazo `0/3` en ambas. La muestra
+benigna es pequeña y no sustituye un seguimiento de producción. La caída del
+proveedor sigue siendo fail-open; el filtro regex siempre se ejecuta antes y no
+llama a Jev cuando ya bloquea la entrada.
+
+**Artefactos de validación.** Los manifiestos, métricas, resúmenes y resultados
+por caso se conservan localmente en `data/evaluation/results/` (directorio
+ignorado por Git). Las corridas finales son `2026-10-22-router-jev-04-final/`,
+`2026-10-22-router-openai-luna-final/`, `2026-10-22-redteam-off-final/` y
+`2026-10-22-redteam-jev-final/`. Ambas corridas del router contienen 110 casos;
+las de red-team, 30 casos cada una. El holdout del router, la comparación de
+extracción Sol/Luna y la calibración humana del juez continúan pendientes.
 
 **Humo sintético OpenAI (22-10-2026, commit `9aa5fd9`).** Los adaptadores de
 respuesta, extracción de hechos y router aceptaron salida estructurada con `gpt-6-luna`: respuesta
 `insufficient_evidence` sin bloques, extracción en estado `ask` con tres hechos
-sintéticos y ruta `question`. Esta corrida valida compatibilidad de esquema. La
-calidad en golden, latencia, uso/coste y el acceso a Sol siguen pendientes; no se
-llamó a `gpt-6.1-sol`. La exportación de trazas no conectó con Langfuse local en
-`127.0.0.1:3000`.
+sintéticos y ruta `question`. Esta corrida valida compatibilidad de esquema,
+no calidad de respuesta ni extracción en golden; tampoco se llamó a
+`gpt-6.1-sol`. La exportación de trazas no conectó con Langfuse local en
+`127.0.0.1:3000`. La evaluación golden de este trabajo corresponde al router,
+no a la respuesta documental ni a la extracción.
 
-**Riesgos que se asumen y se documentan.** El contrato de la API se tomó del
-OpenAPI del SDK oficial pero **no se ha ejecutado contra el servicio real**;
-TypeSafe no publica su política de retención de datos (no deben enviársele
-relatos reales con datos personales hasta confirmarla); y el cliente propio
-(`httpx`) sustituye al SDK para no depender de un proveedor en acceso anticipado.
+**Validación del servicio Jev (22-10-2026).** El contrato real de
+`POST /v1/systemone` pasó un humo con una pregunta `noul` y otra `choice`: modelo
+devuelto `jev-1.14.0`, respuestas/probabilidades válidas y uso `368` tokens de
+entrada / `50` de salida. No se enviaron datos personales. TypeSafe indica que
+no entrena con solicitudes/respuestas, pero retención y borrado dependen del
+acuerdo y de cualquier arreglo ZDR; no enviar relatos reales hasta confirmar
+esas condiciones. El cliente propio (`httpx`) evita añadir el SDK como
+dependencia.
 
-**Qué no se hizo:** siguen pendientes el A/B completo del router, la comparación
-Sol/Luna de extracción y la campaña real de Jev. El humo de Luna no registró
-latencia, uso ni coste. Falta `TYPESAFE_API_KEY` para medir Jev; no se afirma que
-Jev sea más barato o igual de preciso.
+La tarifa pública consultada el 22-10-2026 es `$0.042` por millón de tokens de
+entrada Jev, con salida gratuita; OpenAI Luna Standard publica `$0.10` de
+entrada y `$0.50` de salida por millón. La estimación del router usa los tokens
+medios observados y se limita a esa etapa; tarifas y condiciones pueden
+cambiar. Fuentes: [TypeSafe](https://typesafe.ai/), [OpenAI Pricing](https://developers.openai.com/api/docs/pricing) y [retención TypeSafe](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained).
+
+**Qué no se hizo:** siguen pendientes la comparación Sol/Luna de extracción,
+la calibración humana del juez Jev y la validación del umbral con un golden
+independiente. La selección de `0,4` y su medida usan el mismo golden, por lo
+que el resultado puede sobreajustarse a ese conjunto. La campaña live produjo
+timeouts de extracción OpenAI Luna en algunos casos; se contabilizaron como
+fallos y no se sustituyeron por resultados favorables.
 
 ### 2.2 Embeddings y dimensiones
 
@@ -240,7 +276,7 @@ Todas son deterministas (sin juez LLM), calculadas en
 | `over_resolution_rate_against_reference` | Fracción de casos en que el sistema *resolvió* cuando la referencia exigía abstenerse. **Es la métrica de seguridad central.** |
 | `abstention_metrics` | Calibración: de las veces que se abstuvo, cuántas correctamente y cuántas innecesariamente. |
 | `router_confusion_matrix` | Matriz de confusión del router sobre un enum cerrado. |
-| `router_accuracy_all_labeled` | Exactitud del router sobre todas las etiquetas del golden; una ruta ausente o un error técnico cuenta como fallo de promoción. |
+| `router_end_to_end_accuracy_all_labeled` | Acierto del flujo `auto` completo sobre todas las etiquetas del golden; rutas ausentes y errores técnicos de cualquier etapa cuentan como fallos. No aísla el clasificador. |
 | `citation_id_validity` | Fracción de IDs citados que pertenecen al catálogo permitido del caso; las citas obligatorias ausentes puntúan 0. |
 | `evidence_bundle_coverage` | Cobertura de los requisitos del golden, respetando los paquetes AND y sus alternativas OR. |
 | `resolution_support_rate` | Resoluciones con actor, regla coincidente y evidencia estructurados; si falta el actor en el envelope, se registra como missing. |
@@ -273,8 +309,8 @@ de 330 ejecuciones sin error, 1380 s):
 Esta tabla es histórica y no recalculable en este checkout: no están disponibles
 los resultados originales `per-case` ni su manifiesto. Se conservan las cifras
 publicadas sin convertirlas a los nuevos denominadores; `router_match` no se
-puede reconstruir ahora como `router_accuracy_all_labeled`. Hace falta una nueva
-corrida completa para sustituirlas.
+puede reconstruir ahora como `router_end_to_end_accuracy_all_labeled`. Hace falta
+una nueva corrida completa para sustituirlas.
 
 | Modo | Métrica | Valor |
 |---|---|---|
@@ -344,7 +380,7 @@ modo estricto sobre el código de producción.
  Usuario ─► Frontend (React 19, SSE) ─► API FastAPI /api/v1/queries
                                               │
                                   ┌───────────┴────────────┐
-                                  │   Router (mode=auto)   │  gpt-6-luna, enum cerrado
+                                  │   Router (mode=auto)   │  Jev, enum cerrado
                                   └───────┬────────┬───────┘
                           question        │        │        claim
               ┌───────────────────────────┘        └──────────────────────────┐
@@ -474,15 +510,14 @@ Un filtro determinista de alcance (insultos y consultas meteorológicas) con una
 excepción para relatos de siniestro, que evita bloquear «no consigue detenerse a
 tiempo». **Es un filtro de alcance, no de seguridad:** cubre solo español y se
 elude con vocabulario de siniestro. La defensa frente a la inyección no descansa
-aquí sino en el diseño (§6.2). *Mejora:* un límite de longitud del texto, que hoy no existe en el esquema de
-entrada, y un clasificador semántico. Este último **está implementado como
-opción** (`ALLIANZ_INPUT_GUARD=jev`, §2.1.1): dos preguntas `noul` (intento de
-manipular al asistente; consulta ajena al dominio) con umbrales altos por
-defecto, que **falla abierto** si el servicio no responde porque las defensas de
-§6.2 siguen activas. Su efecto se mide con la propia suite de red-teaming:
-ejecutarla con y sin guarda y comparar la tasa de éxito del atacante y el
-sobre-rechazo de los controles benignos. Sin esa medición, los umbrales son una
-hipótesis.
+aquí sino en el diseño (§6.2). *Mejoras pendientes:* un límite de longitud del
+texto, que hoy no existe en el esquema de entrada, y ampliar la cobertura de
+idioma. El clasificador semántico Jev está implementado y **activo por defecto**
+(`ALLIANZ_INPUT_GUARD=jev`, §2.1.1): dos preguntas `noul` (intento de manipular
+al asistente; consulta ajena al dominio) con umbrales `0,9` y `0,95`. **Falla
+abierto** si el servicio no responde porque las defensas de §6.2 siguen activas.
+En la suite actual no aumentó el sobre-rechazo benigno (`0/3`) ni hubo ataques
+exitosos (`0/27`); ampliar la muestra benigna sigue pendiente.
 
 ### 6.2 Salida: defensa en profundidad sin depender del modelo
 
@@ -587,7 +622,7 @@ de políticas auditable.
 | Límite de tasa | Ninguno | Por usuario e IP; protege además el coste |
 | Límite de entrada | Sin `max_length` en el texto | Límite por campo y por petición |
 | PII | Sin detección ni enmascarado; los relatos incluyen matrículas | Detección/enmascarado antes de enviar al proveedor y antes de trazar; política de retención en Langfuse |
-| Retención en el proveedor | `store=False` | Mantener; revisar condiciones y región del proveedor |
+| Retención en el proveedor | `store=False` evita estado persistente de Responses; no implica ZDR y permanecen controles de abuso | Acordar retención, región y enmascarado de PII antes de uso real |
 | CORS / cabeceras | No configurados | Lista blanca de orígenes |
 | `GET /manual/pdf` | Sin control de acceso | Mismo control que el resto |
 
@@ -661,7 +696,7 @@ final, contrastar la documentación con el código y declarar los límites.
 | Alertas de deriva / coste / guardrails | ❌ Solo diseño (§5.2) | Exportador de métricas + alertas |
 | Poisoning | 🟡 Mitigado por diseño y analizado | Escaneo de chunks, autenticación, procedencia firmada |
 | Red-teaming | 🟡 Suite de 30 casos, reproducible | Ampliar con generación adversarial y multi-turno |
-| Modelo de decisiones (Jev) en router, guarda y juez | 🟡 Integrado y opcional; sin verificar contra el servicio ni medido | Smoke test, A/B del router, calibrar umbrales y juez (§2.1.1) |
+| Modelo de decisiones (Jev) en router, guard y juez | 🟡 Router/guard validados y predeterminados; juez opcional sin calibrar | Validación humana del juez y holdout independiente del umbral (§2.1.1) |
 | Autenticación, límites, PII | ❌ | §7.3 |
 | Despliegue | 🟡 Local y contenedores | CI, estado persistente, réplicas (§4.3) |
 | Multiagente | No aplica por diseño | — |
