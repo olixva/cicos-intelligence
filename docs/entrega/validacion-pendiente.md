@@ -112,6 +112,10 @@ contra el servicio real. El contrato se tomó del OpenAPI del SDK oficial
 (`POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer`,
 `{model, state, questions}` → `{model, answers, usage}`).
 
+**Estado de esta ejecución:** no hay `TYPESAFE_API_KEY` configurada ni backend
+local activo. No se ha enviado ninguna llamada ni se han generado resultados
+A/B. El router predeterminado se mantiene en `openai`.
+
 **Red.** Desde un equipo con proxy corporativo, `api.typesafe.ai` queda bloqueado
 (Zscaler devuelve 403). Ejecutar desde la VM propia, no desde la red de Allianz.
 
@@ -135,11 +139,13 @@ export TYPESAFE_API_KEY=...      # clave de https://console.typesafe.ai (acceso 
      --output ../data/evaluation/results/router-openai --label router-openai
    # repetir con ALLIANZ_ROUTER_BACKEND=jev -> router-jev
    ```
-   Comparar `router_match` y la matriz de confusión, y la latencia por caso
-   (`per-case/*.json`). Barrer `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` (0,4 / 0,6 / 0,8)
-   con la corrida de Jev. **Si Jev iguala o supera a OpenAI, eliminar el router de
-   OpenAI sin dejar rastro** (adaptador, prompt `auto-router`, variables, tests y
-   documentación). Si no, dejar Jev como opción documentada o retirarlo.
+   Mismo commit, golden, índice, prompts y concurrencia en ambos procesos.
+   Comparar exactitud sobre todos los casos, matriz por clase, errores técnicos,
+   latencia y uso/coste disponible; los errores cuentan como fallos y permanecen
+   en `n_total`. Barrer `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` (0,4 / 0,6 / 0,8)
+   en directorios nuevos. Sólo promover Jev si iguala o supera la exactitud de
+   OpenAI; mantener OpenAI como referencia seleccionable y no añadir fallback
+   silencioso.
 3. **Guardarraíl, con la suite de red-teaming.** Ejecutar el paso 4 con
    `ALLIANZ_INPUT_GUARD=off` y con `jev`; comparar tasa de éxito del atacante y
    sobre-rechazo de los controles. Ajustar `ALLIANZ_JEV_GUARD_INJECTION` y

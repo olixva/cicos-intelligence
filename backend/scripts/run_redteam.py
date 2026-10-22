@@ -89,6 +89,21 @@ def main() -> int:
         parser.error(f"{args.output} ya existe; usa otra carpeta de salida")
 
     cases = load_cases(CASES_PATH.read_text(encoding="utf-8").splitlines())
+    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "openai").strip().lower()
+    router_model = (
+        os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
+        if router_backend == "jev"
+        else os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna")
+    )
+    router_configuration = {
+        "backend": router_backend,
+        "model": router_model,
+        "min_confidence": (
+            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.6"))
+            if router_backend == "jev"
+            else None
+        ),
+    }
     started = datetime.now(UTC)
     results = asyncio.run(_run_all(cases, args.concurrency, args.base_url))
     metrics = summarize([(case, verdict) for case, verdict, _ in results])
@@ -111,10 +126,11 @@ def main() -> int:
         "base_url": args.base_url,
         "cases": len(cases),
         "models": {
-            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "<unset>"),
-            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "<unset>"),
-            "router": os.environ.get("ALLIANZ_ROUTER_MODEL", "<unset>"),
+            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
+            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
+            "router": router_model,
         },
+        "router": router_configuration,
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")

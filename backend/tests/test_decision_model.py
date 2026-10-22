@@ -187,6 +187,40 @@ def test_choice_outside_the_offered_options_is_rejected() -> None:
         asyncio.run(_model(handler).decide("x", {"q": _CHOICE}))
 
 
+def test_response_requires_every_asked_question() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_ok({"urgent": {"type": "noul", "noul": 0.9}}))
+
+    with pytest.raises(ModelOutputError, match="omitted an answer"):
+        asyncio.run(_model(handler).decide("x", {"urgent": _NOUL, "team": _CHOICE}))
+
+
+def test_choice_probability_out_of_range_is_rejected() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        answer = {
+            "type": "choice",
+            "choice": "billing",
+            "confidence": 0.9,
+            "probabilities": {"billing": 1.2, "technical": -0.2},
+        }
+        return httpx.Response(200, json=_ok({"q": answer}))
+
+    with pytest.raises(ModelOutputError, match="out-of-range"):
+        asyncio.run(_model(handler).decide("x", {"q": _CHOICE}))
+
+
+def test_provider_error_body_is_not_exposed() -> None:
+    sensitive_body = "account=claimant@example.test; provider diagnostic"
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(502, text=sensitive_body)
+
+    with pytest.raises(LanguageModelError) as error:
+        asyncio.run(_model(handler, max_retries=0).decide("x", {"q": _NOUL}))
+    assert "502" in str(error.value)
+    assert sensitive_body not in str(error.value)
+
+
 class _FakeDecisionModel:
     def __init__(self, answers: Mapping[str, Answer] | Exception) -> None:
         self._answers = answers

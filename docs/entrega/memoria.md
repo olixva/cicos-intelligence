@@ -87,17 +87,17 @@ comportamiento sin configurar es idéntico al anterior):
 
 | Uso | Dónde | Estado |
 |---|---|---|
-| Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | alternativa al clasificador de OpenAI | Implementado y probado con dobles; **no medido** |
+| Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | candidato al clasificador de OpenAI | Implementado y probado con dobles; **sin humo real ni A/B** |
 | Guardarraíl semántico de entrada (`ALLIANZ_INPUT_GUARD=jev`) | tras el filtro por regex; falla abierto | Implementado y probado con dobles; **no medido** |
 | Juez de evaluación (`run_baseline.py --judge jev`) | *context precision* y *groundedness* | Implementado; **sin calibrar contra humanos** |
 
-**Por qué no sustituye al router de OpenAI.** Sería la sustitución más natural,
-pero no hay ninguna medición que la respalde: el modelo está en acceso
-anticipado, es cerrado, sin paper ni pesos, y sus cifras de rendimiento son del
-proveedor. La decisión de reemplazar se toma con datos: el golden ya trae la
-intención esperada de cada caso y el runner calcula la matriz de confusión del
-router, de modo que basta ejecutar `mode=auto` con cada backend y comparar. Si
-Jev iguala o supera al router actual, se elimina el otro sin dejar rastro.
+**Estado del router.** OpenAI (`gpt-6-luna`) se conserva como default y como
+referencia hasta completar el A/B real. El golden ya trae la intención esperada
+de cada caso y el runner calcula la matriz de confusión; se compararán ambos
+backends con el mismo commit y conjunto completo. Jev sólo pasará a ser default
+si su exactitud iguala o supera OpenAI, con los errores técnicos contados como
+fallos. OpenAI permanecerá seleccionable como referencia y no habrá fallback
+silencioso.
 
 **Riesgos que se asumen y se documentan.** El contrato de la API se tomó del
 OpenAPI del SDK oficial pero **no se ha ejecutado contra el servicio real**;
@@ -105,12 +105,9 @@ TypeSafe no publica su política de retención de datos (no deben enviársele
 relatos reales con datos personales hasta confirmarla); y el cliente propio
 (`httpx`) sustituye al SDK para no depender de un proveedor en acceso anticipado.
 
-**Qué no se hizo:** no se comparó empíricamente un modelo contra otro en el golden
-set; la asignación por etapa es un criterio de ingeniería razonado, no un
-resultado medido. *Cómo se haría:* ejecutar el golden set con cada combinación
-(`run_baseline.py` ya lo permite cambiando las variables de entorno) y comparar
-exactitud de decisión y validez de citas frente a coste por consulta; el mismo
-procedimiento sirve para decidir si un modelo más barato basta para la respuesta.
+**Qué no se hizo:** no se ha ejecutado todavía el A/B de router ni se han medido
+los costes reales de GPT-6. La validación queda pendiente de credenciales y
+servicios; no se afirma que Jev ya sea más barato o igual de preciso.
 
 ### 2.2 Embeddings y dimensiones
 

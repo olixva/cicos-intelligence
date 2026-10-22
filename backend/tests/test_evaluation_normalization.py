@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 
 def _evaluatable_turn_type():
     spec = importlib.util.find_spec("application.models.evaluation")
@@ -131,3 +133,48 @@ def test_case_json_is_atomically_replaced(tmp_path: Path) -> None:
     assert set(saved) == {"question", "claim"}
     assert saved["question"]["evaluation"]["score"] == 1.0
     assert list(case_dir.iterdir()) == [case_dir / "case-1.json"]
+
+
+def test_run_identity_records_router_provider_model_and_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _baseline_module()
+    monkeypatch.delenv("OPENAI_ANSWER_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_CLAIM_EXTRACTION_MODEL", raising=False)
+    monkeypatch.delenv("ALLIANZ_ROUTER_MODEL", raising=False)
+    monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "jev")
+    monkeypatch.setenv("TYPESAFE_DEFAULT_MODEL", "jev-test-model")
+    monkeypatch.setenv("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.75")
+
+    identity = runner._run_identity(
+        label="router-jev",
+        cases=[],
+        modes=("auto",),
+        concurrency=1,
+        base_url="http://test",
+        judge="none",
+    )
+
+    assert identity["router"] == {
+        "backend": "jev",
+        "model": "jev-test-model",
+        "min_confidence": 0.75,
+    }
+    assert identity["models"]["answer"] == "gpt-6.1-sol"
+    assert identity["models"]["extraction"] == "gpt-6.1-sol"
+    assert identity["models"]["router"] == "jev-test-model"
+
+    monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "openai")
+    openai_identity = runner._run_identity(
+        label="router-openai",
+        cases=[],
+        modes=("auto",),
+        concurrency=1,
+        base_url="http://test",
+        judge="none",
+    )
+    assert openai_identity["router"] == {
+        "backend": "openai",
+        "model": "gpt-6-luna",
+        "min_confidence": None,
+    }

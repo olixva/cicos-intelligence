@@ -104,7 +104,9 @@ traduce igual que los del LLM.
 dobles de transporte. Los umbrales por defecto no están calibrados, el modelo
 está en acceso anticipado, y TypeSafe no publica su política de retención de
 datos: no enviarle relatos reales con datos personales hasta confirmarla. Los
-pasos de validación están en `docs/entrega/validacion-pendiente.md`.
+pasos de validación están en `docs/entrega/validacion-pendiente.md`. El router
+OpenAI sigue como default hasta que Jev supere su A/B; si se promueve Jev, se
+conservará OpenAI como referencia explícita y no habrá fallback silencioso.
 
 ## Puesta en marcha desde cero
 

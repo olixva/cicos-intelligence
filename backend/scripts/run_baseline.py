@@ -238,6 +238,21 @@ def _run_identity(
     base_url: str,
     judge: str,
 ) -> dict[str, Any]:
+    router_backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "openai").strip().lower()
+    router_model = (
+        os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
+        if router_backend == "jev"
+        else os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna")
+    )
+    router_configuration = {
+        "backend": router_backend,
+        "model": router_model,
+        "min_confidence": (
+            float(os.environ.get("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.6"))
+            if router_backend == "jev"
+            else None
+        ),
+    }
     return {
         "label": label,
         "commit": _git_commit(),
@@ -247,10 +262,11 @@ def _run_identity(
         "concurrency": concurrency,
         "base_url": base_url,
         "judge": judge,
+        "router": router_configuration,
         "models": {
-            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "<unset>"),
-            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "<unset>"),
-            "router": os.environ.get("ALLIANZ_ROUTER_MODEL", "<unset>"),
+            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
+            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
+            "router": router_model,
         },
     }
 
@@ -911,6 +927,7 @@ def main(argv: list[str] | None = None) -> int:
             "status": "complete" if not remaining else "partial",
             "pending_case_modes": len(remaining),
             "models": identity["models"],
+            "router": identity["router"],
             "commit": identity["commit"],
             "golden_path": str(GOLDEN_PATH),
             "golden_sha256": identity["golden_sha256"],

@@ -74,6 +74,9 @@ comparación de seguridad Sol/Luna descrita en
 La llamada real y la comparación Sol/Luna siguen pendientes: no hay una clave
 de API ni un backend local disponible en esta ejecución. No se han creado
 artefactos de comparación ni se afirma que la cuenta tenga acceso a esos IDs.
+El router sigue usando OpenAI (`gpt-6-luna`) por defecto. Jev no se promoverá
+hasta validar el cliente real y completar un A/B que incluya todos los casos y
+cuente los errores técnicos como fallos.
 
 ## Métricas
 
