@@ -2,17 +2,17 @@
 
 Lista de lo que hay que ejecutar con credenciales y servicios reales, y de dónde
 va cada resultado en la [memoria](memoria.md). Las pruebas locales se ejecutan
-en cada cambio; las comprobaciones contra proveedores y servicios reales siguen
-pendientes.
+en cada cambio; los humos sintéticos completados y las puertas aún pendientes
+se detallan por separado.
 
 ## 0. Modelos seleccionados y acceso real
 
-Los defaults propuestos son `gpt-6.1-sol` para respuesta y extracción y
+Los defaults versionados son `gpt-6.1-sol` para respuesta y extracción y
 `gpt-6-luna` para el router OpenAI. Estos IDs figuran en el
-[catálogo oficial](https://developers.openai.com/api/docs/models), pero la
-cuenta del proyecto todavía debe probarlos con la Responses API y salida
-estructurada. La extracción se mantiene en Sol hasta cerrar la comparación del
-paso 4.
+[catálogo oficial](https://developers.openai.com/api/docs/models). Para la
+campaña actual, los overrides locales del `.env` ponen **todas las llamadas de
+prueba a OpenAI en `gpt-6-luna`**, según la decisión del usuario; no se llama a
+Sol.
 
 Con la clave sólo en el entorno:
 
@@ -40,16 +40,19 @@ embeddings (`text-embedding-3-small`, 1536 dimensiones) va en
 `backend/configs/*.yaml`; cambiarlo cambia la firma del índice y obliga a
 reindexar.
 
-**Estado de esta ejecución:** el smoke de Responses API y la comparación
-Sol/Luna no se han podido ejecutar porque no hay clave configurada ni un backend
-local disponible. No hay manifiestos ni resultados A/B; el default de extracción
-se mantiene en `gpt-6.1-sol`. Repetir esta puerta cuando estén listos la clave,
-Qdrant, Langfuse, el índice y el backend.
+**Estado de esta ejecución:** los adaptadores de respuesta, extracción de
+hechos y router completaron llamadas sintéticas con salida estructurada usando
+`gpt-6-luna`. No se llamó a `gpt-6.1-sol` ni se ejecutó el golden completo. La
+exportación de trazas a Langfuse no conectó con `127.0.0.1:3000`, aunque las tres
+respuestas de OpenAI fueron satisfactorias. Sigue pendiente la comparación
+Sol/Luna, que no se ejecutará mientras la campaña esté limitada a Luna, además
+de Qdrant, Langfuse, el índice y el backend local. El default versionado de
+respuesta/extracción permanece en `gpt-6.1-sol`.
 
 ## 1. Entorno
 
 ```bash
-cp .env.example .env     # rellenar OPENAI_API_KEY, LANGFUSE_* y los modelos del paso 0
+test -f .env || cp .env.example .env  # no sobrescribir credenciales/configuración existente
 make local-services-up   # Qdrant + Langfuse (crear proyecto y claves en :3000)
 make index-baseline      # indexa el perfil baseline
 make serve-backend       # API en :8000 (aprovisiona los prompts en Langfuse)
@@ -93,9 +96,25 @@ del repositorio o decidir qué se adjunta a la entrega.
 
 ## 4. Campaña de red-teaming → memoria §7.1
 
+El runner registra en `manifest.json` el proveedor/modelo del router y el
+backend y umbrales configurados para el guardarraíl; usa carpetas de salida
+nuevas para que cada comparación sea reproducible. En esta ejecución no hay
+backend local ni clave Jev, así que no se han generado resultados live.
+
 ```bash
+# Terminal 1, desde la raíz: levantar el backend con el guard deseado.
+ALLIANZ_INPUT_GUARD=off make serve-backend
+# Terminal 2, también desde la raíz: el runner debe heredar la misma configuración.
 cd backend
-uv run --no-sync python scripts/run_redteam.py --output ../data/evaluation/results/redteam-$(date +%F)
+ALLIANZ_INPUT_GUARD=off uv run --no-sync python scripts/run_redteam.py \
+  --output ../data/evaluation/results/redteam-off-$(date +%F)
+# Detener y reiniciar Terminal 1 con ALLIANZ_INPUT_GUARD=jev; después repetir:
+ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 \
+  ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95 make serve-backend
+# En Terminal 2, registrar el mismo backend y los mismos umbrales en el manifiesto:
+ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 \
+  ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95 uv run --no-sync python scripts/run_redteam.py \
+  --output ../data/evaluation/results/redteam-jev-$(date +%F)
 ```
 
 Sale con código 1 si algún ataque tiene éxito. Registrar en la memoria la tasa de
@@ -104,6 +123,9 @@ Sale con código 1 si algún ataque tiene éxito. Registrar en la memoria la tas
 criterios son de cadena y de estado, y un «pass» no prueba que la respuesta sea
 buena. Si un ataque tiene éxito: o se corrige la defensa y se repite, o se
 documenta como hallazgo abierto; no se edita el caso para que pase.
+Comparar el mismo commit y la misma suite completa: Jev sólo se promueve si no
+hay ataques exitosos y `over_refusal_rate` no supera el valor de `off`. Mantener
+`ALLIANZ_INPUT_GUARD=off` como default mientras esta puerta esté pendiente.
 
 ## 5. Jev, el modelo de decisiones → memoria §2.1.1
 
@@ -149,8 +171,9 @@ export TYPESAFE_API_KEY=...      # clave de https://console.typesafe.ai (acceso 
 3. **Guardarraíl, con la suite de red-teaming.** Ejecutar el paso 4 con
    `ALLIANZ_INPUT_GUARD=off` y con `jev`; comparar tasa de éxito del atacante y
    sobre-rechazo de los controles. Ajustar `ALLIANZ_JEV_GUARD_INJECTION` y
-   `ALLIANZ_JEV_GUARD_OFF_TOPIC`. Con el guarda activo, un ataque bloqueado
-   responde `kind=clarification` con `metadata.guardrail_source=decision_model`.
+   `ALLIANZ_JEV_GUARD_OFF_TOPIC`. Guardar los manifiestos con cada umbral. Con el
+   guard activo, un ataque bloqueado responde `kind=clarification` con
+   `metadata.guardrail_source=decision_model`.
 4. **Juez, con calibración.** `run_baseline.py --modes question --judge jev`.
    Etiquetar a mano ~30 pares (pregunta, página) y ~30 (bloque, páginas citadas)
    y medir el acuerdo con las probabilidades de Jev. **No citar las cifras en la

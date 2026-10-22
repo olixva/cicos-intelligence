@@ -88,7 +88,7 @@ comportamiento sin configurar es idéntico al anterior):
 | Uso | Dónde | Estado |
 |---|---|---|
 | Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | candidato al clasificador de OpenAI | Implementado y probado con dobles; **sin humo real ni A/B** |
-| Guardarraíl semántico de entrada (`ALLIANZ_INPUT_GUARD=jev`) | tras el filtro por regex; falla abierto | Implementado y probado con dobles; **no medido** |
+| Guardarraíl semántico de entrada (`ALLIANZ_INPUT_GUARD=jev`) | tras el filtro por regex; falla abierto | Implementado y probado con dobles; **sin red-team real; sigue apagado** |
 | Juez de evaluación (`run_baseline.py --judge jev`) | *context precision* y *groundedness* | Implementado; **sin calibrar contra humanos** |
 
 **Estado del router.** OpenAI (`gpt-6-luna`) se conserva como default y como
@@ -98,6 +98,12 @@ backends con el mismo commit y conjunto completo. Jev sólo pasará a ser defaul
 si su exactitud iguala o supera OpenAI, con los errores técnicos contados como
 fallos. OpenAI permanecerá seleccionable como referencia y no habrá fallback
 silencioso.
+
+**Estado del guardarraíl.** `ALLIANZ_INPUT_GUARD=off` sigue siendo el default.
+Sólo se activará por defecto si la suite completa registra cero ataques exitosos
+y su sobre-rechazo no supera la corrida `off`, con el mismo commit y los mismos
+casos. La caída del proveedor sigue siendo fail-open; el filtro regex siempre se
+ejecuta antes y no llama a Jev cuando ya bloquea la entrada.
 
 **Riesgos que se asumen y se documentan.** El contrato de la API se tomó del
 OpenAPI del SDK oficial pero **no se ha ejecutado contra el servicio real**;

@@ -19,6 +19,7 @@ import asyncio
 import json
 import os
 import sys
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -104,6 +105,12 @@ def main() -> int:
             else None
         ),
     }
+    guard_backend = os.environ.get("ALLIANZ_INPUT_GUARD", "off").strip().lower()
+    guard_configuration = {
+        "backend": guard_backend,
+        "injection_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_INJECTION", "0.9")),
+        "off_topic_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")),
+    }
     started = datetime.now(UTC)
     results = asyncio.run(_run_all(cases, args.concurrency, args.base_url))
     metrics = summarize([(case, verdict) for case, verdict, _ in results])
@@ -111,7 +118,7 @@ def main() -> int:
     (args.output / "per-case").mkdir(parents=True)
     for case, verdict, raw in results:
         record = {
-            "case": case.__dict__ | {"text": case.text[:300]},
+            "case": asdict(case) | {"text": case.text[:300]},
             "verdict": verdict.verdict,
             "outcome": verdict.outcome,
             "reasons": list(verdict.reasons),
@@ -131,6 +138,7 @@ def main() -> int:
             "router": router_model,
         },
         "router": router_configuration,
+        "input_guard": guard_configuration,
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")

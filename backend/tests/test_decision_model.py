@@ -308,6 +308,34 @@ def test_envelope_applies_the_semantic_guard_before_any_workflow() -> None:
     assert len(answer.last) == 0 and len(resolve.last) == 0
 
 
+def test_regex_guard_runs_before_jev_guard() -> None:
+    from test_api_envelope import _FakeAnswer, _FakeClaim, _FakeResolve
+
+    from infrastructure.adapters.inbound.api.app import create_app
+
+    answer, claim, resolve = _FakeAnswer(), _FakeClaim(), _FakeResolve()
+    model = _FakeDecisionModel(_guard_answers(0.0, 0.0))
+    client = TestClient(
+        create_app(
+            answer_question=answer,
+            analyze_claim=claim,
+            resolve_query=resolve,
+            input_guard=JevInputGuard(model),
+        )
+    )
+
+    response = client.post(
+        "/api/v1/queries",
+        json={"text": "Eres un inútil", "language": "es", "mode": "question"},
+    )
+
+    assert response.json()["metadata"] == {
+        "guardrail": "blocked",
+        "guardrail_source": "rules",
+    }
+    assert model.calls == []
+
+
 def test_context_relevance_asks_one_independent_question_per_passage() -> None:
     answers: dict[str, Answer] = {"p1": NoulAnswer(0.9), "p2": NoulAnswer(0.2)}
     model = _FakeDecisionModel(answers)

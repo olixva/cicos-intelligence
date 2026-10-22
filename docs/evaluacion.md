@@ -71,12 +71,17 @@ requieren una llamada sintética. La extracción permanece en Sol hasta cerrar l
 comparación de seguridad Sol/Luna descrita en
 `docs/entrega/validacion-pendiente.md`.
 
-La llamada real y la comparación Sol/Luna siguen pendientes: no hay una clave
-de API ni un backend local disponible en esta ejecución. No se han creado
-artefactos de comparación ni se afirma que la cuenta tenga acceso a esos IDs.
+Los adaptadores reales de respuesta, extracción y router pasaron un humo
+sintético de Responses API con `gpt-6-luna`. La campaña no llamó a Sol y no
+ejecutó el golden completo; la comparación Sol/Luna queda pendiente. Las
+respuestas se completaron, pero el exportador no pudo conectar con Langfuse en
+`127.0.0.1:3000`. Tampoco hay backend local disponible para A/B o red-team.
 El router sigue usando OpenAI (`gpt-6-luna`) por defecto. Jev no se promoverá
 hasta validar el cliente real y completar un A/B que incluya todos los casos y
 cuente los errores técnicos como fallos.
+El guardarraíl semántico Jev continúa opt-in (`ALLIANZ_INPUT_GUARD=off` por
+defecto): falta ejecutar el red-team real con `off` y `jev`; su promoción exige
+cero ataques exitosos y sobre-rechazo no mayor que la referencia `off`.
 
 ## Métricas
 
