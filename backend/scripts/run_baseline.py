@@ -75,7 +75,7 @@ from infrastructure.adapters.outbound.evaluation.domain_evaluators import (  # n
 
 # --- Configuración -------------------------------------------------------------
 
-GOLDEN_PATH = Path("/Users/aoc/proyectos/prueba-allianz/data/evaluation/golden/development.jsonl")
+GOLDEN_PATH = Path(__file__).resolve().parents[2] / "data/evaluation/golden/development.jsonl"
 DEFAULT_BASE_URL = os.environ.get("ALLIANZ_BASELINE_URL", "http://127.0.0.1:8000")
 QUERY_PATH = "/api/v1/queries"
 HEALTH_PATH = "/health/ready"

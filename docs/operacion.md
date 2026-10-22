@@ -151,6 +151,10 @@ Ambas partes tienen imagen propia como alternativa al entorno local:
 ```bash
 docker build -t allianz-backend -f backend/Dockerfile .
 docker build -t allianz-frontend -f frontend/Dockerfile .
-docker run --rm -p 8000:8000 --env-file ops/local.env allianz-backend
+docker run --rm -p 8000:8000 --env-file .env \
+  -e QDRANT_URL=http://host.docker.internal:6333 \
+  -e ALLIANZ_QDRANT_URL=http://host.docker.internal:6333 \
+  -e LANGFUSE_BASE_URL=http://host.docker.internal:3000 \
+  -v "$PWD/data:/app/backend/data" allianz-backend
 docker run --rm -p 5173:5173 allianz-frontend
 ```

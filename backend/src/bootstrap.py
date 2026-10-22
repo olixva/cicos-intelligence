@@ -170,7 +170,7 @@ def build_answer_question(profile_name: str) -> AnswerQuestion:
             retriever=retriever,
             evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
             language_model=OpenAILanguageModel(
-                model=os.environ.get("OPENAI_ANSWER_MODEL", "gpt-5.4"), prompt=prompt
+                model=os.environ.get("OPENAI_ANSWER_MODEL", "gpt-5.6-sol"), prompt=prompt
             ),
             trace_id_factory=langfuse.create_trace_id,
             callback_factory=callback_factory,
@@ -482,7 +482,7 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
         langfuse.get_prompt(prompt_name, version=prompt_version, type="text"),
     ).prompt
     classifier = OpenAIRoutingLanguageModel(
-        model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.4"),
+        model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.6-luna"),
         prompt=RoutingPrompt(name=prompt_name, version=prompt_version, content=prompt_text),
     )
     answer_question = build_answer_question(profile_name)

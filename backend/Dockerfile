@@ -12,8 +12,8 @@ ENV UV_LINK_MODE=copy \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Build tools: scikit-network (a Ragas transitive dep) ships no wheel for
-# Python 3.14 yet and needs a C++ compiler to build from source.
+# Build tools: some transitive dependencies ship no wheel for Python 3.14 yet
+# and need a C++ compiler to build from source.
 # Runtime stage does NOT inherit these; the final image only carries the
 # built wheels inside the venv.
 RUN apt-get update \
@@ -40,6 +40,7 @@ RUN uv sync --frozen --no-install-project --no-dev --group ingestion --extra loc
 # performs the editable install using the cached deps layer above.
 COPY backend/README.md ./
 COPY backend/src ./src
+COPY backend/configs ./configs
 RUN uv sync --frozen --no-dev --group ingestion --extra local-rag
 
 # ---- Stage 2: runtime ----
@@ -70,6 +71,7 @@ RUN groupadd --system --gid 1001 app \
 COPY --from=builder --chown=app:app /app/backend/.venv /app/backend/.venv
 COPY --from=builder --chown=app:app /app/backend/README.md /app/backend/README.md
 COPY --from=builder --chown=app:app /app/backend/src /app/backend/src
+COPY --from=builder --chown=app:app /app/backend/configs /app/backend/configs
 
 USER app
 EXPOSE 8000
@@ -77,4 +79,4 @@ EXPOSE 8000
 # `--no-sync` prevents the container from trying to mutate uv.lock at
 # startup. Configuration is injected at runtime via env vars (or
 # `--env-file ops/local.env`) — never baked into the image.
-CMD ["uv", "run", "--no-sync", "uvicorn", "asgi_local:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "--no-sync", "uvicorn", "asgi_local:app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
