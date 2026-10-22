@@ -49,7 +49,7 @@ async def resolve_query(
 
     # Override heurístico: si la decisión NO es "claim" pero el texto
     # tiene vocabulario claro de relato de siniestro, forzamos "claim".
-    # El router barato (gpt-5.6-luna) puede confundir palabras
+    # El router barato (gpt-6-luna) puede confundir palabras
     # incidentales como "tiempo" o "hora" con preguntas sobre el clima.
     # Sin este cortafuegos, un alcance trasero se queda sin analizar
     # porque el router dice "clarification_required" y el handler

@@ -1,14 +1,20 @@
 # Validación pendiente antes de entregar
 
 Lista de lo que hay que ejecutar con credenciales y servicios reales, y de dónde
-va cada resultado en la [memoria](memoria.md). Nada de esto se ha ejecutado aún:
-las cifras de la memoria marcadas como _[insertar aquí]_ salen de estos pasos.
+va cada resultado en la [memoria](memoria.md). Las pruebas locales se ejecutan
+en cada cambio; las comprobaciones contra proveedores y servicios reales siguen
+pendientes.
 
-## 0. Elegir los modelos (hacer primero)
+## 0. Modelos seleccionados y acceso real
 
-Los identificadores actuales (`gpt-5.6-sol` / `terra` / `luna`) están en el
-repositorio pero **no se han verificado contra la API** y pueden estar
-superados. Con la clave en el entorno:
+Los defaults propuestos son `gpt-6.1-sol` para respuesta y extracción y
+`gpt-6-luna` para el router OpenAI. Estos IDs figuran en el
+[catálogo oficial](https://developers.openai.com/api/docs/models), pero la
+cuenta del proyecto todavía debe probarlos con la Responses API y salida
+estructurada. La extracción se mantiene en Sol hasta cerrar la comparación del
+paso 4.
+
+Con la clave sólo en el entorno:
 
 ```bash
 export OPENAI_API_KEY=...        # sin commitear
@@ -16,23 +22,23 @@ curl -s https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_K
   | python3 -c "import sys,json; print('\n'.join(sorted(m['id'] for m in json.load(sys.stdin)['data'])))"
 ```
 
-Elegir un modelo por etapa con el criterio de la memoria §2.1 (coste del error
-por etapa) y comprobar que soportan la Responses API con salida estructurada.
-Si se cambian los identificadores, actualizar **todos** estos sitios:
+Comprobar acceso y enviar una petición sintética de cada etapa. Si se cambian
+los identificadores, actualizar **todos** estos sitios:
 
 | Fichero | Qué |
 |---|---|
 | `.env.example` | `OPENAI_ANSWER_MODEL`, `OPENAI_CLAIM_EXTRACTION_MODEL`, `ALLIANZ_ROUTER_MODEL` |
-| `backend/src/bootstrap.py` | valores por defecto (3 sitios) |
+| `backend/src/bootstrap.py` | configuración centralizada de los tres defaults |
 | `backend/src/infrastructure/adapters/outbound/query_workflow/langgraph_workflow.py` | valor por defecto del router |
 | `backend/src/application/services/routing.py`, `claim_heuristics.py` | comentarios que citan el router |
 | `docs/operacion.md`, `docs/evaluacion.md` | reparto de modelos y corrida de referencia |
 | `docs/entrega/memoria.md` §2.1 y §3.4 | tabla de modelos y modelo de la corrida |
 
-Comprobar con `grep -rn "gpt-5\.[0-9]" --exclude-dir=node_modules --exclude-dir=.venv .`
-que no queda ninguno antiguo. El modelo de embeddings (`text-embedding-3-small`,
-1536 dimensiones) va en `backend/configs/*.yaml`; cambiarlo cambia la firma del
-índice y obliga a reindexar.
+Buscar referencias antiguas con `rg -n 'gpt-5\.[0-9]'`; las que describen
+corridas históricas deben seguir etiquetadas como históricas. El modelo de
+embeddings (`text-embedding-3-small`, 1536 dimensiones) va en
+`backend/configs/*.yaml`; cambiarlo cambia la firma del índice y obliga a
+reindexar.
 
 ## 1. Entorno
 
@@ -72,8 +78,9 @@ Sustituir la tabla de la memoria §3.4 por `metrics.json` de la nueva corrida y
 actualizar fecha, commit y modelos. **Comparar con la corrida anterior**
 (`convention_accuracy` 0,12; `claim_decision_accuracy` 0,31 antes de corregir el
 ruleset): si siguen bajas, la explicación de la memoria («la causa fue el
-ruleset») no se sostiene y hay que cambiarla. Comprobar que
-`unjustified_resolution_rate` sigue en 0.
+ruleset») no se sostiene y hay que cambiarla. Comprobar
+`over_resolution_rate_against_reference` junto a `n_total`, `n_scored`,
+`n_missing` y `n_error`; no tratar errores como casos resueltos correctamente.
 
 `data/evaluation/results/` está ignorado por git: conservar los resultados fuera
 del repositorio o decidir qué se adjunta a la entrega.

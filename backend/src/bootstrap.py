@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -42,6 +42,17 @@ if TYPE_CHECKING:
     from langfuse.experiment import EvaluatorFunction, ExperimentResult
 
 _SKIPPED_PORT_LOGGER = logging.getLogger(__name__)
+
+
+def model_configuration(environ: Mapping[str, str] | None = None) -> dict[str, str]:
+    """Resolve the active OpenAI model IDs without changing API call contracts."""
+
+    environment = os.environ if environ is None else environ
+    return {
+        "answer": environment.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
+        "extraction": environment.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
+        "router": environment.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna"),
+    }
 
 
 def build_inspect_manual() -> InspectManual:
@@ -173,7 +184,7 @@ def build_answer_question(profile_name: str) -> AnswerQuestion:
             retriever=retriever,
             evidence_repository=FilesystemEvidenceRepository(evidence_root, parser),
             language_model=OpenAILanguageModel(
-                model=os.environ.get("OPENAI_ANSWER_MODEL", "gpt-5.6-sol"), prompt=prompt
+                model=model_configuration()["answer"], prompt=prompt
             ),
             trace_id_factory=langfuse.create_trace_id,
             callback_factory=callback_factory,
@@ -227,7 +238,7 @@ def build_analyze_claim(profile_name: str) -> AnalyzeClaim:
     return AnalyzeClaimUseCase(
         LangGraphClaimWorkflow(
             fact_extractor=OpenAIClaimFactExtractor(
-                model=os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-5.6-terra"),
+                model=model_configuration()["extraction"],
                 fact_names=fact_names(_rules.rules),
             ),
             retriever=QdrantRetriever(
@@ -541,7 +552,7 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
             langfuse.get_prompt(prompt_name, version=prompt_version, type="text"),
         ).prompt
         classifier = OpenAIRoutingLanguageModel(
-            model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.6-luna"),
+            model=model_configuration()["router"],
             prompt=RoutingPrompt(name=prompt_name, version=prompt_version, content=prompt_text),
         )
     answer_question = build_answer_question(profile_name)

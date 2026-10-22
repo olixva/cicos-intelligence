@@ -46,17 +46,18 @@ siniestros con más de dos vehículos, cualquier documento distinto del manual.
 
 | Etapa | Modelo | Razón |
 |---|---|---|
-| Respuesta documental | `gpt-5.6-sol` (el de mayor capacidad) | Es la etapa que se juzga: precisión de la cita y fidelidad al contexto. |
-| Extracción de hechos del siniestro | `gpt-5.6-terra` (equilibrado) | Extracción estructurada y acotada contra un catálogo cerrado de hechos; un error aquí lo contiene el motor de reglas, que se abstiene si faltan hechos. |
-| Router `auto` | `gpt-5.6-luna` (rápido y barato) | Clasificación en un enum cerrado de tres etiquetas, alto volumen. |
+| Respuesta documental | `gpt-6.1-sol` (default propuesto) | Es la etapa que se juzga: precisión de la cita y fidelidad al contexto. |
+| Extracción de hechos del siniestro | `gpt-6.1-sol` (default propuesto) | Se conserva Sol hasta comparar Luna con el golden y revisar métricas de seguridad. |
+| Router `auto` de OpenAI | `gpt-6-luna` (referencia) | Clasificación en un enum cerrado de tres etiquetas; Jev se decide en una puerta independiente. |
 
-El criterio es el *coste del error por etapa*, no «el mejor modelo en todo». Hay
-una diferencia de precio de ~25× entre el mayor y el menor, de modo que usar el
-mayor para clasificar un enum sería pagar capacidad que no se usa. Para tandas de
-evaluación masiva se bajan las tres etapas a `luna`. Los modelos se configuran
-por variables de entorno (`OPENAI_ANSWER_MODEL`, `OPENAI_CLAIM_EXTRACTION_MODEL`,
-`ALLIANZ_ROUTER_MODEL`) y los valores por defecto del código coinciden con los de
-`.env.example`.
+El criterio es el coste del error por etapa. Los IDs aparecen en el
+[catálogo oficial de OpenAI](https://developers.openai.com/api/docs/models), pero
+estos defaults no acreditan que la cuenta tenga acceso ni que la llamada real
+haya pasado. Los modelos se configuran por variables de entorno
+(`OPENAI_ANSWER_MODEL`, `OPENAI_CLAIM_EXTRACTION_MODEL`,
+`ALLIANZ_ROUTER_MODEL`) y el código coincide con `.env.example`. La validación
+de Responses API con salida estructurada queda pendiente de un humo sintético
+con la clave de la cuenta; los resultados reales se registrarán por separado.
 
 Todas las llamadas usan la Responses API con **salida estructurada** (esquema
 cerrado, `extra="forbid"`) y `store=False`: el proveedor no retiene las
@@ -238,9 +239,10 @@ referencias para que el sistema no pueda ver la respuesta esperada).
 El contexto recuperado viaja serializado en cada ejecución (`context` y
 `evidence`) y queda en la traza de Langfuse. Hoy, el evaluador lo ve como un
 conjunto de `evidence_id`: se mide si **las citas del modelo** pertenecen al
-conjunto válido del caso (`evidence_reference_validity`), y la validación
-posterior del flujo descarta además cualquier cita que no estuviera en el
-contexto entregado (§6.2).
+conjunto permitido del caso (`citation_id_validity`) y si las citas cubren un
+paquete AND/OR completo (`evidence_bundle_coverage`). La validación posterior
+del flujo descarta además cualquier cita que no estuviera en el contexto
+entregado (§6.2).
 
 Lo que las métricas deterministas **no** miden es la calidad del *retriever* por
 separado: si trajo las páginas correctas, independientemente de lo que el modelo
@@ -326,13 +328,13 @@ modo estricto sobre el código de producción.
  Usuario ─► Frontend (React 19, SSE) ─► API FastAPI /api/v1/queries
                                               │
                                   ┌───────────┴────────────┐
-                                  │   Router (mode=auto)   │  gpt-5.6-luna, enum cerrado
+                                  │   Router (mode=auto)   │  gpt-6-luna, enum cerrado
                                   └───────┬────────┬───────┘
                           question        │        │        claim
               ┌───────────────────────────┘        └──────────────────────────┐
               ▼                                                               ▼
    retrieve ─► generate ─► validate                    extract_facts ─► retrieve_criteria
-   (Qdrant     (gpt-5.6-sol,     (citas ⊆ contexto,         │              ▼
+   (Qdrant     (gpt-6.1-sol,     (citas ⊆ contexto,         │              ▼
    híbrido)    salida estruct.)   degradar si no)        apply_rules (motor determinista,
                                                           reglas firmadas)  │
                                                           needs_information ◄┘ (interrupt:
@@ -418,7 +420,7 @@ pueden derivar de datos que ya se capturan.
 | Riesgo | Señal | Fuente | Umbral / alerta |
 |---|---|---|---|
 | **Deriva del modelo** | Tasa de `insufficient_evidence`; distribución de `status` y de decisión; tasa de citas recortadas por la validación; validez de citas | Trazas Langfuse (ya contienen estado y citas) | Desviación respecto a la línea base de la última corrida del golden; aviso al salirse de una banda |
-| **Deriva del modelo (cambio de proveedor)** | Corrida del golden programada (semanal) y tras cualquier cambio de modelo | `run_baseline.py` + Langfuse experiments | Caída de `decision_accuracy` o subida de `unjustified_resolution_rate` > 0 bloquea la promoción |
+| **Deriva del modelo (cambio de proveedor)** | Corrida del golden programada (semanal) y tras cualquier cambio de modelo | `run_baseline.py` + Langfuse experiments | Caída de `decision_accuracy` o subida de `over_resolution_rate_against_reference` bloquea la promoción |
 | **Deriva de datos** | Distribución de similitud de las consultas contra el índice; tasa de consultas sin contexto recuperado | Puntuaciones de Qdrant en las trazas | Aumento sostenido de consultas con baja similitud → el manual o el uso han cambiado |
 | **Coste** | Tokens y coste por consulta, por etapa y por día | `usage` de las generaciones en Langfuse (el wrapper ya lo captura) | Presupuesto diario/mensual; alerta a 80 %; corte o degradación a un modelo más barato al superarlo |
 | **Vulneración de guardrails** | Tasa de bloqueos del guardrail de entrada, de citas rechazadas, de intentos con patrones de inyección | Metadatos `guardrail=blocked`, validación de citas | Pico anómalo por sesión/IP → posible sondeo; revisión humana |
@@ -634,7 +636,7 @@ final, contrastar la documentación con el código y declarar los límites.
 
 | Área | Estado | Siguiente paso |
 |---|---|---|
-| Abstención y no-invención | ✅ Implementada y medida (`unjustified_resolution_rate` = 0) | Mantener como umbral de CI |
+| Abstención y no-invención | 🟡 Implementada; medida actual pendiente (el 0 publicado es histórico y no recalculable aquí) | Medir `over_resolution_rate_against_reference` en una corrida completa y fijar el umbral de CI |
 | Decisión determinista de siniestros | ✅ Reglas firmadas | Validación por experto del dominio |
 | Recuperación híbrida | ✅ | Métricas de retrieval y ablaciones |
 | Evaluación del RAG | 🟡 Solo métricas deterministas; cifras previas a una corrección | Re-medir; recall@k; fidelidad con juez calibrado |

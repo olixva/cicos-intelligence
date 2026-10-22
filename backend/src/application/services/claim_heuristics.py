@@ -4,7 +4,7 @@ Módulo compartido por ``routing.resolve_query`` y por
 ``input_guardrails.guardrail_message``. Cuando el usuario envía un
 texto que parece un relato de siniestro (alcance, colisión, semáforo
 y maniobra, etc.) pero incluye palabras incidentales que el guardrail
-o el router barato (gpt-5.6-luna) podrían malinterpretar
+o el router barato (gpt-6-luna) podrían malinterpretar
 (``tiempo`` en "no consigue detenerse a tiempo", ``hora``,
 ``parte`` en "parte amistoso"), el cortafuegos detecta el contexto
 real y deja pasar el texto al flujo de análisis.

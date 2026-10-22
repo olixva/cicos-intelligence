@@ -63,18 +63,21 @@ Está fuera del control de versiones.
 
 ### Reparto de modelos
 
-Los tres niveles de GPT-5.6 son capacidades, no variantes, con un factor ~25×
-de precio entre el mayor y el menor. El reparto por defecto sigue el coste de
-equivocarse en cada etapa:
+Los defaults propuestos siguen el coste de equivocarse en cada etapa y el
+catálogo oficial de [modelos OpenAI](https://developers.openai.com/api/docs/models):
 
-- **Respuesta documental → `gpt-5.6-sol`.** Es la etapa que se juzga: citas
-  estrictas sobre el contexto y abstención cuando no hay evidencia.
-- **Extracción de hechos → `gpt-5.6-terra`.** Extracción estructurada acotada,
-  más fácil que generar la respuesta pero exige precisión.
-- **Router → `gpt-5.6-luna`.** Clasificación en un enum cerrado, alto volumen,
-  tarea trivial.
+- **Respuesta documental → `gpt-6.1-sol`.** Etapa juzgada por citas y abstención.
+- **Extracción de hechos → `gpt-6.1-sol`.** Se conserva Sol como default
+  conservador hasta comparar Luna con el golden.
+- **Router OpenAI → `gpt-6-luna`.** Referencia compacta para la clasificación en
+  enum cerrado; Jev se activa de forma independiente con
+  `ALLIANZ_ROUTER_BACKEND=jev`.
 
-Para una tanda de evaluación masiva se bajan las tres a `gpt-5.6-luna`.
+Los IDs de `.env.example` son defaults de configuración, no una comprobación de
+acceso de la cuenta. La llamada real de Responses API y las salidas
+estructuradas siguen pendientes de humo con la clave de despliegue. La
+extracción sólo se cambiará a `gpt-6-luna` si la comparación no añade
+resoluciones injustificadas ni una regresión material de seguridad.
 
 ### Modelo de decisiones (Jev)
 

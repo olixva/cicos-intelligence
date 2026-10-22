@@ -61,11 +61,21 @@ publicaciones de ingesta. Los items marcados como `technical_fixture` se
 rechazan por defecto en cualquier release real; sólo se admiten con un flag
 explícito para el humo de CI.
 
+### Modelos configurados
+
+Los defaults actuales son `gpt-6.1-sol` para respuesta y extracción, y
+`gpt-6-luna` para el router OpenAI de referencia. Los IDs figuran en el
+[catálogo oficial](https://developers.openai.com/api/docs/models); la
+disponibilidad de esta cuenta y la compatibilidad real de Responses API aún
+requieren una llamada sintética. La extracción permanece en Sol hasta cerrar la
+comparación de seguridad Sol/Luna descrita en
+`docs/entrega/validacion-pendiente.md`.
+
 ## Métricas
 
 Los evaluadores deterministas
-(`infrastructure/adapters/outbound/evaluation/domain_evaluators.py`) no
-necesitan un juez LLM y son reproducibles:
+(`infrastructure/adapters/outbound/evaluation/domain_evaluators.py` y
+`evidence_evaluators.py`) no necesitan un juez LLM y son reproducibles:
 
 | Métrica | Qué mide |
 |---|---|
@@ -118,10 +128,11 @@ Ejecuta el golden contra el backend en marcha, en sus tres modos, y escribe:
 └── per-case/       un JSON por caso, con los tres modos y sus métricas
 ```
 
-Es idempotente por construcción: si la carpeta de salida existe, falla con un
-error claro en lugar de mezclar corridas. Los errores por caso no detienen el
-bucle; se cuentan y se reportan. El runner es local y no publica nada en
-Langfuse, pero cada caso conserva su `trace_id` y su enlace.
+No sobrescribe corridas: si la carpeta de salida contiene datos, falla salvo que
+se use `--resume`. La reanudación exige que coincidan commit, golden, modelos y
+configuración, conserva los modos completos y vuelve a intentar los fallidos.
+Los errores y casos ausentes se cuentan por separado. El runner es local y no
+publica nada en Langfuse, pero cada caso conserva su `trace_id` y su enlace.
 
 ## Resultados medidos
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, cast
@@ -223,7 +224,7 @@ def test_resolve_query_wraps_provider_error_from_claim_flow() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Override heurístico: el router barato (gpt-5.6-luna) puede clasificar
+# Override heurístico: el router barato (gpt-6-luna) puede clasificar
 # un relato de siniestro como 'clarification_required' o 'question' por
 # confundir palabras incidentales (p. ej. "no consigue detenerse a
 # tiempo" → pregunta sobre el tiempo) con la intención real. Si el texto
@@ -710,6 +711,7 @@ def test_routing_metadata_defaults_match_module_state() -> None:
     assert metadata["langfuse_prompt_version"] >= 1
     assert isinstance(metadata["model_name"], str)
     assert metadata["model_name"] != ""
+    assert metadata["model_name"] == os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna")
 
 
 def test_auto_router_attaches_session_and_self_describing_run_metadata() -> None:

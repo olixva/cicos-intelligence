@@ -34,7 +34,7 @@ _CLOSED_DECISIONS: tuple[RouteDecision, ...] = (
 _ROUTING_METADATA: dict[str, str | int] = {
     "langfuse_prompt_name": "auto-router",
     "langfuse_prompt_version": int(os.environ.get("ALLIANZ_ROUTER_PROMPT_VERSION", "1")),
-    "model_name": os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.6-luna"),
+    "model_name": os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna"),
 }
 
 
