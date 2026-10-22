@@ -313,6 +313,17 @@ def test_runner_rejects_backend_configuration_mismatch() -> None:
         runner._assert_backend_configuration(expected, actual)
 
 
+def test_resume_adds_run_time_instead_of_replacing_partial_duration() -> None:
+    runner = _baseline_module()
+    manifest = {"duration_s": 120.0}
+
+    total = runner._record_run_duration(manifest, 8.5)
+
+    assert total == pytest.approx(128.5)
+    assert manifest["duration_segments_s"] == [120.0, 8.5]
+    assert manifest["duration_s"] == pytest.approx(128.5)
+
+
 def test_runner_checks_live_configuration_before_sending_cases() -> None:
     runner = _baseline_module()
     expected = {

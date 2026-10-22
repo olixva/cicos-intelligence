@@ -305,6 +305,21 @@ def _read_resume_state(
     return manifest, _load_case_records(output_dir)
 
 
+def _record_run_duration(manifest: dict[str, Any], duration_s: float) -> float:
+    """Accumulate every execution segment so resumed runs retain wall-clock time."""
+
+    segments = manifest.get("duration_segments_s")
+    if isinstance(segments, list) and all(isinstance(value, (int, float)) for value in segments):
+        durations = [float(value) for value in segments]
+    else:
+        previous = manifest.get("duration_s", 0.0)
+        durations = [float(previous)] if isinstance(previous, (int, float)) and previous > 0 else []
+    durations.append(duration_s)
+    manifest["duration_segments_s"] = durations
+    manifest["duration_s"] = sum(durations)
+    return manifest["duration_s"]
+
+
 # --- HTTP ----------------------------------------------------------------------
 
 
@@ -999,7 +1014,7 @@ def main(argv: list[str] | None = None) -> int:
     remaining = _pending_modes(per_case, case_ids=case_ids, modes=modes)
     manifest.update(
         {
-            "duration_s": duration_s,
+            "duration_s": _record_run_duration(manifest, duration_s),
             "run_identity": identity,
             "status": "complete" if not remaining else "partial",
             "pending_case_modes": len(remaining),
