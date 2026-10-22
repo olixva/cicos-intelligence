@@ -78,6 +78,21 @@ necesitan un juez LLM y son reproducibles:
 | `abstention_metrics` | acierto al abstenerse cuando corresponde |
 | `router_confusion_matrix` | acierto y confusiones del enrutado automático |
 
+## Métricas con juez (opcionales)
+
+`run_baseline.py --judge jev` (requiere `TYPESAFE_API_KEY`) añade, sólo al modo
+`question`, tres medidas que las deterministas no cubren. Cada una es una
+probabilidad de un modelo de decisiones, no una verdad:
+
+| Métrica | Qué mide |
+|---|---|
+| `jev_context_relevance` / `jev_context_precision` | media de la probabilidad de que cada página entregada al modelo sirva para la pregunta, y proporción de páginas con probabilidad ≥ 0,5 |
+| `jev_groundedness` / `jev_groundedness_min` | probabilidad media (y mínima) de que cada bloque de la respuesta esté sostenido por las páginas que cita |
+
+Los pasajes se leen de `GET /api/v1/manual/evidence/{id}`. Un fallo del juez se
+anota en el caso como `jev_judge_error` y no lo invalida. **No citar estas cifras
+sin calibrarlas** contra etiquetas humanas de una muestra y reportar el acuerdo.
+
 ## El runner
 
 ```bash

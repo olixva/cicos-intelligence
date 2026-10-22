@@ -63,6 +63,45 @@ cerrado, `extra="forbid"`) y `store=False`: el proveedor no retiene las
 consultas, y la respuesta del modelo no puede traer campos que el sistema no
 espera.
 
+### 2.1.1 Un modelo de decisiones para las tareas de elegir
+
+Hay tareas del sistema que no necesitan generar texto sino **decidir sobre un
+conjunto cerrado**: a qué flujo enviar un mensaje, si una entrada intenta
+manipular al asistente, si una página sirve para una pregunta, si una afirmación
+está sostenida por su cita. Para ellas se integró **Jev** (TypeSafe, modelo
+«System One»): un modelo discriminativo que recibe un estado y preguntas tipadas
+(`noul`, sí/no con probabilidad; `choice`, una opción de varias; `score`) y
+devuelve probabilidades, no texto.
+
+Por qué encaja: (1) **la salida es un valor de un conjunto cerrado**, así que un
+texto malicioso en el estado sólo puede desplazar una probabilidad, no producir
+contenido; (2) la **confianza es un dato**, lo que permite abstenerse por umbral
+en lugar de por prompt; (3) coste y latencia anunciados muy inferiores a los de un
+LLM (cifras del proveedor, sin verificar).
+
+Se usa en tres sitios, siempre **opcional y apagado por defecto** (el
+comportamiento sin configurar es idéntico al anterior):
+
+| Uso | Dónde | Estado |
+|---|---|---|
+| Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | alternativa al clasificador de OpenAI | Implementado y probado con dobles; **no medido** |
+| Guardarraíl semántico de entrada (`ALLIANZ_INPUT_GUARD=jev`) | tras el filtro por regex; falla abierto | Implementado y probado con dobles; **no medido** |
+| Juez de evaluación (`run_baseline.py --judge jev`) | *context precision* y *groundedness* | Implementado; **sin calibrar contra humanos** |
+
+**Por qué no sustituye al router de OpenAI.** Sería la sustitución más natural,
+pero no hay ninguna medición que la respalde: el modelo está en acceso
+anticipado, es cerrado, sin paper ni pesos, y sus cifras de rendimiento son del
+proveedor. La decisión de reemplazar se toma con datos: el golden ya trae la
+intención esperada de cada caso y el runner calcula la matriz de confusión del
+router, de modo que basta ejecutar `mode=auto` con cada backend y comparar. Si
+Jev iguala o supera al router actual, se elimina el otro sin dejar rastro.
+
+**Riesgos que se asumen y se documentan.** El contrato de la API se tomó del
+OpenAPI del SDK oficial pero **no se ha ejecutado contra el servicio real**;
+TypeSafe no publica su política de retención de datos (no deben enviársele
+relatos reales con datos personales hasta confirmarla); y el cliente propio
+(`httpx`) sustituye al SDK para no depender de un proveedor en acceso anticipado.
+
 **Qué no se hizo:** no se comparó empíricamente un modelo contra otro en el golden
 set; la asignación por etapa es un criterio de ingeniería razonado, no un
 resultado medido. *Cómo se haría:* ejecutar el golden set con cada combinación
@@ -201,8 +240,11 @@ conjunto válido del caso (`evidence_reference_validity`), y la validación
 posterior del flujo descarta además cualquier cita que no estuviera en el
 contexto entregado (§6.2).
 
-Lo que **no** se mide hoy es la calidad del *retriever* por separado: si trajo
-las páginas correctas, independientemente de lo que el modelo hiciera con ellas.
+Lo que las métricas deterministas **no** miden es la calidad del *retriever* por
+separado: si trajo las páginas correctas, independientemente de lo que el modelo
+hiciera con ellas. El juez opcional de §2.1.1 aproxima esa medida (*context
+precision*) a partir del texto de cada página entregada; las métricas
+*recall@k*/MRR de §3.5 siguen siendo la forma objetiva de medirla.
 
 ### 3.4 Resultados y lectura honesta
 
@@ -249,10 +291,12 @@ Lo que falta y cómo se añadiría, de mayor a menor valor:
    paquetes `all_of`/`any_of`, así que basta comparar las páginas recuperadas
    con el paquete esperado. Separa «el retriever falló» de «el modelo falló» y
    resuelve la ambigüedad de `evidence_validity`.
-2. **Fidelidad (*faithfulness*) y relevancia de la respuesta** con un juez LLM
-   (p. ej. Ragas) calibrado contra una muestra etiquetada por humanos. El juez
-   debe ser un modelo distinto del evaluado y su acuerdo con las etiquetas
-   humanas debe medirse antes de confiar en él.
+2. **Fidelidad (*faithfulness*) y relevancia del contexto** con un juez calibrado
+   contra una muestra etiquetada por humanos. **Ya está implementado** como
+   `run_baseline.py --judge jev` (§2.1.1): da *context precision* y *groundedness*
+   por caso. Falta ejecutarlo y, sobre todo, **medir su acuerdo con etiquetas
+   humanas** (p. ej. 30 pares) antes de citar las cifras. El juez debe ser un
+   modelo distinto del evaluado, y lo es.
 3. **Ablaciones**: denso vs léxico vs híbrido; `baseline` vs `structured`;
    1200/200 frente a otras ventanas; `-small` frente a otros embeddings.
 4. **Validación por un experto del dominio** de, al menos, una muestra del
@@ -405,9 +449,15 @@ Un filtro determinista de alcance (insultos y consultas meteorológicas) con una
 excepción para relatos de siniestro, que evita bloquear «no consigue detenerse a
 tiempo». **Es un filtro de alcance, no de seguridad:** cubre solo español y se
 elude con vocabulario de siniestro. La defensa frente a la inyección no descansa
-aquí sino en el diseño (§6.2). *Mejora:* un clasificador de entrada (modelo
-pequeño o servicio de moderación) y un límite de longitud del texto, que hoy no
-existe en el esquema de entrada.
+aquí sino en el diseño (§6.2). *Mejora:* un límite de longitud del texto, que hoy no existe en el esquema de
+entrada, y un clasificador semántico. Este último **está implementado como
+opción** (`ALLIANZ_INPUT_GUARD=jev`, §2.1.1): dos preguntas `noul` (intento de
+manipular al asistente; consulta ajena al dominio) con umbrales altos por
+defecto, que **falla abierto** si el servicio no responde porque las defensas de
+§6.2 siguen activas. Su efecto se mide con la propia suite de red-teaming:
+ejecutarla con y sin guarda y comparar la tasa de éxito del atacante y el
+sobre-rechazo de los controles benignos. Sin esa medición, los umbrales son una
+hipótesis.
 
 ### 6.2 Salida: defensa en profundidad sin depender del modelo
 
@@ -586,6 +636,7 @@ final, contrastar la documentación con el código y declarar los límites.
 | Alertas de deriva / coste / guardrails | ❌ Solo diseño (§5.2) | Exportador de métricas + alertas |
 | Poisoning | 🟡 Mitigado por diseño y analizado | Escaneo de chunks, autenticación, procedencia firmada |
 | Red-teaming | 🟡 Suite de 30 casos, reproducible | Ampliar con generación adversarial y multi-turno |
+| Modelo de decisiones (Jev) en router, guarda y juez | 🟡 Integrado y opcional; sin verificar contra el servicio ni medido | Smoke test, A/B del router, calibrar umbrales y juez (§2.1.1) |
 | Autenticación, límites, PII | ❌ | §7.3 |
 | Despliegue | 🟡 Local y contenedores | CI, estado persistente, réplicas (§4.3) |
 | Multiagente | No aplica por diseño | — |

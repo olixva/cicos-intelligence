@@ -11,6 +11,7 @@ from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.resolve_query import ResolveQuery
 from application.ports.outbound.evidence_repository import EvidenceRepository
+from application.ports.outbound.input_guard import InputGuard
 from application.services.ingestion_jobs import IngestionJobService
 from infrastructure.adapters.inbound.api.routes.admin_ingestion import (
     IngestionRunner,
@@ -47,6 +48,7 @@ def create_app(
     analyze_claim: AnalyzeClaim | None = None,
     resolve_query: ResolveQuery | None = None,
     allowed_profiles: tuple[str, ...] = (),
+    input_guard: InputGuard | None = None,
     admin_ingestion_service: IngestionJobService | None = None,
     admin_ingestion_runner: IngestionRunner | None = None,
     admin_ingestion_repository: EvidenceRepository | None = None,
@@ -119,6 +121,7 @@ def create_app(
                 analyze_claim=analyze_claim,
                 resolve_query=resolve_query,
                 allowed_profiles=allowed_profiles,
+                input_guard=input_guard,
             )
         )
         stream_router = build_envelope_stream_router(
@@ -126,6 +129,7 @@ def create_app(
             analyze_claim=analyze_claim,
             resolve_query=resolve_query,
             allowed_profiles=allowed_profiles,
+            input_guard=input_guard,
         )
         if stream_router is not None:
             app.include_router(stream_router)

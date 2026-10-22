@@ -92,14 +92,60 @@ criterios son de cadena y de estado, y un «pass» no prueba que la respuesta se
 buena. Si un ataque tiene éxito: o se corrige la defensa y se repite, o se
 documenta como hallazgo abierto; no se edita el caso para que pase.
 
-## 5. Trazabilidad (comprobación manual) → memoria §5.1
+## 5. Jev, el modelo de decisiones → memoria §2.1.1
+
+Jev está integrado como **opción apagada por defecto** y nunca se ha ejecutado
+contra el servicio real. El contrato se tomó del OpenAPI del SDK oficial
+(`POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer`,
+`{model, state, questions}` → `{model, answers, usage}`).
+
+**Red.** Desde un equipo con proxy corporativo, `api.typesafe.ai` queda bloqueado
+(Zscaler devuelve 403). Ejecutar desde la VM propia, no desde la red de Allianz.
+
+**Datos.** TypeSafe no publica (que yo haya podido leer) su política de retención.
+Antes de enviarle nada, confirmarla; con el golden y las suites sintéticas no hay
+datos personales, pero con relatos reales sí.
+
+```bash
+export TYPESAFE_API_KEY=...      # clave de https://console.typesafe.ai (acceso anticipado)
+```
+
+1. **Humo del cliente.** Un `decide` real con una pregunta `noul` y otra `choice`;
+   comprobar que la respuesta cumple el contrato (si no, el único fichero a
+   ajustar es `decision_model/jev_client.py`) y fijar el modelo concreto en
+   `TYPESAFE_DEFAULT_MODEL` si se prefiere una versión a `jev-latest`.
+2. **Router, A/B con el golden.** Levantar el backend dos veces y ejecutar el
+   modo automático con cada uno:
+   ```bash
+   ALLIANZ_ROUTER_BACKEND=openai make serve-backend   # y en otra terminal:
+   cd backend && uv run --no-sync python scripts/run_baseline.py --modes auto \
+     --output ../data/evaluation/results/router-openai --label router-openai
+   # repetir con ALLIANZ_ROUTER_BACKEND=jev -> router-jev
+   ```
+   Comparar `router_match` y la matriz de confusión, y la latencia por caso
+   (`per-case/*.json`). Barrer `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` (0,4 / 0,6 / 0,8)
+   con la corrida de Jev. **Si Jev iguala o supera a OpenAI, eliminar el router de
+   OpenAI sin dejar rastro** (adaptador, prompt `auto-router`, variables, tests y
+   documentación). Si no, dejar Jev como opción documentada o retirarlo.
+3. **Guardarraíl, con la suite de red-teaming.** Ejecutar el paso 4 con
+   `ALLIANZ_INPUT_GUARD=off` y con `jev`; comparar tasa de éxito del atacante y
+   sobre-rechazo de los controles. Ajustar `ALLIANZ_JEV_GUARD_INJECTION` y
+   `ALLIANZ_JEV_GUARD_OFF_TOPIC`. Con el guarda activo, un ataque bloqueado
+   responde `kind=clarification` con `metadata.guardrail_source=decision_model`.
+4. **Juez, con calibración.** `run_baseline.py --modes question --judge jev`.
+   Etiquetar a mano ~30 pares (pregunta, página) y ~30 (bloque, páginas citadas)
+   y medir el acuerdo con las probabilidades de Jev. **No citar las cifras en la
+   memoria sin ese acuerdo.**
+5. Anotar en la memoria §2.1.1 los resultados y quitar la etiqueta «sin medir».
+
+## 6. Trazabilidad (comprobación manual) → memoria §5.1
 
 - Lanzar una consulta y abrir el `langfuse_url` de la respuesta: debe verse la
   traza con spans por nodo y la generación con tokens y coste.
 - Si el coste no aparece, configurar los precios del modelo elegido en Langfuse
   (Settings → Models); la propuesta de alertas de coste (§5.2) depende de ello.
 
-## 6. Contenedores (comprobación manual) → `docs/operacion.md`
+## 7. Contenedores (comprobación manual) → `docs/operacion.md`
 
 ```bash
 docker build -t allianz-backend -f backend/Dockerfile .
@@ -113,7 +159,7 @@ curl -s localhost:8000/health/ready
 El Dockerfile se corrigió leyendo el código (`--factory`, `configs/`), sin
 construir la imagen. Si no arranca, es el primer sitio donde mirar.
 
-## 7. Antes de entregar
+## 8. Antes de entregar
 
 - [ ] Sin marcadores `_[insertar aquí]_` ni `_[pendiente…]_` en `memoria.md`
       (`grep -n "insertar\|pendiente" docs/entrega/memoria.md`).

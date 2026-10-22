@@ -14,6 +14,9 @@ from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.ingest_document import IngestDocument
 from application.ports.inbound.inspect_manual import InspectManual
 from application.ports.inbound.resolve_query import ResolveQuery
+from application.ports.outbound.decision_model import DecisionModel
+from application.ports.outbound.input_guard import InputGuard
+from application.ports.outbound.query_classifier import QueryClassifier
 from application.services.ingestion_jobs import IngestionJobService
 from application.services.ingestion_runner import IngestionRunner
 from application.use_cases.analyze_claim_use_case import AnalyzeClaimUseCase
@@ -269,6 +272,48 @@ def _resolve_published_parser(root: Path, document_hash: str, parser: str) -> st
     return matches[0]
 
 
+def _router_backend() -> str:
+    backend = os.environ.get("ALLIANZ_ROUTER_BACKEND", "openai").strip().lower()
+    if backend not in ("openai", "jev"):
+        raise ValueError("ALLIANZ_ROUTER_BACKEND must be 'openai' or 'jev'")
+    return backend
+
+
+def _unit_environment_float(name: str, default: float) -> float:
+    try:
+        value = float(os.environ.get(name, str(default)))
+    except ValueError as error:
+        raise ValueError(f"{name} must be a number between 0 and 1") from error
+    if not 0 <= value <= 1:
+        raise ValueError(f"{name} must be a number between 0 and 1")
+    return value
+
+
+def build_decision_model() -> DecisionModel:
+    """Typed-decision client (Jev). Credentials are read lazily from ``TYPESAFE_API_KEY``."""
+
+    from infrastructure.adapters.outbound.decision_model.jev_client import JevDecisionModel
+
+    return JevDecisionModel()
+
+
+def build_input_guard() -> InputGuard | None:
+    """Semantic input guard, enabled only with ``ALLIANZ_INPUT_GUARD=jev``."""
+
+    mode = os.environ.get("ALLIANZ_INPUT_GUARD", "off").strip().lower()
+    if mode == "off":
+        return None
+    if mode != "jev":
+        raise ValueError("ALLIANZ_INPUT_GUARD must be 'off' or 'jev'")
+    from infrastructure.adapters.outbound.decision_model.jev_input_guard import JevInputGuard
+
+    return JevInputGuard(
+        build_decision_model(),
+        injection_threshold=_unit_environment_float("ALLIANZ_JEV_GUARD_INJECTION", 0.9),
+        off_topic_threshold=_unit_environment_float("ALLIANZ_JEV_GUARD_OFF_TOPIC", 0.95),
+    )
+
+
 def _positive_environment_integer(name: str, default: int) -> int:
     import os
 
@@ -374,6 +419,7 @@ def build_api(
         analyze_claim=analyze_claim,
         resolve_query=resolve_query,
         allowed_profiles=_known_profiles(),
+        input_guard=build_input_guard(),
         required_index_ready=required_index_ready,
         admin_ingestion_service=ingestion_service,
         admin_ingestion_runner=ingestion_runner.run,
@@ -446,7 +492,9 @@ def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
 def build_resolve_query(profile_name: str) -> ResolveQuery:
     """Compose the closed-enum auto router against the same active index as questions and claims.
 
-    The classifier is backed by its own ``OpenAIRoutingLanguageModel``
+    With ``ALLIANZ_ROUTER_BACKEND=jev`` the classifier is a typed-decision model
+    (``JevQueryClassifier``) and no router prompt is loaded. By default it is
+    backed by its own ``OpenAIRoutingLanguageModel``
     instance loaded with the dedicated ``auto-router`` prompt version
     (configurable via ``ALLIANZ_ROUTER_PROMPT_VERSION``); it uses a
     separate structured output schema (``RouteDecisionSchema``) so the
@@ -475,16 +523,27 @@ def build_resolve_query(profile_name: str) -> ResolveQuery:
 
     _require_local_langfuse_environment()
     langfuse = Langfuse()
-    prompt_name = os.environ.get("ALLIANZ_ROUTER_PROMPT_NAME", "auto-router")
-    prompt_version = _positive_environment_integer("ALLIANZ_ROUTER_PROMPT_VERSION", 1)
-    prompt_text = cast(
-        LangfuseTextPrompt,
-        langfuse.get_prompt(prompt_name, version=prompt_version, type="text"),
-    ).prompt
-    classifier = OpenAIRoutingLanguageModel(
-        model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.6-luna"),
-        prompt=RoutingPrompt(name=prompt_name, version=prompt_version, content=prompt_text),
-    )
+    classifier: QueryClassifier
+    if _router_backend() == "jev":
+        from infrastructure.adapters.outbound.decision_model.jev_query_classifier import (
+            JevQueryClassifier,
+        )
+
+        classifier = JevQueryClassifier(
+            build_decision_model(),
+            min_confidence=_unit_environment_float("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", 0.6),
+        )
+    else:
+        prompt_name = os.environ.get("ALLIANZ_ROUTER_PROMPT_NAME", "auto-router")
+        prompt_version = _positive_environment_integer("ALLIANZ_ROUTER_PROMPT_VERSION", 1)
+        prompt_text = cast(
+            LangfuseTextPrompt,
+            langfuse.get_prompt(prompt_name, version=prompt_version, type="text"),
+        ).prompt
+        classifier = OpenAIRoutingLanguageModel(
+            model=os.environ.get("ALLIANZ_ROUTER_MODEL", "gpt-5.6-luna"),
+            prompt=RoutingPrompt(name=prompt_name, version=prompt_version, content=prompt_text),
+        )
     answer_question = build_answer_question(profile_name)
     analyze_claim = build_analyze_claim(profile_name)
 

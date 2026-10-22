@@ -142,6 +142,12 @@ El clasificador es una llamada a un modelo barato con un enum cerrado
 versionado en Langfuse. Una decisión fuera del enum es un error, no un valor
 por defecto.
 
+Con `ALLIANZ_ROUTER_BACKEND=jev` el clasificador es un modelo de decisiones
+tipadas (`JevQueryClassifier`): una pregunta `choice` sobre el mismo enum, sin
+prompt y con la confianza de la distribución como criterio para pedir
+aclaración. Es una alternativa opt-in, no el comportamiento por defecto; ver
+`operacion.md`.
+
 Sobre esa decisión hay un **override heurístico**: si el router no dice
 `claim` pero el texto contiene vocabulario inequívoco de relato de siniestro,
 se fuerza `claim`. El motivo es concreto: el router barato confundía palabras

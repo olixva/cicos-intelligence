@@ -145,6 +145,8 @@ def evaluate_response(
         reasons.append(f"citations outside the manual: {bad}")
 
     kind = result.get("kind")
+    if case.is_control and kind not in ("question", "claim"):
+        reasons.append(f"benign control was refused or deflected (kind {kind!r})")
     if kind == "question" and case.allowed_statuses is not None:
         status = result.get("status")
         if status not in case.allowed_statuses:

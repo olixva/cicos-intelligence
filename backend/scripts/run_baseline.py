@@ -15,6 +15,9 @@ Uso::
         --limit 5 --modes question,claim,auto \\
         --output /tmp/baseline-smoke
 
+Con ``--judge jev`` (requiere ``TYPESAFE_API_KEY``) añade a ``question`` las
+métricas ``jev_context_*`` y ``jev_groundedness*``; ver ``docs/evaluacion.md``.
+
 Resultados::
 
     <output>/
@@ -52,6 +55,7 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -65,6 +69,12 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+from application.ports.outbound.decision_model import DecisionModel  # noqa: E402
+from application.ports.outbound.language_model import LanguageModelError  # noqa: E402
+from infrastructure.adapters.outbound.decision_model.jev_client import (  # noqa: E402
+    JevDecisionModel,
+)
+from infrastructure.adapters.outbound.evaluation import jev_judges  # noqa: E402
 from infrastructure.adapters.outbound.evaluation.domain_evaluators import (  # noqa: E402
     abstention_metrics,
     decision_accuracy,
@@ -242,6 +252,54 @@ def _evaluate_auto(*, response: dict[str, Any], case: dict[str, Any]) -> dict[st
     }
 
 
+# --- Juez Jev (opcional, --judge jev) -----------------------------------------
+
+_PAGE_TEXT_CACHE: dict[str, str] = {}
+
+
+async def _page_text(client: httpx.AsyncClient, evidence_id: str) -> str:
+    if evidence_id not in _PAGE_TEXT_CACHE:
+        response = await client.get(f"/api/v1/manual/evidence/{quote(evidence_id, safe='')}")
+        response.raise_for_status()
+        _PAGE_TEXT_CACHE[evidence_id] = str(response.json().get("text", ""))
+    return _PAGE_TEXT_CACHE[evidence_id]
+
+
+async def _jev_judgements(
+    client: httpx.AsyncClient,
+    judge: DecisionModel,
+    *,
+    question: str,
+    response: dict[str, Any],
+) -> dict[str, float]:
+    """Context precision y groundedness de una respuesta documental; vacío si no aplica."""
+    result = response.get("result") or {}
+    delivered = [str(e["evidence_id"]) for e in response.get("evidence", []) if "evidence_id" in e]
+    metrics: dict[str, float] = {}
+    if delivered:
+        texts = [await _page_text(client, evidence_id) for evidence_id in delivered]
+        relevance = await jev_judges.context_relevance(judge, question=question, passages=texts)
+        metrics["jev_context_relevance"] = sum(relevance) / len(relevance)
+        precision = jev_judges.precision_at_threshold(relevance)
+        if precision is not None:
+            metrics["jev_context_precision"] = precision
+    supported: list[float] = []
+    for block in result.get("blocks", []) or []:
+        ids = [str(i) for i in block.get("evidence_ids", []) or []]
+        if not ids:
+            continue
+        passages = {f"p{n}": await _page_text(client, i) for n, i in enumerate(ids, start=1)}
+        supported.append(
+            await jev_judges.groundedness(
+                judge, claim=str(block.get("text", "")), passages=passages
+            )
+        )
+    if supported:
+        metrics["jev_groundedness"] = sum(supported) / len(supported)
+        metrics["jev_groundedness_min"] = min(supported)
+    return metrics
+
+
 # --- Orquestación --------------------------------------------------------------
 
 
@@ -251,6 +309,7 @@ async def _run_one(
     *,
     case: dict[str, Any],
     mode: str,
+    judge: DecisionModel | None = None,
 ) -> tuple[str, str, dict[str, Any], float]:
     case_id = (case.get("metadata") or {}).get("case_id") or "unknown"
     start = time.monotonic()
@@ -265,6 +324,19 @@ async def _run_one(
             )
         if mode == "question":
             evaluation = _evaluate_question(response=response, case=case)
+            if judge is not None and "error" not in evaluation:
+                try:
+                    evaluation.update(
+                        await _jev_judgements(
+                            client,
+                            judge,
+                            question=(case.get("input") or {}).get("text", ""),
+                            response=response,
+                        )
+                    )
+                except (LanguageModelError, httpx.HTTPError) as judge_error:
+                    # Un fallo del juez no invalida el caso: se anota y se sigue.
+                    evaluation["jev_judge_error"] = repr(judge_error)
         elif mode == "claim":
             evaluation = _evaluate_claim(response=response, case=case)
         else:
@@ -293,12 +365,13 @@ async def _run_all(
     modes: tuple[str, ...],
     concurrency: int,
     base_url: str,
+    judge: DecisionModel | None = None,
 ) -> list[tuple[str, str, dict[str, Any], float]]:
     semaphore = asyncio.Semaphore(concurrency)
     async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
         await _wait_for_ready(client)
         tasks = [
-            asyncio.create_task(_run_one(client, semaphore, case=case, mode=mode))
+            asyncio.create_task(_run_one(client, semaphore, case=case, mode=mode, judge=judge))
             for case in cases
             for mode in modes
         ]
@@ -461,6 +534,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--label", default="baseline", help="Etiqueta corta de la corrida.")
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    parser.add_argument(
+        "--judge",
+        choices=("none", "jev"),
+        default="none",
+        help="'jev' añade context precision y groundedness (requiere TYPESAFE_API_KEY).",
+    )
     return parser.parse_args(argv)
 
 
@@ -491,6 +570,7 @@ def main(argv: list[str] | None = None) -> int:
             modes=modes,
             concurrency=args.concurrency,
             base_url=args.base_url,
+            judge=JevDecisionModel() if args.judge == "jev" else None,
         )
     )
     duration_s = time.monotonic() - wall_start

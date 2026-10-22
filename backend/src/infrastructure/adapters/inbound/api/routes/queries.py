@@ -35,6 +35,7 @@ from application.models.query import (
 from application.ports.inbound.analyze_claim import AnalyzeClaim
 from application.ports.inbound.answer_question import AnswerQuestion
 from application.ports.inbound.resolve_query import ResolveQuery
+from application.ports.outbound.input_guard import InputGuard
 from application.services.input_guardrails import guardrail_message
 from domain.models.claim import ClaimInput
 from infrastructure.adapters.inbound.api.schemas.envelope import (
@@ -101,6 +102,7 @@ async def _execute_envelope(
     answer_question: AnswerQuestion,
     analyze_claim: AnalyzeClaim,
     resolve_query: ResolveQuery,
+    input_guard: InputGuard | None = None,
     request_id: str | None = None,
 ) -> EnvelopeResponse:
     """Dispatch by mode and project into the envelope response.
@@ -117,6 +119,10 @@ async def _execute_envelope(
     rid = request_id or str(uuid.uuid4())
 
     refusal = guardrail_message(request.text)
+    guard_source = "rules"
+    if refusal is None and input_guard is not None:
+        refusal = await input_guard.check(request.text)
+        guard_source = "decision_model"
     if refusal is not None:
         # Guardrail responses are terminal and deliberately carry no evidence.
         # They apply even when a caller selected an explicit mode: unsafe or
@@ -128,7 +134,7 @@ async def _execute_envelope(
             requested_mode=request.mode,
             resolved_mode="clarification",
             result=ClarificationResultBody(kind="clarification", message=refusal),
-            metadata={"guardrail": "blocked"},
+            metadata={"guardrail": "blocked", "guardrail_source": guard_source},
         )
 
     if request.mode == "question":
@@ -206,6 +212,7 @@ def build_envelope_router(
     analyze_claim: AnalyzeClaim,
     resolve_query: ResolveQuery,
     allowed_profiles: tuple[str, ...] = (),
+    input_guard: InputGuard | None = None,
 ) -> APIRouter:
     """Build the envelope router binding the three ports explicitly.
 
@@ -237,6 +244,7 @@ def build_envelope_router(
             answer_question=answer_question,
             analyze_claim=analyze_claim,
             resolve_query=resolve_query,
+            input_guard=input_guard,
         )
 
     router.add_api_route(
@@ -255,6 +263,7 @@ async def _streaming_event_loop(
     answer_question: AnswerQuestion,
     analyze_claim: AnalyzeClaim,
     resolve_query: ResolveQuery,
+    input_guard: InputGuard | None = None,
 ) -> AsyncIterator[dict[str, str]]:
     """Yield the bounded SSE events for the envelope.
 
@@ -298,6 +307,7 @@ async def _streaming_event_loop(
             answer_question=answer_question,
             analyze_claim=analyze_claim,
             resolve_query=resolve_query,
+            input_guard=input_guard,
             request_id=request_id,
         )
         if request.mode == "auto" and response.resolved_mode in ("question", "claim"):
@@ -379,6 +389,7 @@ def build_envelope_stream_router(
     analyze_claim: AnalyzeClaim,
     resolve_query: ResolveQuery,
     allowed_profiles: tuple[str, ...] = (),
+    input_guard: InputGuard | None = None,
 ) -> APIRouter | None:
     """Build the streaming router; returns ``None`` if ``sse-starlette`` is missing.
 
@@ -413,6 +424,7 @@ def build_envelope_stream_router(
                 answer_question=answer_question,
                 analyze_claim=analyze_claim,
                 resolve_query=resolve_query,
+                input_guard=input_guard,
             )
         )
 

@@ -57,6 +57,9 @@ Está fuera del control de versiones.
 | `ALLIANZ_EXTRACTIONS_ROOT` / `ALLIANZ_EVIDENCE_PARSER` | publicación de evidencia que sirve el API |
 | `ALLIANZ_RULES_ROOT` | artefactos de reglas firmados |
 | `ALLIANZ_DOCLING_ARTIFACTS` | bundle local de modelos de Docling (opcional) |
+| `TYPESAFE_API_KEY` | acceso a Jev; sólo si se usa alguno de los usos de abajo |
+| `ALLIANZ_ROUTER_BACKEND` | `openai` (por defecto) o `jev` para el modo automático |
+| `ALLIANZ_INPUT_GUARD` | `off` (por defecto) o `jev` para el guardarraíl semántico |
 
 ### Reparto de modelos
 
@@ -72,6 +75,33 @@ equivocarse en cada etapa:
   tarea trivial.
 
 Para una tanda de evaluación masiva se bajan las tres a `gpt-5.6-luna`.
+
+### Modelo de decisiones (Jev)
+
+[Jev](https://typesafe.ai) es un modelo discriminativo de TypeSafe: no genera
+texto, responde preguntas tipadas sobre un estado (probabilidad de sí, elección
+entre opciones cerradas). Encaja donde el trabajo es decidir sobre un conjunto
+cerrado, y se ha integrado en tres sitios, **todos opcionales y desactivados por
+defecto**:
+
+| Uso | Activación | Qué hace |
+|---|---|---|
+| Router del modo `auto` | `ALLIANZ_ROUTER_BACKEND=jev` | Una pregunta `choice` entre `question`, `claim` y `clarification_required`; por debajo de `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` pide aclaración. No carga el prompt `auto-router`. |
+| Guardarraíl de entrada | `ALLIANZ_INPUT_GUARD=jev` | Dos preguntas `noul` (intento de manipular al asistente; consulta ajena al dominio) que bloquean por encima de umbral, tras el filtro por expresiones regulares. **Falla abierto**: si Jev no responde, la petición sigue y se deja un aviso en el log. |
+| Juez de evaluación | `run_baseline.py --judge jev` | Añade *context precision* y *groundedness* al runner (ver `evaluacion.md`). |
+
+El cliente (`infrastructure/adapters/outbound/decision_model/jev_client.py`) usa
+`httpx` contra `POST /v1/systemone` con el contrato del OpenAPI del SDK oficial,
+y reutiliza `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL` y `TYPESAFE_DEFAULT_MODEL`.
+Reintenta 408/429/5xx con espera acotada y respeta `Retry-After`; los errores
+técnicos usan la jerarquía de `LanguageModelError`, de modo que la API los
+traduce igual que los del LLM.
+
+**Estado: sin verificar contra el servicio real.** Se escribió y probó con
+dobles de transporte. Los umbrales por defecto no están calibrados, el modelo
+está en acceso anticipado, y TypeSafe no publica su política de retención de
+datos: no enviarle relatos reales con datos personales hasta confirmarla. Los
+pasos de validación están en `docs/entrega/validacion-pendiente.md`.
 
 ## Puesta en marcha desde cero
 
