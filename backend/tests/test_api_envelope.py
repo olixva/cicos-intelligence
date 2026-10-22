@@ -750,6 +750,29 @@ def _envelope_request(*, mode: str, profile: str | None = None) -> Any:
     return request
 
 
+def test_auto_envelope_includes_router_provider_and_usage() -> None:
+    classification = RouteClassification(
+        decision="clarification_required",
+        provider="typesafe",
+        model="jev-production",
+        input_tokens=22,
+        output_tokens=4,
+    )
+    execution = RouteExecution(
+        query=QueryInput("hola"),
+        classification=classification,
+        dispatch=ClarificationResult(message="Necesito más información."),
+        trace_id="trace-router",
+    )
+
+    response = EnvelopeResponse.from_route_execution(request_id="request-1", execution=execution)
+
+    assert response.metadata["router_provider"] == "typesafe"
+    assert response.metadata["router_model"] == "jev-production"
+    assert response.metadata["router_input_tokens"] == "22"
+    assert response.metadata["router_output_tokens"] == "4"
+
+
 async def _consume(generator: Any) -> list[dict[str, Any]]:
     """Drain the streaming event generator into a list of dicts."""
 

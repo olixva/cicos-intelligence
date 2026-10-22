@@ -65,17 +65,24 @@ explícito para el humo de CI.
 
 Los defaults actuales son `gpt-6.1-sol` para respuesta y extracción, y
 `gpt-6-luna` para el router OpenAI de referencia. Los IDs figuran en el
-[catálogo oficial](https://developers.openai.com/api/docs/models); la
-disponibilidad de esta cuenta y la compatibilidad real de Responses API aún
-requieren una llamada sintética. La extracción permanece en Sol hasta cerrar la
-comparación de seguridad Sol/Luna descrita en
+[catálogo oficial](https://developers.openai.com/api/docs/models). Esta cuenta
+pasó humo sintético de Responses API con Luna en las tres etapas; Sol no se
+probó. La extracción permanece en Sol hasta cerrar la comparación de seguridad
+Sol/Luna descrita en
 `docs/entrega/validacion-pendiente.md`.
+
+En `auto`, el envelope y los registros por caso conservan proveedor/modelo del
+router y sus tokens de entrada/salida cuando el proveedor los devuelve. Así se
+puede comparar el uso observado del router Jev y OpenAI sin estimar tokens
+ausentes ni inferir un coste monetario sin una tarifa configurada.
 
 Los adaptadores reales de respuesta, extracción y router pasaron un humo
 sintético de Responses API con `gpt-6-luna`. La campaña no llamó a Sol y no
 ejecutó el golden completo; la comparación Sol/Luna queda pendiente. Las
 respuestas se completaron, pero el exportador no pudo conectar con Langfuse en
-`127.0.0.1:3000`. Tampoco hay backend local disponible para A/B o red-team.
+`127.0.0.1:3000`. Más tarde Qdrant y Langfuse se levantaron temporalmente para
+E2E y se verificó el índice existente; no se ejecutaron corridas golden ni
+red-team. Los servicios están detenidos ahora.
 El router sigue usando OpenAI (`gpt-6-luna`) por defecto. Jev no se promoverá
 hasta validar el cliente real y completar un A/B que incluya todos los casos y
 cuente los errores técnicos como fallos.
@@ -101,6 +108,7 @@ Los evaluadores deterministas
 | `resolution_support_rate` | proporción de resoluciones con actor, regla `matched` y evidencia estructurados; queda como missing si el actor no está expuesto por el envelope |
 | `abstention_metrics` | acierto al abstenerse cuando corresponde |
 | `router_confusion_matrix` | acierto y confusiones del enrutado automático |
+| `router_accuracy_all_labeled` | exactitud sobre todos los casos auto con etiqueta; errores y rutas ausentes cuentan como incorrectos. La matriz de confusión sigue mostrando sólo rutas observadas. |
 
 Cada métrica numérica se guarda con `n_total`, `n_applicable`, `n_scored`,
 `n_missing`, `n_error` y `n_not_applicable`. Debe cumplirse
@@ -119,17 +127,23 @@ probabilidad de un modelo de decisiones, no una verdad:
 | `jev_groundedness` / `jev_groundedness_min` | probabilidad media (y mínima) de que cada bloque de la respuesta esté sostenido por las páginas que cita |
 
 Los pasajes se leen de `GET /api/v1/manual/evidence/{id}`. Un fallo del juez se
-anota en el caso como `jev_judge_error` y no lo invalida. **No citar estas cifras
-sin calibrarlas** contra etiquetas humanas de una muestra y reportar el acuerdo.
+anota como `jev_judge_error` y cuenta en `n_error` para esas métricas, sin
+invalidar las métricas deterministas del caso. **No citar estas cifras sin
+calibrarlas** contra etiquetas humanas de una muestra y reportar el acuerdo.
 
 ## El runner
 
 ```bash
-cd backend && uv run --no-sync python scripts/run_baseline.py \
-    --output ../data/evaluation/results/<fecha>-<etiqueta> \
-    --label <etiqueta> --concurrency 4
+make run-baseline ARGS="--output data/evaluation/results/<fecha>-<etiqueta> \
+    --label <etiqueta> --concurrency 4"
 ```
 
+Arranca el runner con los mismos `.env` y `ops/local.env` que `make serve-backend`.
+Para un A/B o una campaña con parámetros distintos, pasa las mismas asignaciones
+en `LOCAL_ENV` tanto al backend como al runner, por ejemplo
+`make run-baseline LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=jev" ARGS="..."`. El
+manifiesto registra esa fuente de configuración junto a modelos y umbrales del
+router y del guardarraíl.
 Ejecuta el golden contra el backend en marcha, en sus tres modos, y escribe:
 
 ```

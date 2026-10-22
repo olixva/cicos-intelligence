@@ -73,6 +73,20 @@ def _langfuse_trace_url(trace_id: str) -> str | None:
     return f"{base}/project/{project_id}/traces/{trace_id}"
 
 
+def _router_usage_metadata(execution: RouteExecution) -> dict[str, str]:
+    classification = execution.classification
+    metadata: dict[str, str] = {}
+    for key, value in (
+        ("router_provider", classification.provider),
+        ("router_model", classification.model),
+        ("router_input_tokens", classification.input_tokens),
+        ("router_output_tokens", classification.output_tokens),
+    ):
+        if value is not None:
+            metadata[key] = str(value)
+    return metadata
+
+
 def _claim_result(analysis: ClaimAnalysis, execution: ClaimExecution) -> ClaimResult:
     """Project a claim analysis into the wire result.
 
@@ -331,6 +345,7 @@ class EnvelopeResponse(_ResponseModel):
                 "trace_id": trace_id,
                 "langfuse_url": _langfuse_trace_url(trace_id),
                 "decision": execution.classification.decision,
+                **_router_usage_metadata(execution),
             },
         )
 
@@ -372,6 +387,7 @@ class EnvelopeResponse(_ResponseModel):
                 metadata={
                     "trace_id": trace_id,
                     "langfuse_url": _langfuse_trace_url(trace_id),
+                    **_router_usage_metadata(execution),
                 },
             )
         if isinstance(dispatch, ClaimExecution):
@@ -385,6 +401,7 @@ class EnvelopeResponse(_ResponseModel):
                 metadata={
                     "trace_id": trace_id,
                     "langfuse_url": _langfuse_trace_url(trace_id),
+                    **_router_usage_metadata(execution),
                 },
             )
         return cls(
@@ -401,5 +418,6 @@ class EnvelopeResponse(_ResponseModel):
                 "trace_id": trace_id,
                 "langfuse_url": _langfuse_trace_url(trace_id),
                 "decision": execution.classification.decision,
+                **_router_usage_metadata(execution),
             },
         )

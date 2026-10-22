@@ -79,6 +79,30 @@ def test_auto_guardrail_is_not_counted_as_router_decision() -> None:
     assert evaluation["router_match"] is None
 
 
+def test_auto_evaluation_records_router_provider_and_token_usage() -> None:
+    runner = _baseline_module()
+    response = {
+        "requested_mode": "auto",
+        "resolved_mode": "claim",
+        "result": {"kind": "claim", "decision": "conditional"},
+        "metadata": {
+            "router_provider": "typesafe",
+            "router_model": "jev-production",
+            "router_input_tokens": 22,
+            "router_output_tokens": 4,
+        },
+    }
+
+    evaluation = runner._evaluate_auto(
+        response=response, case={"metadata": {"expected_intent": "claim"}}
+    )
+
+    assert evaluation["router_provider"] == "typesafe"
+    assert evaluation["router_model"] == "jev-production"
+    assert evaluation["router_input_tokens"] == 22
+    assert evaluation["router_output_tokens"] == 4
+
+
 def test_unknown_metric_does_not_abort_aggregation() -> None:
     runner = _baseline_module()
     per_case = {
@@ -145,6 +169,10 @@ def test_run_identity_records_router_provider_model_and_threshold(
     monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "jev")
     monkeypatch.setenv("TYPESAFE_DEFAULT_MODEL", "jev-test-model")
     monkeypatch.setenv("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.75")
+    monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "jev")
+    monkeypatch.setenv("ALLIANZ_JEV_GUARD_INJECTION", "0.81")
+    monkeypatch.setenv("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.93")
+    monkeypatch.setenv("ALLIANZ_EVALUATION_CONFIG_SOURCE", "makefile:.env+ops/local.env+LOCAL_ENV")
 
     identity = runner._run_identity(
         label="router-jev",
@@ -163,6 +191,12 @@ def test_run_identity_records_router_provider_model_and_threshold(
     assert identity["models"]["answer"] == "gpt-6.1-sol"
     assert identity["models"]["extraction"] == "gpt-6.1-sol"
     assert identity["models"]["router"] == "jev-test-model"
+    assert identity["configuration_source"] == "makefile:.env+ops/local.env+LOCAL_ENV"
+    assert identity["input_guard"] == {
+        "backend": "jev",
+        "injection_threshold": 0.81,
+        "off_topic_threshold": 0.93,
+    }
 
     monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "openai")
     openai_identity = runner._run_identity(
@@ -178,3 +212,69 @@ def test_run_identity_records_router_provider_model_and_threshold(
         "model": "gpt-6-luna",
         "min_confidence": None,
     }
+
+
+def test_router_promotion_accuracy_counts_missing_routes_and_errors_as_incorrect() -> None:
+    runner = _baseline_module()
+    cases = {
+        "correct": {"metadata": {"expected_intent": "claim"}},
+        "error": {"metadata": {"expected_intent": "question"}},
+        "missing": {"metadata": {"expected_intent": "question"}},
+        "unlabeled": {"metadata": {}},
+    }
+    per_case = {
+        "correct": {
+            "auto": {
+                "evaluation": {
+                    "expected_intent": "claim",
+                    "route_decision": "claim",
+                    "router_match": 1.0,
+                }
+            }
+        },
+        "error": {"auto": {"error": "TimeoutError"}},
+        "missing": {
+            "auto": {
+                "evaluation": {
+                    "expected_intent": "question",
+                    "route_decision": None,
+                    "router_match": None,
+                }
+            }
+        },
+    }
+
+    metrics = runner._aggregate(per_case, cases, modes=("auto",))
+
+    assert metrics["cross_mode"]["router_accuracy_all_labeled"] == {
+        "n_labeled": 3,
+        "n_predicted": 1,
+        "n_missing_or_error": 2,
+        "n_correct": 1,
+        "n_incorrect": 2,
+        "accuracy": pytest.approx(1 / 3),
+    }
+
+
+def test_jev_judge_failures_are_counted_without_invalidating_deterministic_case() -> None:
+    runner = _baseline_module()
+    metrics = runner._aggregate(
+        {
+            "question-1": {
+                "question": {
+                    "evaluation": {
+                        "answer_status_accuracy": 1.0,
+                        "jev_judge_error": "LanguageModelError",
+                    }
+                }
+            }
+        },
+        {"question-1": {"expected_output": {"status": "answered"}}},
+        modes=("question",),
+    )
+
+    question = metrics["question"]
+    assert question["errors"] == 0
+    assert question["metrics"]["answer_status_accuracy"]["mean"] == 1.0
+    assert question["metrics"]["jev_context_precision"]["n_error"] == 1
+    assert question["metrics"]["jev_groundedness"]["n_error"] == 1

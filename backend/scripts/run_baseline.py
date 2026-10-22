@@ -4,16 +4,13 @@ backend en sus tres modos y aplica los evaluadores deterministas del paquete
 
 Uso::
 
-    # Asume backend levantado en 127.0.0.1:8000 y extractiones cargadas.
-    cd backend && uv run --no-sync python scripts/run_baseline.py \\
-        --output ../data/evaluation/results/2026-09-03-baseline-deterministas \\
-        --label baseline-deterministas \\
-        --concurrency 4
+    # Desde la raíz; carga la misma configuración local que make serve-backend.
+    make run-baseline ARGS="--output data/evaluation/results/2026-09-03-baseline-deterministas \\
+        --label baseline-deterministas --concurrency 4"
 
     # Smoke test acotado:
-    cd backend && uv run --no-sync python scripts/run_baseline.py \\
-        --limit 5 --modes question,claim,auto \\
-        --output /tmp/baseline-smoke
+    make run-baseline ARGS="--limit 5 --modes question,claim,auto \\
+        --output /tmp/baseline-smoke"
 
 Con ``--judge jev`` (requiere ``TYPESAFE_API_KEY``) añade a ``question`` las
 métricas ``jev_context_*`` y ``jev_groundedness*``; ver ``docs/evaluacion.md``.
@@ -37,9 +34,8 @@ Decisiones explícitas:
 - Errores por caso no detienen el bucle; se cuentan y se reportan en
   ``metrics.json``. ``--resume`` retoma modos incompletos usando el mismo
   manifiesto de identidad.
-- Model override: el script no toca variables; arráncalo con
-  ``OPENAI_ANSWER_MODEL=gpt-6-luna OPENAI_CLAIM_EXTRACTION_MODEL=gpt-6-luna``
-  antes de levantar el backend para iterar barato.
+- Model override: configura los valores en `.env`, o pásalos en `LOCAL_ENV`
+  tanto a `make serve-backend` como a `make run-baseline` para fijar un A/B.
 - No publica nada a Langfuse: este runner es local, deja los traces en el
   backend (``trace_id`` y ``langfuse_url`` quedan en cada per-case).
 """
@@ -103,6 +99,14 @@ DEFAULT_BASE_URL = os.environ.get("ALLIANZ_BASELINE_URL", "http://127.0.0.1:8000
 QUERY_PATH = "/api/v1/queries"
 HEALTH_PATH = "/health/ready"
 MODES = ("question", "claim", "auto")
+JEV_JUDGE_METRICS = frozenset(
+    {
+        "jev_context_relevance",
+        "jev_context_precision",
+        "jev_groundedness",
+        "jev_groundedness_min",
+    }
+)
 TIMEOUT_S = 180.0
 USER_AGENT = "allianz-baseline-runner/0.1"
 
@@ -253,6 +257,11 @@ def _run_identity(
             else None
         ),
     }
+    input_guard_configuration = {
+        "backend": os.environ.get("ALLIANZ_INPUT_GUARD", "off").strip().lower(),
+        "injection_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_INJECTION", "0.9")),
+        "off_topic_threshold": float(os.environ.get("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")),
+    }
     return {
         "label": label,
         "commit": _git_commit(),
@@ -262,6 +271,10 @@ def _run_identity(
         "concurrency": concurrency,
         "base_url": base_url,
         "judge": judge,
+        "configuration_source": os.environ.get(
+            "ALLIANZ_EVALUATION_CONFIG_SOURCE", "process environment"
+        ),
+        "input_guard": input_guard_configuration,
         "router": router_configuration,
         "models": {
             "answer": os.environ.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
@@ -395,7 +408,7 @@ def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[s
 def _evaluate_auto(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     turn = EvaluableTurn.from_envelope(response, requested_mode="auto")
     expected_intent = (case.get("metadata") or {}).get("expected_intent")
-    return {
+    evaluation: dict[str, Any] = {
         "resolved_mode": response.get("resolved_mode"),
         "route_decision": turn.route_decision,
         "result_kind": turn.result_kind,
@@ -408,6 +421,19 @@ def _evaluate_auto(*, response: dict[str, Any], case: dict[str, Any]) -> dict[st
             else None
         ),
     }
+    metadata = response.get("metadata")
+    if isinstance(metadata, dict):
+        for field in ("router_provider", "router_model"):
+            value = metadata.get(field)
+            if isinstance(value, str):
+                evaluation[field] = value
+        for field in ("router_input_tokens", "router_output_tokens"):
+            value = metadata.get(field)
+            if type(value) is int and value >= 0:
+                evaluation[field] = value
+            elif isinstance(value, str) and value.isdecimal():
+                evaluation[field] = int(value)
+    return evaluation
 
 
 # --- Juez Jev (opcional, --judge jev) -----------------------------------------
@@ -618,6 +644,8 @@ def _aggregate(
             evaluation = payload.get("evaluation") if isinstance(payload, dict) else None
             if not isinstance(evaluation, dict):
                 continue
+            if isinstance(evaluation.get("jev_judge_error"), str):
+                metric_names.update(JEV_JUDGE_METRICS)
             metric_names.update(
                 key
                 for key, value in evaluation.items()
@@ -650,6 +678,13 @@ def _aggregate(
                     continue
                 evaluation = payload.get("evaluation")
                 if not isinstance(evaluation, dict) or metric_name not in evaluation:
+                    if (
+                        metric_name in JEV_JUDGE_METRICS
+                        and isinstance(evaluation, dict)
+                        and isinstance(evaluation.get("jev_judge_error"), str)
+                    ):
+                        n_error += 1
+                        continue
                     n_missing += 1
                     continue
                 value = evaluation[metric_name]
@@ -689,6 +724,7 @@ def _aggregate(
     expected_routes: list[str] = []
     router_missing = 0
     router_cases = 0
+    router_correct = 0
     over_resolution_values: list[float] = []
     over_resolution_missing = 0
     over_resolution_errors = 0
@@ -715,6 +751,7 @@ def _aggregate(
                 }:
                     predicted_routes.append(route)
                     expected_routes.append(expected_intent)
+                    router_correct += route == expected_intent
                 else:
                     router_missing += 1
 
@@ -769,6 +806,14 @@ def _aggregate(
         "over_resolution_rate_against_reference": asdict(over_resolution_aggregate),
         "router_cases": router_cases,
         "router_missing": router_missing,
+        "router_accuracy_all_labeled": {
+            "n_labeled": router_cases,
+            "n_predicted": router_cases - router_missing,
+            "n_missing_or_error": router_missing,
+            "n_correct": router_correct,
+            "n_incorrect": router_cases - router_correct,
+            "accuracy": (router_correct / router_cases if router_cases else None),
+        },
     }
     return aggregated
 
@@ -808,6 +853,15 @@ def _write_summary(
             )
     lines.append("")
     cross = metrics.get("cross_mode") or {}
+    router_accuracy = cross.get("router_accuracy_all_labeled") or {}
+    accuracy = router_accuracy.get("accuracy")
+    accuracy_text = f"{accuracy:.3f}" if isinstance(accuracy, (int, float)) else "n/a"
+    lines.append(
+        "## router_accuracy_all_labeled "
+        f"accuracy={accuracy_text} ({router_accuracy.get('n_correct', 0)}/"
+        f"{router_accuracy.get('n_labeled', 0)}; "
+        f"missing_or_error={router_accuracy.get('n_missing_or_error', 0)})"
+    )
     cm = cross.get("router_confusion_matrix") or {}
     lines.append(f"## router_confusion_matrix ({cross.get('router_cases', 0)} casos en auto)")
     if cm:
@@ -928,6 +982,7 @@ def main(argv: list[str] | None = None) -> int:
             "pending_case_modes": len(remaining),
             "models": identity["models"],
             "router": identity["router"],
+            "input_guard": identity["input_guard"],
             "commit": identity["commit"],
             "golden_path": str(GOLDEN_PATH),
             "golden_sha256": identity["golden_sha256"],
@@ -936,6 +991,7 @@ def main(argv: list[str] | None = None) -> int:
             "concurrency": args.concurrency,
             "base_url": args.base_url,
             "judge": args.judge,
+            "configuration_source": identity["configuration_source"],
         }
     )
     _atomic_write_json(output_dir / "manifest.json", manifest)

@@ -13,10 +13,14 @@ type RouteDecision = Literal["question", "claim", "clarification_required"]
 
 @dataclass(frozen=True, slots=True)
 class RouteClassification:
-    """Closed enum decision plus the rationale the classifier surfaced."""
+    """Closed enum decision, rationale, and provider accounting when available."""
 
     decision: RouteDecision
     rationale: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

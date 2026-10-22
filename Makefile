@@ -3,7 +3,7 @@
         lint-frontend typecheck-frontend test-frontend build-frontend test-e2e \
         local-services-config local-services-up local-services-stop \
         doctor serve-backend serve-frontend provision-prompts \
-        verify-source index-baseline
+        verify-source index-baseline run-baseline run-redteam
 
 LOCAL_COMPOSE = docker compose --env-file ops/local.env
 PNPM ?= npm exec --yes pnpm@9.12.0 --
@@ -96,14 +96,28 @@ BACKEND_ENV = set -a; . ./.env; . ./ops/local.env; \
 	: "$${LANGFUSE_SECRET_KEY:=$$ALLIANZ_LANGFUSE_SECRET_KEY}"; \
 	: "$${LANGFUSE_BASE_URL:=http://127.0.0.1:3000}"; \
 	: "$${LANGFUSE_PROJECT_ID:=allianz-rag}"; set +a;
+LOCAL_ENV ?=
 
 provision-prompts:
-	@$(BACKEND_ENV) uv run --project backend --extra local-rag \
+	@$(BACKEND_ENV) $(LOCAL_ENV) uv run --project backend --extra local-rag \
 		python backend/scripts/provision_langfuse_prompts.py
 
 serve-backend: provision-prompts
-	@$(BACKEND_ENV) uv run --project backend --extra local-rag \
+	@$(BACKEND_ENV) $(LOCAL_ENV) uv run --project backend --extra local-rag \
 		uvicorn asgi_local:app --factory --host 127.0.0.1 --port 8000
+
+# Ejecuta evaluaciones con el mismo `.env` y `ops/local.env` que serve-backend.
+# El manifiesto identifica esta fuente para que una campaña no aparente usar
+# modelos/guardas distintos de los que realmente se configuraron.
+run-baseline:
+	@$(BACKEND_ENV) $(LOCAL_ENV) \
+		ALLIANZ_EVALUATION_CONFIG_SOURCE=makefile:.env+ops/local.env+LOCAL_ENV \
+		uv run --project backend --no-sync python backend/scripts/run_baseline.py $(ARGS)
+
+run-redteam:
+	@$(BACKEND_ENV) $(LOCAL_ENV) \
+		ALLIANZ_EVALUATION_CONFIG_SOURCE=makefile:.env+ops/local.env+LOCAL_ENV \
+		uv run --project backend --no-sync python backend/scripts/run_redteam.py $(ARGS)
 
 serve-frontend:
 	$(PNPM) --dir frontend dev

@@ -250,7 +250,14 @@ def test_resolve_query_overrides_clarification_to_claim_on_vehicle_collision() -
     answer = _CounterAnswerQuestion()
     claim = _CounterAnalyzeClaim()
     classifier = _StubClassifier(
-        RouteClassification("clarification_required", rationale="pide hora")
+        RouteClassification(
+            "clarification_required",
+            rationale="pide hora",
+            provider="typesafe",
+            model="jev-production",
+            input_tokens=12,
+            output_tokens=2,
+        )
     )
     query = QueryInput(text=claim_text, language="es")
 
@@ -258,6 +265,10 @@ def test_resolve_query_overrides_clarification_to_claim_on_vehicle_collision() -
 
     assert execution.classification.decision == "claim"
     assert "Heur" in (execution.classification.rationale or "")
+    assert execution.classification.provider == "typesafe"
+    assert execution.classification.model == "jev-production"
+    assert execution.classification.input_tokens == 12
+    assert execution.classification.output_tokens == 2
     assert isinstance(execution.dispatch, ClaimExecution)
     assert answer.calls == 0
     assert claim.calls == 1
@@ -344,10 +355,17 @@ def _manual_query() -> QueryInput:
     return QueryInput(text="¿Qué dice el manual?", language="es")
 
 
+@dataclass(frozen=True)
+class _FakeRoutingUsage:
+    input_tokens: int = 15
+    output_tokens: int = 4
+
+
 @dataclass
 class _FakeParsedResponse(ParsedRoutingResponse):
     parsed: RouteDecisionSchema | None
     response_status: str = "completed"
+    usage_data: object | None = field(default_factory=_FakeRoutingUsage)
 
     @property
     def output_parsed(self) -> object | None:
@@ -356,6 +374,10 @@ class _FakeParsedResponse(ParsedRoutingResponse):
     @property
     def status(self) -> str:
         return self.response_status
+
+    @property
+    def usage(self) -> object | None:
+        return self.usage_data
 
 
 @dataclass
@@ -389,12 +411,19 @@ def test_router_classifier_returns_question_decision() -> None:
         parsed=RouteDecisionSchema(decision="question", rationale="answered"),
     )
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     classification = asyncio.run(classifier.classify(_manual_query()))
 
-    assert classification == RouteClassification(decision="question", rationale="answered")
+    assert classification == RouteClassification(
+        decision="question",
+        rationale="answered",
+        provider="openai",
+        model="gpt-6-luna",
+        input_tokens=15,
+        output_tokens=4,
+    )
     assert len(transport.calls) == 1
     assert transport.calls[0]["text_format"] is RouteDecisionSchema
 
@@ -404,12 +433,19 @@ def test_router_classifier_returns_claim_decision() -> None:
         parsed=RouteDecisionSchema(decision="claim", rationale="narrative"),
     )
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     classification = asyncio.run(classifier.classify(_manual_query()))
 
-    assert classification == RouteClassification(decision="claim", rationale="narrative")
+    assert classification == RouteClassification(
+        decision="claim",
+        rationale="narrative",
+        provider="openai",
+        model="gpt-6-luna",
+        input_tokens=15,
+        output_tokens=4,
+    )
 
 
 def test_router_classifier_returns_clarification_decision() -> None:
@@ -417,20 +453,25 @@ def test_router_classifier_returns_clarification_decision() -> None:
         parsed=RouteDecisionSchema(decision="clarification_required", rationale="faltan datos"),
     )
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     classification = asyncio.run(classifier.classify(_manual_query()))
 
     assert classification == RouteClassification(
-        decision="clarification_required", rationale="faltan datos"
+        decision="clarification_required",
+        rationale="faltan datos",
+        provider="openai",
+        model="gpt-6-luna",
+        input_tokens=15,
+        output_tokens=4,
     )
 
 
 def test_router_classifier_rejects_none_parsed() -> None:
     transport = _FakeTransport(parsed=None)
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     with pytest.raises(ModelOutputError, match="invalid decision"):
@@ -443,7 +484,7 @@ def test_router_classifier_rejects_incomplete_response_status() -> None:
         response_status="incomplete",
     )
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     with pytest.raises(ModelOutputError, match="incomplete"):
@@ -455,7 +496,7 @@ def test_router_classifier_wraps_timeout_as_model_timeout_error() -> None:
 
     transport = _FakeTransport(raise_exc=openai.APITimeoutError(request=None))  # type: ignore[arg-type]
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     with pytest.raises(ModelTimeoutError):
@@ -469,7 +510,7 @@ def test_router_classifier_wraps_api_error_as_language_model_error() -> None:
         raise_exc=openai.APIError(message="boom", request=None, body=None)  # type: ignore[arg-type]
     )
     classifier = OpenAIRoutingLanguageModel(
-        model="gpt-5.4", prompt=_prompt(), transport=cast(Any, transport)
+        model="gpt-6-luna", prompt=_prompt(), transport=cast(Any, transport)
     )
 
     with pytest.raises(LanguageModelError):
@@ -478,7 +519,7 @@ def test_router_classifier_wraps_api_error_as_language_model_error() -> None:
 
 def test_router_classifier_raises_when_openai_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    classifier = OpenAIRoutingLanguageModel(model="gpt-5.4", prompt=_prompt())
+    classifier = OpenAIRoutingLanguageModel(model="gpt-6-luna", prompt=_prompt())
 
     with pytest.raises(MissingLanguageModelCredentialsError):
         asyncio.run(classifier.classify(_manual_query()))
@@ -491,7 +532,7 @@ def test_router_classifier_rejects_empty_model_at_construction() -> None:
 
 def test_router_classifier_rejects_nonpositive_timeout() -> None:
     with pytest.raises(ValueError, match="timeout must be positive"):
-        OpenAIRoutingLanguageModel(model="gpt-5.4", prompt=_prompt(), timeout_seconds=0)
+        OpenAIRoutingLanguageModel(model="gpt-6-luna", prompt=_prompt(), timeout_seconds=0)
 
 
 def test_routing_prompt_rejects_empty_content() -> None:

@@ -222,8 +222,18 @@ def test_provider_error_body_is_not_exposed() -> None:
 
 
 class _FakeDecisionModel:
-    def __init__(self, answers: Mapping[str, Answer] | Exception) -> None:
+    def __init__(
+        self,
+        answers: Mapping[str, Answer] | Exception,
+        *,
+        model: str = "fake",
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+    ) -> None:
         self._answers = answers
+        self._model = model
+        self._input_tokens = input_tokens
+        self._output_tokens = output_tokens
         self.calls: list[tuple[Any, Mapping[str, Question]]] = []
 
     async def decide(
@@ -233,7 +243,12 @@ class _FakeDecisionModel:
         if isinstance(self._answers, Exception):
             raise self._answers
         answers = {name: self._answers[name] for name in questions}
-        return DecisionResult(answers=answers, model="fake", input_tokens=0, output_tokens=0)
+        return DecisionResult(
+            answers=answers,
+            model=self._model,
+            input_tokens=self._input_tokens,
+            output_tokens=self._output_tokens,
+        )
 
 
 def _route(choice: str, confidence: float) -> dict[str, Answer]:
@@ -250,6 +265,21 @@ def test_classifier_returns_the_selected_route_and_sends_the_text_as_state() -> 
     route = model.calls[0][1]["route"]
     assert isinstance(route, ChoiceQuestion)
     assert set(route.criteria) == {"question", "claim", "clarification_required"}
+
+
+def test_classifier_preserves_jev_model_and_token_usage() -> None:
+    model = _FakeDecisionModel(
+        _route("claim", 0.93), model="jev-production", input_tokens=22, output_tokens=4
+    )
+
+    classification = asyncio.run(
+        JevQueryClassifier(model).classify(QueryInput("Me dieron un golpe"))
+    )
+
+    assert classification.provider == "typesafe"
+    assert classification.model == "jev-production"
+    assert classification.input_tokens == 22
+    assert classification.output_tokens == 4
 
 
 def test_classifier_asks_for_clarification_below_the_confidence_floor() -> None:

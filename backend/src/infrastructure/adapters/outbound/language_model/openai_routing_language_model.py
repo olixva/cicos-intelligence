@@ -52,6 +52,9 @@ class ParsedRoutingResponse(Protocol):
     @property
     def status(self) -> str: ...
 
+    @property
+    def usage(self) -> object | None: ...
+
 
 class RoutingTransport(Protocol):
     """Typed seam over ``responses.parse`` for deterministic local tests."""
@@ -149,7 +152,15 @@ class OpenAIRoutingLanguageModel:
         parsed = response.output_parsed
         if parsed is None or not isinstance(parsed, RouteDecisionSchema):
             raise ModelOutputError("routing model returned an invalid decision")
-        return RouteClassification(decision=parsed.decision, rationale=parsed.rationale)
+        usage = response.usage
+        return RouteClassification(
+            decision=parsed.decision,
+            rationale=parsed.rationale,
+            provider="openai",
+            model=self.model,
+            input_tokens=_usage_count(usage, "input_tokens"),
+            output_tokens=_usage_count(usage, "output_tokens"),
+        )
 
     def _get_transport(self) -> RoutingTransport:
         if self._transport is not None:
@@ -177,3 +188,8 @@ def _routing_messages(prompt: RoutingPrompt, query: QueryInput) -> ResponseInput
             {"role": "user", "content": user_payload},
         ],
     )
+
+
+def _usage_count(usage: object | None, field: str) -> int | None:
+    value = getattr(usage, field, None)
+    return value if type(value) is int and value >= 0 else None

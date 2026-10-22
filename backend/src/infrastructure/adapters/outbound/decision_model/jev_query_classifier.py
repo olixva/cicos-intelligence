@@ -44,5 +44,13 @@ class JevQueryClassifier:
         result = await self._model.decide({"user_message": query.text}, {"route": _QUESTION})
         answer = result.choice("route")
         if answer.confidence < self._min_confidence:
-            return RouteClassification(decision="clarification_required")
-        return RouteClassification(decision=cast(RouteDecision, answer.choice))
+            decision: RouteDecision = "clarification_required"
+        else:
+            decision = cast(RouteDecision, answer.choice)
+        return RouteClassification(
+            decision=decision,
+            provider="typesafe",
+            model=result.model,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+        )

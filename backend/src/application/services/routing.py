@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Awaitable, Callable
+from dataclasses import replace
 
 from application.models.claim import ClaimExecution
 from application.models.query import QueryExecution, QueryInput
@@ -14,7 +15,6 @@ from application.services.claim_heuristics import looks_like_claim_text
 from domain.models.claim import ClaimInput
 from domain.models.routing import (
     ClarificationResult,
-    RouteClassification,
     RouteDecision,
     RouteExecution,
 )
@@ -56,7 +56,8 @@ async def resolve_query(
     # genérico responde "no puedo informar del tiempo".
     if decision != "claim" and looks_like_claim_text(query.text):
         decision = "claim"
-        classification = RouteClassification(
+        classification = replace(
+            classification,
             decision=decision,
             rationale=(
                 "Heurística de override: el router clasificó "

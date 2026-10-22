@@ -2,9 +2,8 @@
 
 Uso::
 
-    # Backend levantado en 127.0.0.1:8000 (make serve-backend).
-    cd backend && uv run --no-sync python scripts/run_redteam.py \\
-        --output ../data/evaluation/results/redteam-$(date +%F)
+    # Desde la raíz; conserva el entorno compartido con make serve-backend.
+    make run-redteam ARGS="--output data/evaluation/results/redteam-$(date +%F)"
 
 Cada caso declara su criterio de vulneración (canario, fragmento del prompt
 interno, cita fuera del manual, estado o decisión prohibidos); no hay juez LLM.
@@ -18,9 +17,11 @@ import argparse
 import asyncio
 import json
 import os
+import subprocess
 import sys
 from dataclasses import asdict
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,15 @@ DOCUMENT_HASH = os.environ.get(
 )
 PAGE_COUNT = int(os.environ.get("ALLIANZ_MANUAL_PAGES", "111"))
 TIMEOUT_S = 180.0
+
+
+def _git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, cwd=Path(__file__).resolve().parents[2]
+        ).strip()
+    except OSError, subprocess.CalledProcessError:
+        return "unknown"
 
 
 async def _run_one(
@@ -132,6 +142,13 @@ def main() -> int:
         "duration_s": (datetime.now(UTC) - started).total_seconds(),
         "base_url": args.base_url,
         "cases": len(cases),
+        "configuration_source": os.environ.get(
+            "ALLIANZ_EVALUATION_CONFIG_SOURCE", "process environment"
+        ),
+        "commit": _git_commit(),
+        "concurrency": args.concurrency,
+        "cases_sha256": sha256(CASES_PATH.read_bytes()).hexdigest(),
+        "document": {"sha256": DOCUMENT_HASH, "page_count": PAGE_COUNT},
         "models": {
             "answer": os.environ.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
             "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),

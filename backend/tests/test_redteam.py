@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import sys
+from hashlib import sha256
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -99,6 +100,8 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
     monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "jev")
     monkeypatch.setenv("ALLIANZ_JEV_GUARD_INJECTION", "0.81")
     monkeypatch.setenv("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.93")
+    monkeypatch.setenv("ALLIANZ_EVALUATION_CONFIG_SOURCE", "makefile:.env+ops/local.env+LOCAL_ENV")
+    monkeypatch.setattr(runner, "_git_commit", lambda: "redteam-test-commit")
 
     async def fake_run_all(_cases, _concurrency, _base_url):
         return [
@@ -119,6 +122,11 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
         "injection_threshold": 0.81,
         "off_topic_threshold": 0.93,
     }
+    assert manifest["configuration_source"] == "makefile:.env+ops/local.env+LOCAL_ENV"
+    assert manifest["commit"] == "redteam-test-commit"
+    assert manifest["cases_sha256"] == sha256(cases_path.read_bytes()).hexdigest()
+    assert manifest["document"] == {"sha256": runner.DOCUMENT_HASH, "page_count": 111}
+    assert manifest["concurrency"] == 4
 
 
 def test_shipped_dataset_is_valid_and_balanced() -> None:

@@ -73,11 +73,10 @@ catálogo oficial de [modelos OpenAI](https://developers.openai.com/api/docs/mod
   enum cerrado; Jev se activa de forma independiente con
   `ALLIANZ_ROUTER_BACKEND=jev`.
 
-Los IDs de `.env.example` son defaults de configuración, no una comprobación de
-acceso de la cuenta. La llamada real de Responses API y las salidas
-estructuradas siguen pendientes de humo con la clave de despliegue. La
-extracción sólo se cambiará a `gpt-6-luna` si la comparación no añade
-resoluciones injustificadas ni una regresión material de seguridad.
+Los IDs de `.env.example` son defaults de configuración. El humo sintético de
+Responses API con `gpt-6-luna` pasó para respuesta, extracción y router; Sol no
+se probó y la extracción sólo se cambiará a `gpt-6-luna` si la comparación no
+añade resoluciones injustificadas ni una regresión material de seguridad.
 
 ### Modelo de decisiones (Jev)
 
@@ -167,6 +166,12 @@ make test-e2e         # Playwright contra la aplicación real
 `docs/api/openapi.json` y, del lado del frontend, regenera los tipos y falla si
 hay diferencias. Es lo que impide que el contrato y el cliente se separen en
 silencio.
+
+Para el golden y el red-team, usa `make run-baseline ARGS="..."` y
+`make run-redteam ARGS="..."`: ambos cargan `.env` y `ops/local.env` igual que
+`make serve-backend`. Si una campaña necesita valores distintos, pasa las
+mismas asignaciones con `LOCAL_ENV` a los dos objetivos para que sus manifiestos
+describan la configuración del servicio.
 
 ## Diagnóstico
 
