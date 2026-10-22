@@ -51,15 +51,14 @@ siniestros con más de dos vehículos, cualquier documento distinto del manual.
 | Router `auto` de OpenAI | `gpt-6-luna` (referencia) | Clasificación en un enum cerrado de tres etiquetas; Jev se decide en una puerta independiente. |
 
 El criterio es el coste del error por etapa. Los IDs aparecen en el
-[catálogo oficial de OpenAI](https://developers.openai.com/api/docs/models), pero
-estos defaults no acreditan que la cuenta tenga acceso ni que la llamada real
-haya pasado. Los modelos se configuran por variables de entorno
+[catálogo oficial de OpenAI](https://developers.openai.com/api/docs/models). El
+humo sintético confirmó acceso de esta cuenta a `gpt-6-luna`; no se llamó a Sol.
+Los modelos se configuran por variables de entorno
 (`OPENAI_ANSWER_MODEL`, `OPENAI_CLAIM_EXTRACTION_MODEL`,
 `ALLIANZ_ROUTER_MODEL`) y el código coincide con `.env.example`. La validación
-de Responses API con salida estructurada queda pendiente de un humo sintético
-con la clave de la cuenta; los resultados reales se registrarán por separado.
-La comparación Sol/Luna de extracción tampoco se ha ejecutado; por eso el
-default permanece en Sol y no se presentan cifras nuevas de calidad o coste.
+de respuesta estructurada pasó en las tres etapas con Luna; la comparación
+Sol/Luna de extracción no se ha ejecutado. El default permanece en Sol y no se
+presentan cifras nuevas de calidad, latencia o coste.
 
 Todas las llamadas usan la Responses API con **salida estructurada** (esquema
 cerrado, `extra="forbid"`) y `store=False`: el proveedor no retiene las
@@ -93,11 +92,12 @@ comportamiento sin configurar es idéntico al anterior):
 
 **Estado del router.** OpenAI (`gpt-6-luna`) se conserva como default y como
 referencia hasta completar el A/B real. El golden ya trae la intención esperada
-de cada caso y el runner calcula la matriz de confusión; se compararán ambos
-backends con el mismo commit y conjunto completo. Jev sólo pasará a ser default
-si su exactitud iguala o supera OpenAI, con los errores técnicos contados como
-fallos. OpenAI permanecerá seleccionable como referencia y no habrá fallback
-silencioso.
+de cada caso y el runner calcula la matriz de confusión, la exactitud sobre
+todas las etiquetas y los tokens del router cuando el proveedor los devuelve.
+Se compararán ambos backends con el mismo commit y conjunto completo. Jev sólo
+pasará a ser default si su exactitud sobre todas las etiquetas iguala o supera
+OpenAI, con errores y rutas ausentes contados como fallos. OpenAI permanecerá
+seleccionable como referencia y no habrá fallback silencioso.
 
 **Estado del guardarraíl.** `ALLIANZ_INPUT_GUARD=off` sigue siendo el default.
 Sólo se activará por defecto si la suite completa registra cero ataques exitosos
@@ -105,15 +105,24 @@ y su sobre-rechazo no supera la corrida `off`, con el mismo commit y los mismos
 casos. La caída del proveedor sigue siendo fail-open; el filtro regex siempre se
 ejecuta antes y no llama a Jev cuando ya bloquea la entrada.
 
+**Humo sintético OpenAI (22-10-2026, commit `9aa5fd9`).** Los adaptadores de
+respuesta, extracción de hechos y router aceptaron salida estructurada con `gpt-6-luna`: respuesta
+`insufficient_evidence` sin bloques, extracción en estado `ask` con tres hechos
+sintéticos y ruta `question`. Esta corrida valida compatibilidad de esquema. La
+calidad en golden, latencia, uso/coste y el acceso a Sol siguen pendientes; no se
+llamó a `gpt-6.1-sol`. La exportación de trazas no conectó con Langfuse local en
+`127.0.0.1:3000`.
+
 **Riesgos que se asumen y se documentan.** El contrato de la API se tomó del
 OpenAPI del SDK oficial pero **no se ha ejecutado contra el servicio real**;
 TypeSafe no publica su política de retención de datos (no deben enviársele
 relatos reales con datos personales hasta confirmarla); y el cliente propio
 (`httpx`) sustituye al SDK para no depender de un proveedor en acceso anticipado.
 
-**Qué no se hizo:** no se ha ejecutado todavía el A/B de router ni se han medido
-los costes reales de GPT-6. La validación queda pendiente de credenciales y
-servicios; no se afirma que Jev ya sea más barato o igual de preciso.
+**Qué no se hizo:** siguen pendientes el A/B completo del router, la comparación
+Sol/Luna de extracción y la campaña real de Jev. El humo de Luna no registró
+latencia, uso ni coste. Falta `TYPESAFE_API_KEY` para medir Jev; no se afirma que
+Jev sea más barato o igual de preciso.
 
 ### 2.2 Embeddings y dimensiones
 
@@ -231,6 +240,7 @@ Todas son deterministas (sin juez LLM), calculadas en
 | `over_resolution_rate_against_reference` | Fracción de casos en que el sistema *resolvió* cuando la referencia exigía abstenerse. **Es la métrica de seguridad central.** |
 | `abstention_metrics` | Calibración: de las veces que se abstuvo, cuántas correctamente y cuántas innecesariamente. |
 | `router_confusion_matrix` | Matriz de confusión del router sobre un enum cerrado. |
+| `router_accuracy_all_labeled` | Exactitud del router sobre todas las etiquetas del golden; una ruta ausente o un error técnico cuenta como fallo de promoción. |
 | `citation_id_validity` | Fracción de IDs citados que pertenecen al catálogo permitido del caso; las citas obligatorias ausentes puntúan 0. |
 | `evidence_bundle_coverage` | Cobertura de los requisitos del golden, respetando los paquetes AND y sus alternativas OR. |
 | `resolution_support_rate` | Resoluciones con actor, regla coincidente y evidencia estructurados; si falta el actor en el envelope, se registra como missing. |
@@ -262,7 +272,8 @@ de 330 ejecuciones sin error, 1380 s):
 
 Esta tabla es histórica y no recalculable en este checkout: no están disponibles
 los resultados originales `per-case` ni su manifiesto. Se conservan las cifras
-publicadas sin convertirlas a los nuevos denominadores; hace falta una nueva
+publicadas sin convertirlas a los nuevos denominadores; `router_match` no se
+puede reconstruir ahora como `router_accuracy_all_labeled`. Hace falta una nueva
 corrida completa para sustituirlas.
 
 | Modo | Métrica | Valor |

@@ -44,10 +44,12 @@ reindexar.
 hechos y router completaron llamadas sintéticas con salida estructurada usando
 `gpt-6-luna`. No se llamó a `gpt-6.1-sol` ni se ejecutó el golden completo. La
 exportación de trazas a Langfuse no conectó con `127.0.0.1:3000`, aunque las tres
-respuestas de OpenAI fueron satisfactorias. Sigue pendiente la comparación
-Sol/Luna, que no se ejecutará mientras la campaña esté limitada a Luna, además
-de Qdrant, Langfuse, el índice y el backend local. El default versionado de
-respuesta/extracción permanece en `gpt-6.1-sol`.
+respuestas de OpenAI fueron satisfactorias. Después, Qdrant y Langfuse locales
+estuvieron sanos para el E2E y se comprobó el alias de índice existente; no se
+reindexó ni se ejecutó el golden. Los servicios se detuvieron tras el E2E. Sigue
+pendiente la comparación Sol/Luna, que no se ejecutará mientras la campaña esté
+limitada a Luna. El default versionado de respuesta/extracción permanece en
+`gpt-6.1-sol`.
 
 ## 1. Entorno
 
@@ -74,13 +76,19 @@ también en un checkout limpio** si no está preparado el bundle de modelos de
 Docling (`allianz prepare-ingestion-models`, ver `docs/ingesta-y-recuperacion.md`, o `ALLIANZ_DOCLING_ARTIFACTS`). Si falla,
 resolverlo o dejarlo documentado.
 
+**Resultado de esta ejecución (22-10-2026):** `make check-all` pasó: backend
+`568 passed, 1 skipped, 4 warnings`; frontend `98 passed`; lint, tipado, build y
+contrato OpenAPI correctos. `make test-e2e` pasó `2/2` después de arrancar Docker,
+Qdrant, Langfuse y el backend; `/health/ready` devolvió 200. La primera ejecución,
+con el backend apagado, falló al cargar sugerencias. Se usó el índice persistente
+existente, sin reindexar; servicios y backend se detuvieron al terminar.
+
 ## 3. Re-medir la evaluación del RAG → memoria §3.4
 
 ```bash
-cd backend
-uv run --no-sync python scripts/run_baseline.py --limit 5 --output /tmp/baseline-smoke   # humo
-uv run --no-sync python scripts/run_baseline.py \
-  --output ../data/evaluation/results/$(date +%F)-baseline --label baseline --concurrency 4
+make run-baseline ARGS="--limit 5 --output /tmp/baseline-smoke"  # humo
+make run-baseline ARGS="--output data/evaluation/results/$(date +%F)-baseline \
+  --label baseline --concurrency 4"
 ```
 
 Sustituir la tabla de la memoria §3.4 por `metrics.json` de la nueva corrida y
@@ -96,25 +104,26 @@ del repositorio o decidir qué se adjunta a la entrega.
 
 ## 4. Campaña de red-teaming → memoria §7.1
 
-El runner registra en `manifest.json` el proveedor/modelo del router y el
-backend y umbrales configurados para el guardarraíl; usa carpetas de salida
-nuevas para que cada comparación sea reproducible. En esta ejecución no hay
-backend local ni clave Jev, así que no se han generado resultados live.
+El runner registra en `manifest.json` el commit, hash del dataset, hash y páginas
+del manual, concurrencia, proveedor/modelo del router y backend/umbrales del
+guardarraíl. Los objetivos `make run-*` cargan `.env` y `ops/local.env` igual que
+`make serve-backend`. Si se usa `LOCAL_ENV` para variar una campaña, hay que
+pasar las mismas asignaciones al backend y al runner. Usa carpetas de salida
+nuevas. No se han generado resultados live de red-team: falta la clave TypeSafe
+y el backend está detenido. Los servicios se levantaron temporalmente sólo para
+E2E.
 
 ```bash
 # Terminal 1, desde la raíz: levantar el backend con el guard deseado.
-ALLIANZ_INPUT_GUARD=off make serve-backend
-# Terminal 2, también desde la raíz: el runner debe heredar la misma configuración.
-cd backend
-ALLIANZ_INPUT_GUARD=off uv run --no-sync python scripts/run_redteam.py \
-  --output ../data/evaluation/results/redteam-off-$(date +%F)
+make serve-backend LOCAL_ENV="ALLIANZ_INPUT_GUARD=off"
+# Terminal 2: el runner carga la misma configuración y la registra.
+make run-redteam LOCAL_ENV="ALLIANZ_INPUT_GUARD=off" \
+  ARGS="--output data/evaluation/results/redteam-off-$(date +%F)"
 # Detener y reiniciar Terminal 1 con ALLIANZ_INPUT_GUARD=jev; después repetir:
-ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 \
-  ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95 make serve-backend
-# En Terminal 2, registrar el mismo backend y los mismos umbrales en el manifiesto:
-ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 \
-  ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95 uv run --no-sync python scripts/run_redteam.py \
-  --output ../data/evaluation/results/redteam-jev-$(date +%F)
+make serve-backend LOCAL_ENV="ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95"
+# Repetir con los mismos valores para registrar el mismo backend y umbrales:
+make run-redteam LOCAL_ENV="ALLIANZ_INPUT_GUARD=jev ALLIANZ_JEV_GUARD_INJECTION=0.9 ALLIANZ_JEV_GUARD_OFF_TOPIC=0.95" \
+  ARGS="--output data/evaluation/results/redteam-jev-$(date +%F)"
 ```
 
 Sale con código 1 si algún ataque tiene éxito. Registrar en la memoria la tasa de
@@ -156,14 +165,15 @@ export TYPESAFE_API_KEY=...      # clave de https://console.typesafe.ai (acceso 
 2. **Router, A/B con el golden.** Levantar el backend dos veces y ejecutar el
    modo automático con cada uno:
    ```bash
-   ALLIANZ_ROUTER_BACKEND=openai make serve-backend   # y en otra terminal:
-   cd backend && uv run --no-sync python scripts/run_baseline.py --modes auto \
-     --output ../data/evaluation/results/router-openai --label router-openai
-   # repetir con ALLIANZ_ROUTER_BACKEND=jev -> router-jev
+   make serve-backend LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=openai"   # otra terminal:
+   make run-baseline LOCAL_ENV="ALLIANZ_ROUTER_BACKEND=openai" \
+     ARGS="--modes auto --output data/evaluation/results/router-openai --label router-openai"
+   # repetir ambos comandos con ALLIANZ_ROUTER_BACKEND=jev -> router-jev
    ```
    Mismo commit, golden, índice, prompts y concurrencia en ambos procesos.
    Comparar exactitud sobre todos los casos, matriz por clase, errores técnicos,
-   latencia y uso/coste disponible; los errores cuentan como fallos y permanecen
+   latencia y uso disponible (`router_input_tokens` / `router_output_tokens`);
+   los errores cuentan como fallos en `router_accuracy_all_labeled` y permanecen
    en `n_total`. Barrer `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE` (0,4 / 0,6 / 0,8)
    en directorios nuevos. Sólo promover Jev si iguala o supera la exactitud de
    OpenAI; mantener OpenAI como referencia seleccionable y no añadir fallback

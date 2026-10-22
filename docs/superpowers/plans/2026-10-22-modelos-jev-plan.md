@@ -175,11 +175,19 @@
 - Modify: `docs/entrega/validacion-pendiente.md`
 - Review: `.env.example`, manifiestos locales, `git status` y referencias a secretos
 
-- [ ] **Step 1: Consolidar en memoria** commit, fecha, IDs concretos de modelo, configuración, denominadores, errores, latencia y coste observado; no presentar resultados parciales como completos.
-- [ ] **Step 2: Confirmar** que los jueces Jev no calibrados siguen etiquetados como exploratorios y que no queda como pendiente ninguna comprobación que sí se ejecutó.
-- [ ] **Step 3: Ejecutar `make check-all` y `make test-e2e`**; resolver fallos de esta rama y guardar salida reproducible.
-- [ ] **Step 4: Revisar `git diff --check`, búsqueda de claves, modelo de embedding intacto y referencias antiguas sólo históricas; verificar que resultados y secretos no se hayan añadido a Git.
-- [ ] **Step 5: Commit** `docs: finalize model and Jev validation record`.
+- [x] **Step 1: Consolidar en memoria** fecha, IDs y configuración observada, denominadores disponibles y ausencia de mediciones de latencia/coste; no presentar resultados parciales como completos.
+- [x] **Step 2: Confirmar** que los jueces Jev no calibrados siguen etiquetados como exploratorios y que no queda como pendiente ninguna comprobación que sí se ejecutó.
+- [x] **Step 3: Ejecutar `make check-all` y `make test-e2e`**; resolver fallos de esta rama y guardar salida reproducible.
+- [x] **Step 4: Revisar `git diff --check`, búsqueda de claves, modelo de embedding intacto y referencias antiguas sólo históricas; verificar que resultados y secretos no se hayan añadido a Git.
+- [x] **Step 5: Commit** documentación y cierre local de Jev/modelos.
+
+**Cierre de revisión independiente:** `router_accuracy_all_labeled` incorpora
+errores y rutas ausentes como fallos; los runners usan los mismos archivos de
+configuración que `make serve-backend` y registran esa fuente; el manifiesto
+red-team añade commit, hash de casos, hash/páginas del manual y concurrencia;
+el router conserva modelo/tokens también tras el override heurístico; los
+errores del juez quedan en `n_error` de sus métricas sin invalidar el resultado
+determinista.
 
 ## Self-review del plan
 
