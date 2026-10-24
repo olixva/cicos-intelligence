@@ -35,7 +35,6 @@ describe('etiquetas en castellano', () => {
     expect(decisionLabel('not_assessed')).toBe('No procede valorar');
   });
 });
-
 describe('el resumen explica, no enumera enums', () => {
   it('no filtra identificadores internos al texto visible', () => {
     const text = claimSummaryText(base);

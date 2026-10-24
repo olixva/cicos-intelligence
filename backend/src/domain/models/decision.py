@@ -42,6 +42,8 @@ class ClaimAnalysis:
     #: evidence. The audit forbids placeholders here: a rule that did not run
     #: is absent, and one that could not be checked says so.
     rules_evaluated: tuple[RuleEvaluation, ...] = ()
+    #: Structured actor for a resolved claim; never inferred from explanation text.
+    liable_party: str | None = None
 
     def __post_init__(self) -> None:
         if len(set(self.party_ids)) != len(self.party_ids) or any(
@@ -64,3 +66,10 @@ class ClaimAnalysis:
             # The last barrier against a generated conclusion with nothing
             # deterministic behind it.
             raise InvalidDecisionError("a resolved decision must cite at least one matched rule")
+        if self.decision == "resolved":
+            if self.liable_party is None or not self.liable_party.strip():
+                raise InvalidDecisionError("a resolved decision requires a structured liable party")
+            if self.liable_party not in self.party_ids:
+                raise InvalidDecisionError("liable party must belong to party_ids")
+        elif self.liable_party is not None:
+            raise InvalidDecisionError("liable party is only valid for a resolved decision")

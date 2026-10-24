@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 import re
 import uuid
-from collections import defaultdict
 from collections.abc import Callable
 from typing import Literal, NotRequired, Required, TypedDict, cast
 
@@ -33,6 +32,7 @@ from domain.models.rule_evaluation import RuleEvaluation
 from domain.rules.applicability import ApplicabilityFacts, assess_applicability
 from domain.rules.cide_matrix import MatrixDecision, MatrixException, decide_from_daa_matrix
 from domain.rules.ruleset import LoadedRule, evaluate_ruleset
+from domain.services.fact_ledger import FactLedger
 
 
 class ClaimWorkflowTimeoutError(TimeoutError):
@@ -229,10 +229,14 @@ class LangGraphClaimWorkflow:
                 (),
             )
             return _ClaimUpdate(analysis=analysis, result=analysis)
-        assessment = assess_applicability(
-            _applicability_facts(extracted.facts), evidence_ids=evidence_ids
+        applicability_facts = _applicability_facts(extracted.facts)
+        applicability_evidence_ids = _applicability_evidence_ids(
+            applicability_facts, self._rules, fallback=evidence_ids
         )
-        raw_facts = {fact.name: fact.value for fact in extracted.facts if fact.value}
+        assessment = assess_applicability(
+            applicability_facts, evidence_ids=applicability_evidence_ids
+        )
+        raw_facts = FactLedger.from_facts(extracted.facts).known_values()
         # Cada regla del corpus firmado se ejecuta y se reporta, incluidas las
         # que no casan y las que no pueden comprobarse: la interfaz tiene que
         # poder enseñar qué se evaluó, no sólo el veredicto.
@@ -260,11 +264,18 @@ class LangGraphClaimWorkflow:
                 if len(matched_manoeuvre_rules) == 1
                 else None
             ),
-            # Una D.A.A. declarada y una maniobra reconocida no deberían coexistir
-            # en el mismo relato; si por lo que sea lo hicieran, se prioriza la
-            # norma subsidiaria ya resuelta y la matriz no se consulta, en vez de
-            # elegir entre dos caminos que discrepan.
-            matrix_decision=matrix_decision if len(matched_manoeuvre_rules) != 1 else None,
+            manoeuvre_liable_party=(
+                _liable_party_for_rule(
+                    matched_manoeuvre_rules[0].rule_id,
+                    raw_facts,
+                    extracted.party_ids,
+                )
+                if len(matched_manoeuvre_rules) == 1
+                else None
+            ),
+            # La jerarquía entre una celda CIDE resolutiva y una norma de maniobra
+            # no se inventa en código: si discrepan, el análisis se abstiene.
+            matrix_decision=matrix_decision,
             matrix_convention=self._convention_of("cide-matrix-lookup"),
         )
         blocks = analysis.blocks or _rule_blocks(evaluations)
@@ -279,23 +290,62 @@ class LangGraphClaimWorkflow:
             analysis.missing_information,
             blocks,
             rules_evaluated=evaluations,
+            liable_party=analysis.liable_party,
         )
-        return _ClaimUpdate(analysis=analysis, result=analysis)
+        context, unavailable = _materialize_cited_evidence(
+            context, analysis, self._evidence_repository
+        )
+        if unavailable:
+            message = (
+                "No se pudo materializar toda la evidencia citada; no se emite una conclusión "
+                "cerrada hasta recuperar esas páginas."
+            )
+            if analysis.decision == "resolved":
+                analysis = ClaimAnalysis(
+                    applicability=analysis.applicability,
+                    convention=None,
+                    decision="undetermined",
+                    party_ids=analysis.party_ids,
+                    facts=analysis.facts,
+                    contradictions=analysis.contradictions,
+                    conditions=(),
+                    missing_information=(message,),
+                    blocks=(),
+                    rules_evaluated=evaluations,
+                )
+            else:
+                analysis = ClaimAnalysis(
+                    applicability=analysis.applicability,
+                    convention=analysis.convention,
+                    decision=analysis.decision,
+                    party_ids=analysis.party_ids,
+                    facts=analysis.facts,
+                    contradictions=analysis.contradictions,
+                    conditions=analysis.conditions,
+                    missing_information=analysis.missing_information,
+                    blocks=tuple(
+                        block
+                        for block in analysis.blocks
+                        if all(
+                            evidence_id
+                            in {source.evidence_id for item in context for source in item.sources}
+                            for evidence_id in block.evidence_ids
+                        )
+                    ),
+                    rules_evaluated=evaluations,
+                )
+        return _ClaimUpdate(context=context, analysis=analysis, result=analysis)
 
     def _plan_interview(self, state: _ClaimState) -> _ClaimUpdate:
-        """Apply the LLM interview plan as an explicit LangGraph transition.
+        """Keep follow-up decisions bound to deterministic missing facts.
 
-        The extractor decides the plan in the same call that reads the facts,
-        before ``apply_rules`` has run: it cannot know that the deterministic
-        gate already excluded the Convenio (vehicle count, chain collision, an
-        identified third vehicle). Once ``analysis.applicability`` is
-        ``"not_applicable"`` there is nothing left to ask — planning a
-        follow-up question here produced exactly the invariant violation this
-        guard exists to prevent.
+        The LLM proposes interview questions before the rule engine runs and
+        cannot see whether its questions are still relevant afterwards. The
+        authoritative missing-information list therefore comes from the
+        applicability and rule gates in ``analysis``.
         """
-        extracted = state.get("extracted")
         analysis = state.get("analysis")
-        if extracted is None or analysis is None:
+        if state.get("extracted") is None or analysis is None:
             raise RuntimeError(
                 "claim workflow reached interview planning without facts and analysis"
             )
@@ -305,43 +355,13 @@ class LangGraphClaimWorkflow:
                 analysis=analysis,
                 result=analysis,
             )
-        plan = extracted.interview_plan
-        if plan.status == "ask":
-            prompts = tuple(question.prompt for question in plan.questions)
-            analysis = ClaimAnalysis(
-                analysis.applicability,
-                analysis.convention,
-                "conditional",
-                analysis.party_ids,
-                analysis.facts,
-                analysis.contradictions,
-                prompts,
-                prompts,
-                analysis.blocks,
-                rules_evaluated=analysis.rules_evaluated,
-            )
-        elif plan.status in ("inconsistent", "coverage_gap"):
-            reason = plan.terminal_reason
-            if reason is None:
-                raise RuntimeError("terminal interview plan has no reason")
-            evidence_ids = tuple(
-                dict.fromkeys(
-                    item for group in state.get("context", ()) for item in group.evidence_ids
-                )
-            )
-            analysis = ClaimAnalysis(
-                analysis.applicability,
-                analysis.convention,
-                "undetermined",
-                analysis.party_ids,
-                analysis.facts,
-                analysis.contradictions,
-                (),
-                (),
-                (ClaimEvidenceBlock(reason, evidence_ids),),
-                rules_evaluated=analysis.rules_evaluated,
-            )
-        return _ClaimUpdate(interview_plan=plan, analysis=analysis, result=analysis)
+        # The model's interview_status/questions are advisory extraction output
+        # only; they never modify the deterministic result or trigger a turn.
+        return _ClaimUpdate(
+            interview_plan=InterviewPlan("ready"),
+            analysis=analysis,
+            result=analysis,
+        )
 
     @staticmethod
     def _route_after_information(
@@ -402,18 +422,106 @@ class LangGraphClaimWorkflow:
         analysis = state.get("result")
         if analysis is None:
             raise RuntimeError("claim workflow reached validation without a result")
-        # The frozen domain value has already validated its invariants on construction.
-        return _ClaimUpdate(result=analysis)
+        context, unavailable = _materialize_cited_evidence(
+            state.get("context", ()), analysis, self._evidence_repository
+        )
+        if unavailable:
+            message = (
+                "No se pudo materializar toda la evidencia citada; no se emite una conclusión "
+                "cerrada hasta recuperar esas páginas."
+            )
+            if analysis.decision == "resolved":
+                analysis = ClaimAnalysis(
+                    applicability=analysis.applicability,
+                    convention=None,
+                    decision="undetermined",
+                    party_ids=analysis.party_ids,
+                    facts=analysis.facts,
+                    contradictions=analysis.contradictions,
+                    conditions=(),
+                    missing_information=(message,),
+                    blocks=(),
+                    rules_evaluated=analysis.rules_evaluated,
+                )
+            else:
+                materialized = {source.evidence_id for item in context for source in item.sources}
+                analysis = ClaimAnalysis(
+                    applicability=analysis.applicability,
+                    convention=analysis.convention,
+                    decision=analysis.decision,
+                    party_ids=analysis.party_ids,
+                    facts=analysis.facts,
+                    contradictions=analysis.contradictions,
+                    conditions=analysis.conditions,
+                    missing_information=analysis.missing_information,
+                    blocks=tuple(
+                        block
+                        for block in analysis.blocks
+                        if all(item in materialized for item in block.evidence_ids)
+                    ),
+                    rules_evaluated=analysis.rules_evaluated,
+                )
+        # The frozen domain value has already validated structural invariants.
+        # Re-materialization here is the final citation-closure guard.
+        return _ClaimUpdate(context=context, result=analysis)
 
 
 def _applicability_facts(facts: tuple[ClaimFact, ...]) -> ApplicabilityFacts:
-    values = {fact.name: fact.value for fact in facts if fact.value is not None}
+    values = FactLedger.from_facts(facts).known_values()
     return ApplicabilityFacts(
         vehicle_count=_integer(values.get("vehicle_count")),
         direct_collision=_boolean(values.get("direct_collision")),
         third_vehicle_identified=_boolean(values.get("third_vehicle_identified")),
         chain_collision=_boolean(values.get("chain_collision")),
+        accident_location_in_scope=_boolean(values.get("accident_location_in_scope")),
+        vehicles_registered_in_spain=_boolean(values.get("vehicles_registered_in_spain")),
+        insurer_adhered=_boolean(values.get("insurer_adhered")),
+        vehicles_habitually_parked_in_spain=_boolean(
+            values.get("vehicles_habitually_parked_in_spain")
+        ),
     )
+
+
+def _applicability_evidence_ids(
+    facts: ApplicabilityFacts,
+    rules: tuple[LoadedRule, ...],
+    *,
+    fallback: tuple[str, ...],
+) -> tuple[str, ...]:
+    """Attach the manual page for the gate that actually ruled out the case."""
+    rule_ids: list[str] = []
+    if facts.vehicle_count is not None and facts.vehicle_count != 2:
+        rule_ids.append("cide-requires-two-vehicles")
+    if facts.third_vehicle_identified is True:
+        rule_ids.append("third-vehicle-identified-excludes-convention")
+    if facts.chain_collision is True:
+        rule_ids.append("chain-collision-excludes-convention")
+    if facts.vehicle_count == 2 and facts.direct_collision is False:
+        rule_ids.append("cide-requires-direct-collision")
+    registered_basis_false = (
+        facts.vehicles_registered_in_spain is False or facts.insurer_adhered is False
+    )
+    scope_excluded = (
+        facts.accident_location_in_scope is False
+        and facts.vehicles_habitually_parked_in_spain is False
+    ) or (
+        facts.accident_location_in_scope is True
+        and registered_basis_false
+        and facts.vehicles_habitually_parked_in_spain is False
+    )
+    if scope_excluded:
+        rule_ids.append("convention-scope")
+
+    by_id = {rule.rule_id: rule for rule in rules}
+    selected = tuple(
+        dict.fromkeys(
+            evidence_id
+            for rule_id in rule_ids
+            if (rule := by_id.get(rule_id)) is not None
+            for evidence_id in rule.evidence_ids
+        )
+    )
+    return selected or fallback
 
 
 def _integer(value: str | None) -> int | None:
@@ -429,15 +537,28 @@ def _boolean(value: str | None) -> bool | None:
     return {"true": True, "false": False}.get(value.strip().lower())
 
 
+_LIABLE_PARTY_FACT_BY_RULE: dict[str, str] = {
+    "ascide-b5-parked-vehicle": "colliding_vehicle",
+    "ascide-b6-exit-from-parking": "exit_manoeuvre_by",
+    "ascide-b9-reverse-vs-rear-impact": "front_damage_vehicle",
+    "ascide-b10-lane-change": "lane_change_vehicle",
+    "cide-door-opening": "door_vehicle",
+}
+
+
+def _liable_party_for_rule(
+    rule_id: str, facts: dict[str, str], parties: tuple[str, ...]
+) -> str | None:
+    """Return a rule's explicitly extracted actor only when it is a known party."""
+    fact_name = _LIABLE_PARTY_FACT_BY_RULE.get(rule_id)
+    party = facts.get(fact_name) if fact_name is not None else None
+    return party if party in parties else None
+
+
 def _contradictions(facts: tuple[ClaimFact, ...]) -> tuple[ClaimContradiction, ...]:
-    by_name: dict[str, list[ClaimFact]] = defaultdict(list)
-    for fact in facts:
-        if fact.value is not None:
-            by_name[fact.name].append(fact)
     return tuple(
-        ClaimContradiction(name, tuple(statements))
-        for name, statements in by_name.items()
-        if len({statement.value for statement in statements}) > 1 and len(statements) > 1
+        ClaimContradiction(name, statements)
+        for name, statements in FactLedger.from_facts(facts).contradictions()
     )
 
 
@@ -467,6 +588,44 @@ def _apply_matrix_evaluation(
         for evaluation in evaluations
     )
     return replaced
+
+
+def _materialize_cited_evidence(
+    context: tuple[ContextEvidence, ...],
+    analysis: ClaimAnalysis,
+    evidence_repository: EvidenceReader,
+) -> tuple[tuple[ContextEvidence, ...], tuple[str, ...]]:
+    """Ensure every evidence ID in a claim explanation is delivered to the caller."""
+    result = list(context)
+    materialized = {source.evidence_id for item in result for source in item.sources}
+    unavailable: list[str] = []
+    cited = tuple(
+        dict.fromkeys(
+            evidence_id for block in analysis.blocks for evidence_id in block.evidence_ids
+        )
+    )
+    for evidence_id in cited:
+        if evidence_id in materialized:
+            continue
+        try:
+            source = evidence_repository.get(evidence_id)
+        except Exception:  # noqa: BLE001 — fail closed if any repository lookup fails
+            unavailable.append(evidence_id)
+            continue
+        if source.evidence_id != evidence_id:
+            unavailable.append(evidence_id)
+            continue
+        text = source.text.strip() or f"Evidencia del manual, página {source.pdf_page}."
+        result.append(
+            ContextEvidence(
+                evidence_ids=(evidence_id,),
+                text=text,
+                sources=(source,),
+                delivery="rule",
+            )
+        )
+        materialized.add(evidence_id)
+    return tuple(result), tuple(unavailable)
 
 
 def _matrix_rationale(decision: MatrixDecision) -> str:

@@ -44,16 +44,6 @@ if TYPE_CHECKING:
 _SKIPPED_PORT_LOGGER = logging.getLogger(__name__)
 
 
-def _qdrant_url() -> str:
-    """Resolve one endpoint consistently for queries, readiness and ingestion."""
-
-    return (
-        os.environ.get("QDRANT_URL")
-        or os.environ.get("ALLIANZ_QDRANT_URL")
-        or "http://127.0.0.1:6333"
-    )
-
-
 def model_configuration(environ: Mapping[str, str] | None = None) -> dict[str, str]:
     """Resolve the active OpenAI model IDs without changing API call contracts."""
 
@@ -63,6 +53,15 @@ def model_configuration(environ: Mapping[str, str] | None = None) -> dict[str, s
         "extraction": environment.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
         "router": environment.get("ALLIANZ_ROUTER_MODEL", "gpt-6-luna"),
     }
+
+
+def _qdrant_url() -> str:
+    """Resolve the same Qdrant endpoint for retrieval, readiness and ingestion."""
+    return (
+        os.environ.get("QDRANT_URL")
+        or os.environ.get("ALLIANZ_QDRANT_URL")
+        or "http://127.0.0.1:6333"
+    ).rstrip("/")
 
 
 def build_inspect_manual() -> InspectManual:
@@ -319,7 +318,7 @@ def build_decision_model() -> DecisionModel:
 
 
 def build_input_guard() -> InputGuard | None:
-    """Semantic input guard; Jev is standard and can be disabled explicitly."""
+    """Jev semantic input guard; set ``ALLIANZ_INPUT_GUARD=off`` to disable."""
 
     mode = os.environ.get("ALLIANZ_INPUT_GUARD", "jev").strip().lower()
     if mode == "off":
@@ -354,8 +353,15 @@ def _require_local_langfuse_environment() -> None:
     missing = tuple(name for name in required if not os.environ.get(name, "").strip())
     if missing:
         raise ValueError(f"missing Langfuse configuration: {', '.join(missing)}")
-    if os.environ["LANGFUSE_BASE_URL"] != "http://127.0.0.1:3000":
-        raise ValueError("LANGFUSE_BASE_URL must be http://127.0.0.1:3000 for local execution")
+    allowed_local_urls = {
+        "http://127.0.0.1:3000",
+        "http://host.docker.internal:3000",
+    }
+    if os.environ["LANGFUSE_BASE_URL"] not in allowed_local_urls:
+        raise ValueError(
+            "LANGFUSE_BASE_URL must point to the local Langfuse service "
+            "(http://127.0.0.1:3000 or http://host.docker.internal:3000)"
+        )
 
 
 def build_api(
@@ -382,8 +388,6 @@ def build_api(
     ``None`` (default), the production safe-default of "not built" is
     used; local entry points such as ``asgi_local`` pass a probe that
     checks the Qdrant active alias.
-    ``active_index_identity`` reports the signed collection resolved behind
-    that alias for health and evaluation provenance.
     """
 
     from infrastructure.adapters.inbound.api.app import create_app
@@ -517,9 +521,9 @@ def _log_skipped_port(port_name: str, profile: str, error: Exception) -> None:
 def build_resolve_query(profile_name: str) -> ResolveQuery:
     """Compose the closed-enum auto router against the same active index as questions and claims.
 
-    The default classifier is Jev (``JevQueryClassifier``), a typed-decision
-    model that does not load a router prompt. With
-    ``ALLIANZ_ROUTER_BACKEND=openai`` it uses its own ``OpenAIRoutingLanguageModel``
+    With ``ALLIANZ_ROUTER_BACKEND=jev`` the classifier is a typed-decision model
+    (``JevQueryClassifier``) and no router prompt is loaded. By default it is
+    backed by its own ``OpenAIRoutingLanguageModel``
     instance loaded with the dedicated ``auto-router`` prompt version
     (configurable via ``ALLIANZ_ROUTER_PROMPT_VERSION``); it uses a
     separate structured output schema (``RouteDecisionSchema``) so the

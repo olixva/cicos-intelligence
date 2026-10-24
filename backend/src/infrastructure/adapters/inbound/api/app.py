@@ -97,7 +97,7 @@ def create_app(
     app.add_api_route("/health/ready", ready, methods=["GET"], tags=["health"])
 
     def configuration() -> dict[str, object]:
-        """Expose model settings and safe build/index provenance, never credentials."""
+        """Expose effective settings and safe provenance, never credentials."""
         provenance = dict(runtime_configuration["provenance"])
         try:
             provenance["active_index_identity"] = (

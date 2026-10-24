@@ -24,6 +24,7 @@ export interface ClaimResultView {
   applicability: Applicability;
   convention: 'CIDE' | 'ASCIDE' | null;
   decision: Decision;
+  liable_party?: string | null;
   party_ids?: readonly string[];
   facts?: readonly ClaimFactView[];
   contradictions?: readonly { fact_name: string; statements: readonly ClaimFactView[] }[];

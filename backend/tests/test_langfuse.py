@@ -81,6 +81,7 @@ def _make_claim_execution_spy() -> ClaimExecution:
             applicability="applicable",
             convention="CIDE",
             decision="resolved",
+            liable_party="A",
             party_ids=("A", "B"),
             facts=(
                 ClaimFact(
@@ -143,6 +144,7 @@ class _RecordingResolveQuery:
                     applicability="applicable",
                     convention="CIDE",
                     decision="resolved",
+                    liable_party="A",
                     party_ids=("A", "B"),
                     facts=(),
                     contradictions=(),

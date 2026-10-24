@@ -80,6 +80,7 @@ describe('ToolCallCard', () => {
         convention: 'CIDE',
         applicability: 'applicable',
         decision: 'resolved',
+        liable_party: 'B',
       },
     };
     render(<ToolCallCard toolCall={tc} defaultExpanded />);
@@ -87,6 +88,7 @@ describe('ToolCallCard', () => {
     // En castellano y explicado: el usuario no debe leer los enums del backend.
     expect(screen.getByText('El Convenio es aplicable')).toBeInTheDocument();
     expect(screen.getByText('Resuelto')).toBeInTheDocument();
+    expect(screen.getByText('Responsable: B')).toBeInTheDocument();
     expect(screen.queryByText('applicable')).not.toBeInTheDocument();
     expect(screen.queryByText('resolved')).not.toBeInTheDocument();
   });

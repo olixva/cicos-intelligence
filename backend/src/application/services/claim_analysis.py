@@ -7,6 +7,7 @@ from domain.models.decision import ClaimAnalysis
 from domain.models.rule_evaluation import RuleEvaluation
 from domain.rules.applicability import ApplicabilityAssessment
 from domain.rules.cide_matrix import MatrixDecision
+from domain.services.fact_ledger import FactLedger
 
 
 def build_applicability_analysis(
@@ -16,15 +17,16 @@ def build_applicability_analysis(
     assessment: ApplicabilityAssessment,
     matched_manoeuvre_rules: tuple[RuleEvaluation, ...] = (),
     manoeuvre_convention: Literal["CIDE", "ASCIDE"] | None = None,
+    manoeuvre_liable_party: str | None = None,
     matrix_decision: MatrixDecision | None = None,
     matrix_convention: Literal["CIDE", "ASCIDE"] | None = None,
 ) -> ClaimAnalysis:
     """Return a convention-scoped result without attributing liability prematurely.
 
     ``matched_manoeuvre_rules`` holds only ``"matched"`` evaluations of manoeuvre
-    rules, e.g. lane-change or parked-vehicle. A single unambiguous match resolves
-    the claim; zero or several conflicting matches stay ``undetermined`` rather
-    than guessing between them.
+    rules, e.g. lane-change or parked-vehicle. A single match resolves the claim
+    only when its structured actor is a known party; otherwise it remains
+    undetermined.
 
     ``manoeuvre_convention`` is the convention that matched rule declares in the
     signed artifact. It is **not** inferred from the rule's kind: ``manoeuvre``
@@ -32,11 +34,9 @@ def build_applicability_analysis(
     When the artifact does not state one, the claim still resolves but names no
     convention instead of assuming it.
 
-    ``matrix_decision`` is only consulted when no manoeuvre rule already
-    resolved the claim: a D.A.A. pair and a recognised manoeuvre should not
-    coexist in the same narrative, and if they somehow do, guessing which one
-    wins would be exactly the invented conclusion this function exists to
-    avoid.
+    ``matrix_decision`` and a matched manoeuvre are never allowed to disagree
+    silently. If the matrix attributes a party and a manoeuvre has no structured
+    actor or names another party, the result is undetermined pending review.
     """
 
     if assessment.status == "not_applicable":
@@ -66,8 +66,61 @@ def build_applicability_analysis(
             missing_information=assessment.missing_information,
             blocks=(),
         )
+    if (
+        matrix_decision is not None
+        and matrix_decision.status == "attributes"
+        and len(matched_manoeuvre_rules) == 1
+        and manoeuvre_liable_party != matrix_decision.liable_party
+    ):
+        rule = matched_manoeuvre_rules[0]
+        evidence_ids = tuple(dict.fromkeys((*matrix_decision.evidence_ids, *rule.evidence_ids)))
+        message = (
+            "La matriz CIDE y una norma de maniobra producen bases que no se pueden "
+            "conciliar automáticamente; se requiere revisar la prioridad aplicable."
+        )
+        return ClaimAnalysis(
+            applicability="applicable",
+            convention=None,
+            decision="undetermined",
+            party_ids=parties,
+            facts=facts,
+            contradictions=(),
+            conditions=(),
+            missing_information=(message,),
+            blocks=(ClaimEvidenceBlock(message, evidence_ids),),
+        )
     if len(matched_manoeuvre_rules) == 1:
         rule = matched_manoeuvre_rules[0]
+        if manoeuvre_liable_party not in parties:
+            message = (
+                "La regla coincide, pero no se identificó de forma estructurada un responsable "
+                "entre las partes A y B."
+            )
+            return ClaimAnalysis(
+                applicability="applicable",
+                convention=manoeuvre_convention,
+                decision="undetermined",
+                party_ids=parties,
+                facts=facts,
+                contradictions=(),
+                conditions=(),
+                missing_information=(message,),
+                blocks=(ClaimEvidenceBlock(message, rule.evidence_ids),),
+            )
+        if matrix_decision is not None and matrix_decision.status == "attributes":
+            return _from_matrix_decision(
+                matrix_decision, parties=parties, facts=facts, convention=matrix_convention
+            ) or ClaimAnalysis(
+                applicability="applicable",
+                convention=matrix_convention,
+                decision="undetermined",
+                party_ids=parties,
+                facts=facts,
+                contradictions=(),
+                conditions=(),
+                missing_information=("No se pudo validar la parte atribuida por la matriz.",),
+                blocks=(),
+            )
         return ClaimAnalysis(
             applicability="applicable",
             convention=manoeuvre_convention,
@@ -79,6 +132,7 @@ def build_applicability_analysis(
             missing_information=(),
             blocks=(ClaimEvidenceBlock(rule.rationale, rule.evidence_ids),),
             rules_evaluated=matched_manoeuvre_rules,
+            liable_party=manoeuvre_liable_party,
         )
     if matrix_decision is not None:
         resolved = _from_matrix_decision(
@@ -115,6 +169,22 @@ def _from_matrix_decision(
     one outcome — none of them a guess.
     """
     if decision.status == "attributes":
+        if decision.liable_party not in parties:
+            text = (
+                "La matriz CIDE atribuye la responsabilidad a una parte que no está "
+                "identificada en el relato; no se puede cerrar el análisis."
+            )
+            return ClaimAnalysis(
+                applicability="applicable",
+                convention=convention,
+                decision="undetermined",
+                party_ids=parties,
+                facts=facts,
+                contradictions=(),
+                conditions=(),
+                missing_information=("Identificar las partes A y B del siniestro.",),
+                blocks=(ClaimEvidenceBlock(text, decision.evidence_ids),),
+            )
         text = (
             f"La tabla de culpabilidad CIDE atribuye la responsabilidad a {decision.liable_party}."
         )
@@ -139,6 +209,7 @@ def _from_matrix_decision(
                     rationale=text,
                 ),
             ),
+            liable_party=decision.liable_party,
         )
     if decision.status == "no_attribution":
         text = (
@@ -193,14 +264,20 @@ def _personalized_missing_information(facts: tuple[ClaimFact, ...]) -> tuple[str
     the CIDE form's internal boxes. Only a claim with no manoeuvre narrative
     gets a follow-up question, phrased in terms a person can answer.
     """
-    values = {fact.name: fact.value for fact in facts if fact.value is not None}
     core = {
         "vehicle_count",
         "direct_collision",
         "third_vehicle_identified",
         "chain_collision",
+        "accident_location_in_scope",
+        "vehicles_registered_in_spain",
+        "insurer_adhered",
+        "vehicles_habitually_parked_in_spain",
     }
-    if any(name not in core for name in values):
+    if any(
+        state.name not in core and state.status == "known"
+        for state in FactLedger.from_facts(facts).states
+    ):
         return ()
     return (
         "¿Qué maniobra realizaba cada vehículo justo antes del impacto? "

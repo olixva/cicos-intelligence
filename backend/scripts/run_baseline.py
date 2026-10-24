@@ -74,10 +74,10 @@ from application.ports.outbound.decision_model import DecisionModel  # noqa: E40
 from application.ports.outbound.language_model import LanguageModelError  # noqa: E402
 from application.services.evaluation_normalization import evaluation_error  # noqa: E402
 from application.services.evaluation_runtime_config import (  # noqa: E402
-    DEFAULT_DOCUMENT_HASH,
     assert_evaluation_runtime_matches,
     evaluation_build_fingerprint,
     evaluation_runtime_configuration,
+    pin_active_index_identity,
 )
 from infrastructure.adapters.outbound.decision_model.jev_client import (  # noqa: E402
     JevDecisionModel,
@@ -248,23 +248,18 @@ def _run_identity(
     base_url: str,
     judge: str,
 ) -> dict[str, Any]:
-    commit = _git_commit()
     repo_root = Path(__file__).resolve().parents[2]
-    build_fingerprint = evaluation_build_fingerprint(repo_root)
-    document_hash = os.environ.get("ALLIANZ_DOCUMENT_HASH", DEFAULT_DOCUMENT_HASH)
     runtime_environment = dict(os.environ)
-    runtime_environment["ALLIANZ_BUILD_COMMIT"] = commit
-    runtime_environment["ALLIANZ_BUILD_FINGERPRINT"] = build_fingerprint
+    runtime_environment.setdefault(
+        "ALLIANZ_BUILD_FINGERPRINT", evaluation_build_fingerprint(repo_root)
+    )
     effective_configuration = evaluation_runtime_configuration(
         runtime_environment,
-        active_index_identity={"index_signature": {"document_hash": document_hash}},
+        repo_root=repo_root,
     )
-    router_configuration = effective_configuration["router"]
-    input_guard_configuration = effective_configuration["input_guard"]
-    router_model = router_configuration["model"]
     return {
         "label": label,
-        "commit": commit,
+        "commit": effective_configuration["provenance"]["commit"],
         "golden_sha256": sha256(GOLDEN_PATH.read_bytes()).hexdigest(),
         "case_count": len(cases),
         "modes": list(modes),
@@ -274,15 +269,29 @@ def _run_identity(
         "configuration_source": os.environ.get(
             "ALLIANZ_EVALUATION_CONFIG_SOURCE", "process environment"
         ),
-        "input_guard": input_guard_configuration,
-        "router": router_configuration,
-        "models": effective_configuration["models"] | {"router": router_model},
+        "input_guard": effective_configuration["input_guard"],
+        "router": effective_configuration["router"],
+        "models": effective_configuration["models"],
         "effective_configuration": effective_configuration,
     }
 
 
 def _assert_backend_configuration(expected: dict[str, Any], actual: dict[str, Any]) -> None:
-    assert_evaluation_runtime_matches(expected, actual)
+    assert_evaluation_runtime_matches(expected, actual, require_active_index_identity=True)
+
+
+def _record_run_duration(manifest: dict[str, Any], duration_s: float) -> float:
+    """Accumulate every execution segment so resumed runs retain wall time."""
+    segments = manifest.get("duration_segments_s")
+    if isinstance(segments, list) and all(isinstance(value, (int, float)) for value in segments):
+        durations = [float(value) for value in segments]
+    else:
+        previous = manifest.get("duration_s", 0.0)
+        durations = [float(previous)] if isinstance(previous, (int, float)) and previous > 0 else []
+    durations.append(duration_s)
+    manifest["duration_segments_s"] = durations
+    manifest["duration_s"] = sum(durations)
+    return manifest["duration_s"]
 
 
 def _read_resume_state(
@@ -295,21 +304,6 @@ def _read_resume_state(
     if not isinstance(manifest, dict) or manifest.get("run_identity") != expected_identity:
         raise ValueError("cannot resume: run identity does not match manifest.json")
     return manifest, _load_case_records(output_dir)
-
-
-def _record_run_duration(manifest: dict[str, Any], duration_s: float) -> float:
-    """Accumulate every execution segment so resumed runs retain wall-clock time."""
-
-    segments = manifest.get("duration_segments_s")
-    if isinstance(segments, list) and all(isinstance(value, (int, float)) for value in segments):
-        durations = [float(value) for value in segments]
-    else:
-        previous = manifest.get("duration_s", 0.0)
-        durations = [float(previous)] if isinstance(previous, (int, float)) and previous > 0 else []
-    durations.append(duration_s)
-    manifest["duration_segments_s"] = durations
-    manifest["duration_s"] = sum(durations)
-    return manifest["duration_s"]
 
 
 # --- HTTP ----------------------------------------------------------------------
@@ -339,7 +333,7 @@ async def _wait_for_ready(
     *,
     attempts: int = 30,
     expected_configuration: dict[str, Any] | None = None,
-) -> None:
+) -> dict[str, Any]:
     """Espera a que ``/health/ready`` responda 200 con ``status == ready``."""
     last_error: str = ""
     for _ in range(attempts):
@@ -351,16 +345,25 @@ async def _wait_for_ready(
                     if expected_configuration is not None:
                         config_response = await client.get("/health/config", timeout=2.0)
                         config_response.raise_for_status()
-                        _assert_backend_configuration(
-                            expected_configuration, config_response.json()
-                        )
-                    return
+                        configuration = config_response.json()
+                        if not isinstance(configuration, dict):
+                            raise RuntimeError("backend returned invalid /health/config payload")
+                        _assert_backend_configuration(expected_configuration, configuration)
+                        return configuration
+                    return {}
         except (httpx.HTTPError, json.JSONDecodeError) as error:
             last_error = repr(error)
         await asyncio.sleep(1.0)
     raise RuntimeError(
         f"backend no quedó listo tras {attempts}s en {client.base_url}{HEALTH_PATH}: {last_error}"
     )
+
+
+async def _backend_configuration(
+    *, base_url: str, expected_configuration: dict[str, Any]
+) -> dict[str, Any]:
+    async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
+        return await _wait_for_ready(client, expected_configuration=expected_configuration)
 
 
 # --- Métricas por modo ---------------------------------------------------------
@@ -394,6 +397,27 @@ def _evaluate_question(*, response: dict[str, Any], case: dict[str, Any]) -> dic
 
 def _evaluate_claim(*, response: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     result = response.get("result") or {}
+    if result.get("kind") == "clarification":
+        turn = EvaluableTurn.from_envelope(response, requested_mode="claim")
+        cited = _cited_evidence(result)
+        requirements = _evidence_requirements(case)
+        return {
+            "result_kind": turn.result_kind,
+            "route_decision": turn.route_decision,
+            "needs_input": turn.needs_input,
+            "missing_fields": result.get("missing_fields", []),
+            "citation_id_validity": citation_id_validity(
+                cited=cited,
+                valid_pool=_expected_evidence_pool(case),
+                citations_required=bool(requirements),
+            ),
+            "evidence_bundle_coverage": evidence_bundle_coverage(
+                cited=cited,
+                requirements=requirements,
+            ),
+            "cited_count": len(cited),
+            "fact_count": 0,
+        }
     if result.get("kind") != "claim":
         return {"error": f"unexpected kind {result.get('kind')!r}"}
     expected = (case.get("expected_output") or {}).get("decisions") or {}
@@ -834,8 +858,7 @@ def _aggregate(
         "over_resolution_rate_against_reference": asdict(over_resolution_aggregate),
         "router_cases": router_cases,
         "router_missing": router_missing,
-        "router_end_to_end_accuracy_all_labeled": {
-            "scope": "auto pipeline: dispatch and response availability as well as route",
+        "router_accuracy_all_labeled": {
             "n_labeled": router_cases,
             "n_predicted": router_cases - router_missing,
             "n_missing_or_error": router_missing,
@@ -882,11 +905,11 @@ def _write_summary(
             )
     lines.append("")
     cross = metrics.get("cross_mode") or {}
-    router_accuracy = cross.get("router_end_to_end_accuracy_all_labeled") or {}
+    router_accuracy = cross.get("router_accuracy_all_labeled") or {}
     accuracy = router_accuracy.get("accuracy")
     accuracy_text = f"{accuracy:.3f}" if isinstance(accuracy, (int, float)) else "n/a"
     lines.append(
-        "## router_end_to_end_accuracy_all_labeled "
+        "## router_accuracy_all_labeled "
         f"accuracy={accuracy_text} ({router_accuracy.get('n_correct', 0)}/"
         f"{router_accuracy.get('n_labeled', 0)}; "
         f"missing_or_error={router_accuracy.get('n_missing_or_error', 0)})"
@@ -944,6 +967,15 @@ def main(argv: list[str] | None = None) -> int:
         concurrency=args.concurrency,
         base_url=args.base_url,
         judge=args.judge,
+    )
+    backend_configuration = asyncio.run(
+        _backend_configuration(
+            base_url=args.base_url,
+            expected_configuration=identity["effective_configuration"],
+        )
+    )
+    identity["effective_configuration"] = pin_active_index_identity(
+        identity["effective_configuration"], backend_configuration
     )
     output_exists_with_data = output_dir.exists() and any(output_dir.iterdir())
     if output_exists_with_data:

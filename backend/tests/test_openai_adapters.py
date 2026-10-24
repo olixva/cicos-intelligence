@@ -285,18 +285,12 @@ class _Transport:
         )
 
 
-def test_claim_extraction_to_application_drops_whitespace_only_facts_and_questions() -> None:
-    """El proveedor a veces emite ``name`` o ``source_text`` whitespace-only en
-    un fact, e ``id``/``prompt``/``reason`` whitespace-only en una pregunta. El
-    invariante de no-vacío lo aplica el dataclass (`` `` ``.strip()`` `` `` no
-    vacío), no Pydantic ``min_length=1``. El adaptador debe descartar los
-    inválidos antes de cruzar al modelo de aplicación en lugar de propagar
-    ``ValueError`` que tira la request con 500."""
+def test_claim_extraction_drops_whitespace_facts_and_does_not_generate_interviews() -> None:
+    """The extractor returns facts only; deterministic gates own follow-ups."""
 
     from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
         ClaimExtractionSchema,
         ClaimFactSchema,
-        InterviewQuestionSchema,
     )
 
     parsed = ClaimExtractionSchema(
@@ -321,37 +315,22 @@ def test_claim_extraction_to_application_drops_whitespace_only_facts_and_questio
                 source_text="   ",  # whitespace-only — Pydantic pasa, dataclass rechaza
             ),
         ),
-        interview_status="ask",
-        questions=(
-            InterviewQuestionSchema(
-                id="q1",
-                prompt="¿quién circulaba?",
-                reason="aporta la norma",
-            ),
-            InterviewQuestionSchema(
-                id="  ",
-                prompt="\t\n",
-                reason=" ",
-            ),
-        ),
     )
 
     application = parsed.to_application()
 
+    assert "questions" not in ClaimExtractionSchema.model_fields
+    assert "interview_status" not in ClaimExtractionSchema.model_fields
     assert len(application.facts) == 1
     assert application.facts[0].name == "vehicle_count"
 
-    assert application.interview_plan.status == "ask"
-    assert len(application.interview_plan.questions) == 1
-    assert application.interview_plan.questions[0].id == "q1"
+    assert application.interview_plan.status == "ready"
+    assert application.interview_plan.questions == ()
 
 
-def test_known_boolean_fact_coerces_arbitrary_value_to_strict_boolean() -> None:
-    """Bug D: el extractor emite ``value="A"`` para ``one_vehicle_parked`` cuando
-    el LLM lo confunde con un identificador de vehículo. El adaptador debe
-    normalizar cualquier valor presente al literal estricto ``"true"`` para
-    nombres booleanos conocidos — la presencia del fact ya implica que la
-    maniobra ocurre."""
+@pytest.mark.parametrize("value", ["A", "unknown", "no consta", " "])
+def test_known_boolean_fact_with_invalid_or_unknown_value_stays_unknown(value: str) -> None:
+    """Un literal booleano inválido nunca se convierte en una afirmación positiva."""
 
     from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
         ClaimExtractionSchema,
@@ -363,7 +342,7 @@ def test_known_boolean_fact_coerces_arbitrary_value_to_strict_boolean() -> None:
         facts=(
             ClaimFactSchema(
                 name="one_vehicle_parked",
-                value="A",
+                value=value,
                 asserted_by=None,
                 source_text="uno de los vehículos estaba estacionado",
             ),
@@ -374,7 +353,7 @@ def test_known_boolean_fact_coerces_arbitrary_value_to_strict_boolean() -> None:
 
     assert len(application.facts) == 1
     assert application.facts[0].name == "one_vehicle_parked"
-    assert application.facts[0].value == "true"
+    assert application.facts[0].value is None
 
 
 def test_known_boolean_fact_normalises_string_true_false() -> None:
@@ -423,9 +402,8 @@ def test_known_boolean_fact_normalises_string_true_false() -> None:
     assert values == ("true", "false", "true", "true")
 
 
-def test_known_boolean_fact_with_none_value_becomes_false() -> None:
-    """Un fact booleano conocido sin valor (ausente o ``None``) representa la
-    ausencia del hecho en el relato y se normaliza a ``"false"``."""
+def test_known_boolean_fact_with_none_value_stays_unknown() -> None:
+    """La ausencia de un valor no prueba que el hecho sea falso."""
 
     from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
         ClaimExtractionSchema,
@@ -446,7 +424,7 @@ def test_known_boolean_fact_with_none_value_becomes_false() -> None:
 
     application = parsed.to_application()
 
-    assert application.facts[0].value == "false"
+    assert application.facts[0].value is None
 
 
 def test_unknown_fact_passes_value_through_unchanged() -> None:
@@ -521,16 +499,18 @@ def test_claim_extractor_uses_structured_output_and_never_adds_manual_context() 
     assert "context" not in rendered.lower()
 
 
-def test_claim_extractor_instructs_the_model_to_return_a_bounded_interview_plan() -> None:
+def test_claim_extractor_requests_scope_facts_and_leaves_interviews_to_rules() -> None:
     from infrastructure.adapters.outbound.language_model.openai_claim_fact_extractor import (
         _messages,
     )
 
     rendered = str(_messages(ClaimInput("A y B chocaron.")))
 
-    assert "plan de entrevista" in rendered.lower()
-    assert "no repitas" in rendered.lower()
-    assert "matriculación" in rendered.lower()
+    assert "plan de entrevista" not in rendered.lower()
+    assert "accident_location_in_scope" in rendered
+    assert "vehicles_registered_in_spain" in rendered
+    assert "insurer_adhered" in rendered
+    assert "matriculados en españa" in rendered.lower()
 
 
 # --------------------------------------------------------------------------

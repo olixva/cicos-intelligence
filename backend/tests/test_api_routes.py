@@ -314,6 +314,7 @@ def test_claim_route_returns_full_response_shape_from_inbound_port() -> None:
         "applicability": "applicable",
         "convention": "CIDE",
         "decision": "conditional",
+        "liable_party": None,
         "parties": ["A", "B"],
         "attributed_facts": [
             {
@@ -391,6 +392,30 @@ def test_claim_route_never_returns_image_path_or_local_asset_paths() -> None:
     )
     for marker in forbidden_markers:
         assert marker not in body, f"forbidden marker {marker!r} must not appear in the response"
+
+
+def test_claim_response_materializes_every_page_from_a_multi_page_context() -> None:
+    from infrastructure.adapters.inbound.api.schemas.claim import _iter_delivered_sources
+
+    first = _build_page(evidence_id="sha256:abc:page:1", pdf_page=1)
+    second = _build_page(evidence_id="sha256:abc:page:2", pdf_page=2)
+    execution = ClaimExecution(
+        result=_full_analysis(page=first, fact=ClaimFact("vehicle_count", "2", "A", "dos")),
+        context=(
+            ContextEvidence(
+                evidence_ids=(first.evidence_id, second.evidence_id),
+                text="Fragmento que abarca dos páginas.",
+                sources=(first, second),
+            ),
+        ),
+    )
+
+    delivered = tuple(_iter_delivered_sources(execution))
+
+    assert tuple(context_id for context_id, _source in delivered) == (
+        first.evidence_id,
+        second.evidence_id,
+    )
 
 
 def test_claim_route_rejects_invalid_request_payloads_with_422() -> None:
@@ -583,6 +608,7 @@ def test_resolve_route_never_leaks_local_asset_paths() -> None:
                 applicability="applicable",
                 convention="CIDE",
                 decision="resolved",
+                liable_party="A",
                 party_ids=("A", "B"),
                 facts=(),
                 contradictions=(),
@@ -877,81 +903,34 @@ def test_health_is_local_and_catalog_alone_does_not_make_the_api_ready(
     assert checks == 1
 
 
-def test_health_configuration_exposes_effective_models_without_credentials(
+def test_health_config_reports_active_index_without_exposing_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from fastapi.testclient import TestClient
-
     from infrastructure.adapters.inbound.api.app import create_app
 
     monkeypatch.setenv("ALLIANZ_ROUTER_BACKEND", "jev")
     monkeypatch.setenv("TYPESAFE_DEFAULT_MODEL", "jev-latest")
-    monkeypatch.setenv("ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE", "0.4")
-    monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "jev")
-    monkeypatch.setenv("ALLIANZ_JEV_GUARD_INJECTION", "0.9")
-    monkeypatch.setenv("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.95")
-    monkeypatch.setenv("OPENAI_ANSWER_MODEL", "gpt-6-luna")
-    monkeypatch.setenv("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6-luna")
-    monkeypatch.delenv("ALLIANZ_BUILD_COMMIT", raising=False)
-    monkeypatch.delenv("ALLIANZ_BUILD_FINGERPRINT", raising=False)
-    monkeypatch.setenv("OPENAI_API_KEY", "must-not-be-exposed")
-    monkeypatch.setenv("TYPESAFE_API_KEY", "must-not-be-exposed")
-
-    response = TestClient(create_app()).get("/health/config")
-
-    assert response.status_code == 200
-    configuration = response.json()
-    assert {key: configuration[key] for key in ("router", "input_guard", "models")} == {
-        "router": {"backend": "jev", "model": "jev-latest", "min_confidence": 0.4},
-        "input_guard": {
-            "backend": "jev",
-            "injection_threshold": 0.9,
-            "off_topic_threshold": 0.95,
-        },
-        "models": {"answer": "gpt-6-luna", "extraction": "gpt-6-luna"},
-    }
-    assert configuration["provenance"]["build_commit"] is None
-    assert configuration["provenance"]["build_fingerprint"] is None
-    assert configuration["provenance"]["active_index_identity"] is None
-    assert "must-not-be-exposed" not in response.text
-
-
-def test_health_configuration_distinguishes_configured_document_from_active_index(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from infrastructure.adapters.inbound.api.app import create_app
-
-    document_hash = "a" * 64
-    monkeypatch.setenv("ALLIANZ_BUILD_COMMIT", "server-build-123")
-    monkeypatch.setenv("ALLIANZ_BUILD_FINGERPRINT", "worktree-fingerprint")
-    monkeypatch.setenv("ALLIANZ_DOCUMENT_HASH", "c" * 64)
-
-    response = TestClient(create_app(active_version=document_hash)).get("/health/config")
-
-    assert response.status_code == 200
-    assert response.json()["provenance"] == {
-        "build_commit": "server-build-123",
-        "build_fingerprint": "worktree-fingerprint",
-        "configured_document_hash": "c" * 64,
-        "active_index_identity": None,
-    }
-
-
-def test_health_configuration_reports_the_active_qdrant_alias_identity() -> None:
-    from infrastructure.adapters.inbound.api.app import create_app
-
-    document_hash = "b" * 64
+    monkeypatch.setenv("TYPESAFE_API_KEY", "secret-jev-test")
+    monkeypatch.setenv("OPENAI_API_KEY", "secret-openai-test")
     identity = {
         "alias_name": "allianz-manual-active",
         "collection_name": "allianz-test-collection",
         "points_count": 118,
-        "index_signature": {"document_hash": document_hash, "embedding_model": "test-embedding"},
+        "index_signature": {"document_hash": "b" * 64},
     }
 
     response = TestClient(create_app(active_index_identity=lambda: identity)).get("/health/config")
 
     assert response.status_code == 200
-    assert response.json()["provenance"]["active_index_identity"] == identity
+    body = response.json()
+    assert body["router"] == {
+        "backend": "jev",
+        "model": "jev-latest",
+        "min_confidence": 0.4,
+    }
+    assert body["provenance"]["active_index_identity"] == identity
+    assert "secret-jev-test" not in response.text
+    assert "secret-openai-test" not in response.text
 
 
 def test_resolve_citations_preserves_requested_order(tmp_path: Path) -> None:

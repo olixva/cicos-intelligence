@@ -72,6 +72,7 @@ def test_a_single_matched_manoeuvre_rule_resolves_the_claim() -> None:
         assessment=ApplicabilityAssessment("applicable", (), (), ("manual:56",)),
         matched_manoeuvre_rules=(matched,),
         manoeuvre_convention="ASCIDE",
+        manoeuvre_liable_party="A",
     )
 
     assert result.decision == "resolved"
@@ -101,6 +102,7 @@ def test_convention_comes_from_the_rule_not_from_its_kind() -> None:
         assessment=ApplicabilityAssessment("applicable", (), (), ("manual:56",)),
         matched_manoeuvre_rules=(matched,),
         manoeuvre_convention="CIDE",
+        manoeuvre_liable_party="A",
     )
 
     assert result.decision == "resolved"
@@ -125,6 +127,7 @@ def test_a_matched_rule_without_a_declared_convention_names_none() -> None:
         facts=(),
         assessment=ApplicabilityAssessment("applicable", (), (), ("manual:56",)),
         matched_manoeuvre_rules=(matched,),
+        manoeuvre_liable_party="A",
     )
 
     assert result.decision == "resolved"
@@ -195,6 +198,63 @@ def test_conflicting_matched_manoeuvre_rules_stay_undetermined_instead_of_guessi
     assert result.convention is None
 
 
+def test_a_manoeuvre_match_without_a_structured_actor_cannot_resolve() -> None:
+    from application.services.claim_analysis import build_applicability_analysis
+    from domain.models.rule_evaluation import RuleEvaluation
+    from domain.rules.applicability import ApplicabilityAssessment
+
+    matched = RuleEvaluation(
+        rule_id="ascide-b10-lane-change",
+        inputs=(),
+        result="matched",
+        evidence_ids=("manual:75",),
+        rationale="Culpable quien cambia de carril.",
+    )
+
+    result = build_applicability_analysis(
+        parties=("A", "B"),
+        facts=(),
+        assessment=ApplicabilityAssessment("applicable", (), (), ("manual:56",)),
+        matched_manoeuvre_rules=(matched,),
+        manoeuvre_convention="ASCIDE",
+    )
+
+    assert result.decision == "undetermined"
+    assert result.liable_party is None
+    assert result.missing_information
+
+
+def test_conflicting_matrix_and_manoeuvre_bases_abstain() -> None:
+    from application.services.claim_analysis import build_applicability_analysis
+    from domain.models.rule_evaluation import RuleEvaluation
+    from domain.rules.applicability import ApplicabilityAssessment
+    from domain.rules.cide_matrix import MatrixDecision
+
+    matched = RuleEvaluation(
+        rule_id="ascide-b10-lane-change",
+        inputs=(),
+        result="matched",
+        evidence_ids=("manual:75",),
+        rationale="Culpable quien cambia de carril.",
+    )
+    matrix = MatrixDecision(status="attributes", liable_party="B", evidence_ids=("manual:101",))
+
+    result = build_applicability_analysis(
+        parties=("A", "B"),
+        facts=(),
+        assessment=ApplicabilityAssessment("applicable", (), (), ("manual:56",)),
+        matched_manoeuvre_rules=(matched,),
+        manoeuvre_convention="ASCIDE",
+        manoeuvre_liable_party="A",
+        matrix_decision=matrix,
+        matrix_convention="CIDE",
+    )
+
+    assert result.decision == "undetermined"
+    assert result.liable_party is None
+    assert result.blocks[0].evidence_ids == ("manual:101", "manual:75")
+
+
 # --------------------------------------------------------------------------
 # Bounded honesty tests for the documented claim scenarios.
 #
@@ -242,8 +302,24 @@ def _build_workflow(facts: tuple[ClaimFact, ...], speakers: tuple[str, ...] = ("
         LangGraphClaimWorkflow,
     )
 
+    scope_names = {
+        "accident_location_in_scope",
+        "vehicles_registered_in_spain",
+        "insurer_adhered",
+        "vehicles_habitually_parked_in_spain",
+    }
+    scoped_facts = facts
+    if not scope_names.intersection(fact.name for fact in facts):
+        scoped_facts = (
+            ClaimFact("accident_location_in_scope", "true", None, "lugar en ámbito"),
+            ClaimFact("vehicles_registered_in_spain", "true", None, "matriculados en España"),
+            ClaimFact("insurer_adhered", "true", None, "entidades adheridas"),
+            ClaimFact("vehicles_habitually_parked_in_spain", "false", None, "no consta"),
+            *facts,
+        )
+
     return LangGraphClaimWorkflow(
-        fact_extractor=_Extractor(ExtractedClaimFacts(speakers, facts)),
+        fact_extractor=_Extractor(ExtractedClaimFacts(speakers, scoped_facts)),
         retriever=_Retriever(),
         evidence_repository=_Evidence(
             PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())

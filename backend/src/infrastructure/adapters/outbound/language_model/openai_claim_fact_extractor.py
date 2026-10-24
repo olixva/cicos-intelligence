@@ -6,14 +6,14 @@ import json
 import os
 from collections.abc import Awaitable
 from dataclasses import dataclass
-from typing import Literal, Protocol, cast
+from typing import Protocol, cast
 
 from langfuse.openai import AsyncOpenAI  # pyright: ignore[reportPrivateImportUsage]
 from openai import APIError, APITimeoutError
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from application.models.claim import ExtractedClaimFacts, InterviewPlan, InterviewQuestion
+from application.models.claim import ExtractedClaimFacts, InterviewPlan
 from application.ports.outbound.claim_fact_extractor import ClaimFactExtractor
 from application.ports.outbound.language_model import (
     LanguageModelError,
@@ -33,6 +33,7 @@ from domain.models.claim import ClaimFact, ClaimInput
 _BOOLEAN_FACT_NAMES: frozenset[str] = frozenset(
     {
         "admitted_amber",
+        "accident_location_in_scope",
         "chain_collision",
         "collision_with_parked_vehicle",
         "contradictory_versions",
@@ -42,8 +43,11 @@ _BOOLEAN_FACT_NAMES: frozenset[str] = frozenset(
         "driver_under_influence",
         "exit_disputed_as_incorporation",
         "lane_change_acknowledged_by_both",
+        "insurer_adhered",
         "one_vehicle_parked",
         "third_vehicle_identified",
+        "vehicles_habitually_parked_in_spain",
+        "vehicles_registered_in_spain",
     }
 )
 
@@ -51,23 +55,16 @@ _TRUTHY_LITERALS: frozenset[str] = frozenset({"true", "si", "sí", "yes", "1"})
 _FALSY_LITERALS: frozenset[str] = frozenset({"false", "no", "0"})
 
 
-def _coerce_boolean_value(value: str | None) -> str:
-    """Normaliza ``value`` al alfabeto estricto ``"true"`` / ``"false"``.
-
-    - Valor ausente (``None``) o whitespace-only → ``"false"``.
-    - Literal conocido (canónico o alias común) → su forma estricta.
-    - Cualquier otro valor presente → ``"true"``: si el modelo declaró el
-      hecho, la presencia del fact ya implica que aplica.
-    """
-
+def _coerce_boolean_value(value: str | None) -> str | None:
+    """Normalize only recognized literals; absent or invalid values stay unknown."""
     if value is None or not value.strip():
-        return "false"
+        return None
     normalized = value.strip().lower()
     if normalized in _TRUTHY_LITERALS:
         return "true"
     if normalized in _FALSY_LITERALS:
         return "false"
-    return "true"
+    return None
 
 
 class _StrictSchema(BaseModel):
@@ -81,20 +78,9 @@ class ClaimFactSchema(_StrictSchema):
     source_text: str = Field(min_length=1)
 
 
-class InterviewQuestionSchema(_StrictSchema):
-    id: str = Field(min_length=1)
-    prompt: str = Field(min_length=1)
-    reason: str = Field(min_length=1)
-    answer_kind: Literal["text", "choice", "boolean"] = "text"
-    options: tuple[str, ...] = ()
-
-
 class ClaimExtractionSchema(_StrictSchema):
     party_ids: tuple[str, ...]
     facts: tuple[ClaimFactSchema, ...]
-    interview_status: Literal["ask", "ready", "inconsistent", "coverage_gap"] = "ready"
-    questions: tuple[InterviewQuestionSchema, ...] = ()
-    terminal_reason: str | None = None
 
     def to_application(self) -> ExtractedClaimFacts:
         # El proveedor a veces emite facts con ``name`` o ``source_text``
@@ -103,11 +89,9 @@ class ClaimExtractionSchema(_StrictSchema):
         # Los descartamos antes de cruzar al modelo de aplicación; el
         # invariante de no-vacío sigue siendo del dominio, el adaptador
         # sólo limpia el output del proveedor.
-        # Para los facts con nombre booleano conocido normalizamos ``value``
-        # al alfabeto estricto ``"true"``/``"false"``: el LLM emite a veces
-        # identificadores de vehículo (p. ej. ``one_vehicle_parked="A"``) o
-        # alias no canónicos (``"sí"``, ``"yes"``), y queremos un valor
-        # determinista independientemente del modo (claim vs. auto).
+        # Para los facts con nombre booleano conocido normalizamos únicamente
+        # literales explícitos. Un valor ausente, desconocido o inválido no
+        # demuestra false ni true y se conserva como desconocido (None).
         facts = tuple(
             ClaimFact(
                 item.name,
@@ -120,26 +104,10 @@ class ClaimExtractionSchema(_StrictSchema):
             for item in self.facts
             if item.name.strip() and item.source_text.strip()
         )
-        # Misma defensa para las preguntas de entrevista.
-        questions = tuple(
-            InterviewQuestion(
-                id=item.id,
-                prompt=item.prompt,
-                reason=item.reason,
-                answer_kind=item.answer_kind,
-                options=item.options,
-            )
-            for item in self.questions
-            if item.id.strip() and item.prompt.strip() and item.reason.strip()
-        )
         return ExtractedClaimFacts(
             self.party_ids,
             facts,
-            InterviewPlan(
-                status=self.interview_status,
-                questions=questions,
-                terminal_reason=self.terminal_reason,
-            ),
+            InterviewPlan("ready"),
         )
 
 
@@ -234,10 +202,29 @@ class OpenAIClaimFactExtractor(ClaimFactExtractor):
 def _messages(claim: ClaimInput, fact_names: tuple[str, ...] = ()) -> ResponseInputParam:
     # Los nombres estables se derivan del ruleset firmado, no se escriben aquí:
     # una regla no puede depender de un hecho que nadie pidió extraer.
+    stable_names = tuple(
+        dict.fromkeys(
+            (
+                *fact_names,
+                "accident_location_in_scope",
+                "vehicles_registered_in_spain",
+                "insurer_adhered",
+                "vehicles_habitually_parked_in_spain",
+            )
+        )
+    )
     stable = (
-        ", ".join(fact_names)
+        ", ".join(stable_names)
         if fact_names
-        else ("vehicle_count, direct_collision, third_vehicle_identified, chain_collision")
+        else ", ".join(
+            (
+                "vehicle_count",
+                "direct_collision",
+                "third_vehicle_identified",
+                "chain_collision",
+                *stable_names,
+            )
+        )
     )
     developer = (
         "Extrae únicamente hechos contenidos en el relato. Conserva la atribución y el "
@@ -246,6 +233,15 @@ def _messages(claim: ClaimInput, fact_names: tuple[str, ...] = ()) -> ResponseIn
         f"Usa estos nombres estables cuando apliquen: {stable}. "
         "Para booleanos usa los literales true o false.\n"
         "Contar lo que el relato describe NO es inventar:\n"
+        "- accident_location_in_scope: true sólo para un accidente en un país del EEE o "
+        "adherido al Sistema de Certificado Internacional en la fecha del accidente; false "
+        "sólo si el lugar y la fecha constan fuera de ese ámbito.\n"
+        "- vehicles_registered_in_spain: true sólo si consta que los vehículos implicados "
+        "están matriculados en España.\n"
+        "- insurer_adhered: true sólo si consta que las entidades aseguradoras implicadas "
+        "están adheridas al Convenio.\n"
+        "- vehicles_habitually_parked_in_spain: true sólo si consta que algún vehículo "
+        "tiene estacionamiento habitual en España; omite o usa null si no consta.\n"
         "- vehicle_count: número de vehículos que el relato identifica como intervinientes. "
         "Un relato que nombra al vehículo A y al vehículo B da vehicle_count=2. Un vehículo "
         "no identificado que se da a la fuga no cuenta como interviniente identificado.\n"
@@ -295,26 +291,6 @@ def _messages(claim: ClaimInput, fact_names: tuple[str, ...] = ()) -> ResponseIn
         "hubo un tema de puertas, sin esa precisión); door_vehicle es el vehículo cuya puerta "
         "está en cuestión.\n"
         "Si el relato no permite establecer un hecho, omítelo: no lo supongas."
-        "\nAdemás devuelve un plan de entrevista. Usa `ask` sólo si falta un hecho "
-        "que pueda cambiar la aplicabilidad o permitir aplicar una regla del manual; "
-        "formula entre una y tres preguntas concretas, comprensibles y no pidas "
-        "casillas internas de formularios. Antes de preguntar por un dato, comprueba si el "
-        "propio relato ya declara que ese dato es ambiguo o no consta (p. ej. «sin que se "
-        "especifique si...», «no consta si...»): algunas normas del manual se activan "
-        "precisamente ante esa ambigüedad declarada, así que ese enunciado ya es el hecho "
-        "que hace falta, no un vacío por rellenar. Usa `ready` cuando no falte ningún hecho "
-        "material para evaluar. La disparidad de versiones NO es por sí sola motivo de "
-        "`inconsistent`: varias normas subsidiarias del manual (marcha atrás/alcance trasero, "
-        "cambio de carril, rotondas) existen precisamente para resolver un caso donde los "
-        "conductores discrepan — ahí la disparidad es el hecho que activa la norma, y el plan "
-        "correcto es `ready`. Usa `inconsistent` sólo cuando la contradicción impide aplicar "
-        "cualquier norma del manual y no es simplemente el supuesto que una norma subsidiaria "
-        "ya resuelve. Usa `coverage_gap` si los hechos están completos pero el manual no "
-        "aporta una regla para resolver. No repitas preguntas ya contestadas en clarifications."
-        " No preguntes por país del accidente, matriculación, adhesión de las "
-        "aseguradoras ni requisitos administrativos salvo que el relato aporte un "
-        "hecho que los ponga en duda: para esta entrevista son supuestos administrativos, "
-        "no hechos que deban bloquear una conclusión sobre el manual."
     )
     payload = json.dumps(
         {"claim": claim.text, "clarifications": claim.clarifications, "language": claim.language},

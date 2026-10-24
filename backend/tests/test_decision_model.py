@@ -283,15 +283,9 @@ def test_classifier_preserves_jev_model_and_token_usage() -> None:
 
 
 def test_classifier_asks_for_clarification_below_the_confidence_floor() -> None:
-    model = _FakeDecisionModel(_route("claim", 0.39))
-    classification = asyncio.run(JevQueryClassifier(model).classify(QueryInput("hola")))
-    assert classification.decision == "clarification_required"
-
-
-def test_classifier_default_confidence_floor_accepts_calibrated_boundary() -> None:
     model = _FakeDecisionModel(_route("claim", 0.4))
     classification = asyncio.run(JevQueryClassifier(model).classify(QueryInput("hola")))
-    assert classification.decision == "claim"
+    assert classification.decision == "clarification_required"
 
 
 def _guard_answers(injection: float, off_topic: float) -> dict[str, Answer]:
@@ -393,17 +387,17 @@ def test_groundedness_judges_a_claim_against_only_its_cited_passages() -> None:
     assert model.calls[0][0] == {"claim": "Aplica CIDE", "cited_passages": {"p1": "t"}}
 
 
-def test_input_guard_defaults_to_jev_and_validates_environment(
+def test_input_guard_defaults_to_jev_and_is_validated_from_the_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import bootstrap
 
     monkeypatch.delenv("ALLIANZ_INPUT_GUARD", raising=False)
     assert isinstance(bootstrap.build_input_guard(), JevInputGuard)
-    monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "jev")
-    assert isinstance(bootstrap.build_input_guard(), JevInputGuard)
     monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "off")
     assert bootstrap.build_input_guard() is None
+    monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "jev")
+    assert isinstance(bootstrap.build_input_guard(), JevInputGuard)
     monkeypatch.setenv("ALLIANZ_INPUT_GUARD", "otro")
     with pytest.raises(ValueError, match="ALLIANZ_INPUT_GUARD"):
         bootstrap.build_input_guard()

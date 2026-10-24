@@ -95,10 +95,7 @@ BACKEND_ENV = set -a; . ./.env; . ./ops/local.env; \
 	: "$${LANGFUSE_PUBLIC_KEY:=$$ALLIANZ_LANGFUSE_PUBLIC_KEY}"; \
 	: "$${LANGFUSE_SECRET_KEY:=$$ALLIANZ_LANGFUSE_SECRET_KEY}"; \
 	: "$${LANGFUSE_BASE_URL:=http://127.0.0.1:3000}"; \
-	: "$${LANGFUSE_PROJECT_ID:=allianz-rag}"; \
-	ALLIANZ_BUILD_COMMIT=$$(git rev-parse HEAD); \
-	ALLIANZ_BUILD_FINGERPRINT=$$(PYTHONPATH=backend/src uv run --project backend --no-sync python -c 'from pathlib import Path; from application.services.evaluation_runtime_config import evaluation_build_fingerprint; print(evaluation_build_fingerprint(Path.cwd()))'); \
-	: "$${ALLIANZ_DOCUMENT_HASH:=$(DOCUMENT_HASH)}"; set +a;
+	: "$${LANGFUSE_PROJECT_ID:=allianz-rag}"; set +a;
 LOCAL_ENV ?=
 
 provision-prompts:
@@ -106,7 +103,7 @@ provision-prompts:
 		python backend/scripts/provision_langfuse_prompts.py
 
 serve-backend: provision-prompts
-	@$(BACKEND_ENV) $(LOCAL_ENV) uv run --project backend --group ingestion --extra local-rag \
+	@$(BACKEND_ENV) $(LOCAL_ENV) uv run --project backend --extra local-rag \
 		uvicorn asgi_local:app --factory --host 127.0.0.1 --port 8000
 
 # Ejecuta evaluaciones con el mismo `.env` y `ops/local.env` que serve-backend.

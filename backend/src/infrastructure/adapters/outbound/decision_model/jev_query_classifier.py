@@ -31,11 +31,10 @@ class JevQueryClassifier:
     """Implements ``QueryClassifier`` with probabilities instead of generated text.
 
     Por debajo de ``min_confidence`` se pide aclaración en lugar de adivinar. El
-    umbral estándar ``0.4`` se eligió tras comparar el golden; vuelve a validarlo
-    si cambia el modelo o el conjunto de casos.
+    umbral por defecto NO está calibrado: ajústalo con el golden (modo ``auto``).
     """
 
-    def __init__(self, model: DecisionModel, *, min_confidence: float = 0.4) -> None:
+    def __init__(self, model: DecisionModel, *, min_confidence: float = 0.6) -> None:
         if not 0 <= min_confidence <= 1:
             raise ValueError("min_confidence must be between 0 and 1")
         self._model = model

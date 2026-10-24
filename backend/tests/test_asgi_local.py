@@ -5,11 +5,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import pytest
 
-
-def test_qdrant_identity_reports_alias_target_and_signed_index(
-    monkeypatch: pytest.MonkeyPatch,
+def test_qdrant_identity_uses_shared_endpoint_and_signed_active_index(
+    monkeypatch: Any,
 ) -> None:
     import asgi_local
 
@@ -71,9 +69,7 @@ def test_qdrant_identity_reports_alias_target_and_signed_index(
     assert identity["alias_name"] == "allianz-manual-active"
     assert identity["collection_name"] == "allianz-manual-build-1"
     assert identity["points_count"] == 118
-    index_signature = identity["index_signature"]
-    assert isinstance(index_signature, dict)
-    assert index_signature["document_hash"] == "b" * 64
+    assert identity["index_signature"]["document_hash"] == "b" * 64
     assert requested_urls == [
         "http://qdrant-query:6333/aliases",
         "http://qdrant-query:6333/collections/allianz-manual-build-1",

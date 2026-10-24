@@ -96,6 +96,7 @@ class ClaimAnalysisResponse(_ResponseModel):
     applicability: Literal["applicable", "not_applicable", "undetermined"]
     convention: Literal["CIDE", "ASCIDE"] | None
     decision: Literal["resolved", "conditional", "undetermined", "not_assessed"]
+    liable_party: str | None
     parties: tuple[str, ...]
     attributed_facts: tuple[ClaimFactResponse, ...]
     contradictions: tuple[ClaimContradictionResponse, ...]
@@ -114,6 +115,7 @@ class ClaimAnalysisResponse(_ResponseModel):
             applicability=result.applicability,
             convention=result.convention,
             decision=result.decision,
+            liable_party=result.liable_party,
             parties=tuple(result.party_ids),
             attributed_facts=tuple(
                 ClaimFactResponse(
@@ -156,17 +158,13 @@ class ClaimAnalysisResponse(_ResponseModel):
 def _iter_delivered_sources(execution: ClaimExecution):
     """Yield one ``(context_id, source)`` pair per delivered evidence source.
 
-    The convention-claim flow exposes only the first source of every context
-    payload; the remaining sources are reachable through the evidence-block
-    ``evidence_ids`` list, which never references filesystem paths.
+    Every source page is materialized so each cited evidence ID can be opened
+    and audited from the response.
     """
 
     for context in execution.context:
-        if not context.evidence_ids:
-            continue
-        context_id = context.evidence_ids[0]
-        if context.sources:
-            yield context_id, context.sources[0]
+        for source in context.sources:
+            yield source.evidence_id, source
 
 
 def _delivered_context(context_id: str, source: PageEvidence) -> DeliveredContextResponse:

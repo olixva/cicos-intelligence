@@ -38,6 +38,7 @@ export interface ClaimAnalysis {
   applicability: 'applicable' | 'not_applicable' | 'undetermined';
   convention: 'CIDE' | 'ASCIDE' | null;
   decision: 'resolved' | 'conditional' | 'undetermined' | 'not_assessed';
+  liable_party?: string | null;
   facts?: ReadonlyArray<ClaimFact>;
   rules_evaluated?: ReadonlyArray<ClaimRuleEvaluation>;
   conditions?: ReadonlyArray<string>;
@@ -158,6 +159,11 @@ export function ClaimAnalysisPanel({ analysis }: { analysis: ClaimAnalysis }) {
         <span className={_badgeClass(DECISION_TONE[analysis.decision])}>
           {DECISION_LABEL[analysis.decision]}
         </span>
+        {analysis.liable_party && (
+          <span className="inline-flex items-center gap-1 rounded-full border bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium leading-none text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
+            Responsable: {analysis.liable_party}
+          </span>
+        )}
         {analysis.party_ids && analysis.party_ids.length > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-[10px] font-medium leading-none text-muted-foreground border-border">
             {analysis.party_ids.join(' · ')}

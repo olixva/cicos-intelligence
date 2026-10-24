@@ -32,10 +32,10 @@ if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
 from application.services.evaluation_runtime_config import (  # noqa: E402
-    DEFAULT_DOCUMENT_HASH,
     assert_evaluation_runtime_matches,
     evaluation_build_fingerprint,
     evaluation_runtime_configuration,
+    pin_active_index_identity,
 )
 from infrastructure.adapters.outbound.evaluation.redteam import (  # noqa: E402
     RedTeamCase,
@@ -48,7 +48,9 @@ from infrastructure.adapters.outbound.evaluation.redteam import (  # noqa: E402
 
 CASES_PATH = Path(__file__).resolve().parents[2] / "data/evaluation/redteam/cases.jsonl"
 DEFAULT_BASE_URL = os.environ.get("ALLIANZ_BASELINE_URL", "http://127.0.0.1:8000")
-DOCUMENT_HASH = os.environ.get("ALLIANZ_DOCUMENT_HASH", DEFAULT_DOCUMENT_HASH)
+DOCUMENT_HASH = os.environ.get(
+    "ALLIANZ_DOCUMENT_HASH", "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344"
+)
 PAGE_COUNT = int(os.environ.get("ALLIANZ_MANUAL_PAGES", "111"))
 TIMEOUT_S = 180.0
 
@@ -89,17 +91,24 @@ async def _run_all(
     concurrency: int,
     base_url: str,
     *,
-    expected_configuration: dict[str, Any] | None = None,
-) -> list[tuple[RedTeamCase, RedTeamVerdict, dict[str, Any]]]:
+    expected_configuration: dict[str, Any],
+) -> tuple[list[tuple[RedTeamCase, RedTeamVerdict, dict[str, Any]]], dict[str, Any]]:
     semaphore = asyncio.Semaphore(concurrency)
     async with httpx.AsyncClient(base_url=base_url, timeout=TIMEOUT_S) as client:
         ready = await client.get("/health/ready")
         ready.raise_for_status()
-        if expected_configuration is not None:
-            config_response = await client.get("/health/config")
-            config_response.raise_for_status()
-            assert_evaluation_runtime_matches(expected_configuration, config_response.json())
-        return await asyncio.gather(*(_run_one(client, semaphore, case) for case in cases))
+        config_response = await client.get("/health/config")
+        config_response.raise_for_status()
+        backend_configuration = config_response.json()
+        if not isinstance(backend_configuration, dict):
+            raise RuntimeError("backend returned invalid /health/config payload")
+        assert_evaluation_runtime_matches(
+            expected_configuration,
+            backend_configuration,
+            require_active_index_identity=True,
+        )
+        results = await asyncio.gather(*(_run_one(client, semaphore, case) for case in cases))
+        return results, backend_configuration
 
 
 def main() -> int:
@@ -112,27 +121,26 @@ def main() -> int:
         parser.error(f"{args.output} ya existe; usa otra carpeta de salida")
 
     cases = load_cases(CASES_PATH.read_text(encoding="utf-8").splitlines())
-    commit = _git_commit()
     repo_root = Path(__file__).resolve().parents[2]
-    build_fingerprint = evaluation_build_fingerprint(repo_root)
     runtime_environment = dict(os.environ)
-    runtime_environment["ALLIANZ_BUILD_COMMIT"] = commit
-    runtime_environment["ALLIANZ_BUILD_FINGERPRINT"] = build_fingerprint
+    runtime_environment.setdefault(
+        "ALLIANZ_BUILD_FINGERPRINT", evaluation_build_fingerprint(repo_root)
+    )
     effective_configuration = evaluation_runtime_configuration(
         runtime_environment,
-        active_index_identity={"index_signature": {"document_hash": DOCUMENT_HASH}},
+        repo_root=repo_root,
     )
-    router_configuration = effective_configuration["router"]
-    guard_configuration = effective_configuration["input_guard"]
-    router_model = router_configuration["model"]
     started = datetime.now(UTC)
-    results = asyncio.run(
+    results, backend_configuration = asyncio.run(
         _run_all(
             cases,
             args.concurrency,
             args.base_url,
             expected_configuration=effective_configuration,
         )
+    )
+    effective_configuration = pin_active_index_identity(
+        effective_configuration, backend_configuration
     )
     metrics = summarize([(case, verdict) for case, verdict, _ in results])
 
@@ -156,17 +164,15 @@ def main() -> int:
         "configuration_source": os.environ.get(
             "ALLIANZ_EVALUATION_CONFIG_SOURCE", "process environment"
         ),
-        "commit": commit,
+        "commit": _git_commit(),
         "concurrency": args.concurrency,
         "cases_sha256": sha256(CASES_PATH.read_bytes()).hexdigest(),
         "document": {"sha256": DOCUMENT_HASH, "page_count": PAGE_COUNT},
         "models": {
-            "answer": os.environ.get("OPENAI_ANSWER_MODEL", "gpt-6.1-sol"),
-            "extraction": os.environ.get("OPENAI_CLAIM_EXTRACTION_MODEL", "gpt-6.1-sol"),
-            "router": router_model,
+            **effective_configuration["models"],
         },
-        "router": router_configuration,
-        "input_guard": guard_configuration,
+        "router": effective_configuration["router"],
+        "input_guard": effective_configuration["input_guard"],
         "effective_configuration": effective_configuration,
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

@@ -61,95 +61,53 @@ publicaciones de ingesta. Los items marcados como `technical_fixture` se
 rechazan por defecto en cualquier release real; sólo se admiten con un flag
 explícito para el humo de CI.
 
-### Modelos configurados
+### Modelos configurados y resultados medidos
 
-Los defaults versionados son `gpt-6.1-sol` para respuesta y extracción, Jev
-(`jev-latest`) para router y guard, y `gpt-6-luna` como router OpenAI de
-referencia. Los IDs OpenAI figuran en el
-[catálogo oficial](https://developers.openai.com/api/docs/models). Según la
-instrucción del usuario, **todas las llamadas OpenAI de esta campaña usaron
-Luna**, incluida la extracción downstream; Sol no se probó. Los defaults de
-respuesta/extracción permanecen en Sol y su evaluación sigue pendiente.
+Los defaults OpenAI son `gpt-6.1-sol` para respuesta y extracción, y
+`gpt-6-luna` como router de referencia; Jev es el router predeterminado con
+umbral 0,4. La suite live de esta campaña usó `gpt-6-luna` para respuesta,
+extracción y router OpenAI, por decisión del usuario. No se hizo ninguna llamada
+real a GPT-6.1 Sol. Los IDs figuran en el
+[catálogo oficial](https://developers.openai.com/api/docs/models).
 
-En `auto`, el envelope y los registros por caso conservan proveedor/modelo del
-router y sus tokens de entrada/salida cuando el proveedor los devuelve. Así se
-compara el uso observado del router Jev y OpenAI sin inventar tokens ausentes.
-La estimación orientativa con tarifas públicas, separada del gasto facturado,
-se documenta en el A/B siguiente.
+**A/B end-to-end del router (24-10-2026).** Se repitió el modo `auto` con
+110 casos en el mismo commit base, huella del código, perfil, prompts y firma
+del alias activo de Qdrant; las dos corridas usaron Luna para respuesta y
+extracción y concurrencia 2. Jev (`jev-latest`, umbral 0,4) acertó 97/110
+(88,2 %); OpenAI Luna acertó 96/110 (87,3 %). Ambas terminaron 110/110 sin
+errores técnicos. Jev supera el gate de exactitud por un caso. Los manifiestos
+incluyen huella de código e identidad del índice activo; la comparación es
+reproducible sobre esta versión del golden.
 
-El humo real de Jev (una llamada sintética, 22-10-2026) respondió `noul` y
-`choice` con `jev-1.14.0`, probabilidades válidas y uso de tokens. No se
-enviaron relatos reales ni datos personales.
+Artefactos locales ignorados por Git:
+`data/evaluation/results/2026-10-24-final-jev-luna-all-modes-normalized/` y
+`data/evaluation/results/2026-10-24-router-openai-luna-e2e-current/`.
+Las comparaciones del 22-10 (Jev 97/110, OpenAI 95/110) se conservan como
+históricas: sus manifiestos no incluyen huella de código ni firma del índice
+activo, por lo que no se usan como gate de esta versión. El barrido de umbral
+0,4/0,6/0,8 también es histórico; debe repetirse si cambia el router o el
+golden. No se guardan credenciales en los manifiestos.
 
-### A/B del router Jev
+**Red-team actual (24-10-2026; 30 casos, 27 ataques y 3 controles).** Con
+router Jev y `guard=off` se registró 1/27 ataques exitosos (3,7 %) y 0/3
+sobre-rechazos. Con guard Jev a 0,9/0,95 se obtuvo 0/27 y 0/3. La comprobación
+adicional con router OpenAI Luna y guard Jev también dio 0/27 y 0/3. Por tanto,
+Jev supera el gate frente a `off` con el router Jev y no añade sobre-rechazo
+cuando se usa el router OpenAI. Las campañas de 24-10 tienen huella de código,
+configuración y firma del índice activo.
 
-La repetición final del modo `auto` se ejecutó en el commit
-`75da6320266f857e717fa9b846c44baaa0f4c746`, sobre los mismos 110 casos, el
-golden SHA-256 `837dfb6da86bcdf6cb7e2a1477623141b83c021f5c697910da5dfa1af074d874`
-y concurrencia 4. `/health/config` confirmó antes de cada campaña los modelos,
-el router y sus umbrales: Jev `0,4` o OpenAI `gpt-6-luna` como router, Jev como
-guard y Luna para respuesta y extracción. Los manifiestos registraron el commit
-del runner y el hash configurado del manual; aquella versión del endpoint no
-verificaba el build del servidor ni el destino/firma del alias activo de Qdrant.
-La comprobación reforzada de esos datos se añadió después y se verificó en la
-validación final descrita en `docs/entrega/validacion-pendiente.md`. Todas
-terminaron con los
-110 casos completos y cero errores sin resolver. Cada campaña tuvo un error
-HTTP transitorio en su primera pasada; `--resume` reintentó sólo ese caso.
+Resultados locales: `2026-10-24-redteam-jev-router-guard-off-current/`,
+`2026-10-24-redteam-jev-router-jev-guard-current/` y
+`2026-10-24-redteam-openai-router-jev-guard-current/` bajo
+`data/evaluation/results/`. Las carpetas del 22-10 son históricas; sus
+manifiestos no registran la identidad del índice activo.
 
-| Router | Acierto end-to-end | Errores finales | Tokens medios entrada/salida del router | Duración aproximada acumulada |
-|---|---:|---:|---:|---:|
-| OpenAI `gpt-6-luna` | 94/110 (0,855) | 0 | 332,782 / 75,309 | 358,4 s |
-| Jev `jev-latest`, `0,4` | 97/110 (0,882) | 0 | 476,491 / 41,027 | 297,3 s |
-
-La duración acumulada suma el primer intento parcial y el reintento. Los
-manifiestos nativos creados antes de corregir la acumulación automática sólo
-conservan en `duration_s` el tiempo del reintento; las aproximaciones de la
-tabla proceden de las dos salidas del runner. Los artefactos `per-case` sí
-contienen los 110 casos de cada campaña. El runner acumula segmentos de tiempo
-en nuevas reanudaciones desde el commit `16e2c82`.
-
-Matrices (`claim → claim/clarification/question; question →
-claim/clarification/question`): OpenAI `54/0/3; 13/0/40`; Jev `45/2/10;
-1/0/52`. Esta puerta usa `router_end_to_end_accuracy_all_labeled`: cuenta
-rutas observadas correctas y penaliza rutas ausentes o fallos técnicos de
-cualquier etapa del modo `auto`. Mide disponibilidad y acierto del flujo
-automático completo; no aísla el clasificador. La matriz sólo incorpora rutas
-observadas.
-
-El barrido exploratorio anterior comparó Jev a `0,4`, `0,6` y `0,8`; en esa
-pasada `0,6` obtuvo 92/110 y `0,8` 83/110. El golden sirvió tanto para elegir
-umbral como para medirlo, por lo que no equivale a un holdout independiente.
-La repetición final obtuvo 97/110 para Jev `0,4` frente a 94/110 para Luna;
-Jev queda como estándar, con la limitación de que el resultado es de un golden
-sintético y no garantiza la misma ventaja en producción.
-
-Los tokens anteriores son sólo del router; los tokenizadores de proveedores
-son distintos. Con las tarifas públicas consultadas el 22-10-2026 (Jev: `$0.042`
-por millón de tokens de entrada y salida gratuita; Luna Standard: `$0.10` de
-entrada y `$0.50` de salida), el coste de lista estimado por decisión es
-`$0.000020` para Jev `0,4` y `$0.000071` para Luna, aproximadamente **72 % menos
-para el router**. No es una factura observada y no estima el coste completo del
-flujo de respuesta/extracción. Fuentes: [TypeSafe](https://typesafe.ai/) y
-[OpenAI Pricing](https://developers.openai.com/api/docs/pricing).
-
-### Red-team del guardarraíl
-
-Con el commit `75da6320266f857e717fa9b846c44baaa0f4c746`, los mismos 30 casos (27 ataques, 3 controles benignos),
-el router Jev `0,4` y concurrencia 4, se ejecutó primero `off` y luego el guard
-Jev con umbrales de inyección `0,9` y fuera de tema `0,95`. En ambos: tasa de
-éxito del atacante `0/27`; sobre-rechazo `0/3`. Las diez categorías (inyección
-directa, filtrado de prompt, delimitadores, citas falsas, fuera de ámbito,
-anulación de reglas, ofuscación, exfiltración, inyección al router y robustez)
-registraron cero ataques exitosos. El guard Jev pasa su puerta y queda como
-default. La muestra de controles benignos es pequeña; el resultado no demuestra
-cero sobre-rechazo en producción.
-
-TypeSafe declara que no entrena con solicitudes/respuestas, pero su retención
-depende del acuerdo, los datos y cualquier arreglo ZDR; por eso sólo se usaron
-entradas sintéticas. Revisar el
-[tratamiento y retención de datos](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained)
-antes de enviar relatos reales.
+El uso de tokens observado queda en los manifiestos y salidas por caso. No se
+infiere ahorro monetario sin tarifas TypeSafe/Langfuse configuradas. El juez Jev
+sigue opt-in y sus puntuaciones exploratorias hasta medir acuerdo con etiquetas
+humanas. OpenAI conserva `store=False`; esto no desactiva por sí solo los logs de
+abuso, que pueden incluir contenido hasta 30 días por defecto. No se enviaron
+relatos reales con datos personales.
 
 ## Métricas
 
@@ -169,7 +127,7 @@ Los evaluadores deterministas
 | `resolution_support_rate` | proporción de resoluciones con actor, regla `matched` y evidencia estructurados; queda como missing si el actor no está expuesto por el envelope |
 | `abstention_metrics` | acierto al abstenerse cuando corresponde |
 | `router_confusion_matrix` | acierto y confusiones del enrutado automático |
-| `router_end_to_end_accuracy_all_labeled` | acierto del flujo `auto` completo sobre todos los casos etiquetados; rutas ausentes y errores técnicos de cualquier etapa cuentan como fallos. No es una métrica aislada del clasificador. La matriz de confusión sólo muestra rutas observadas. |
+| `router_accuracy_all_labeled` | exactitud sobre todos los casos auto con etiqueta; errores y rutas ausentes cuentan como incorrectos. La matriz de confusión sigue mostrando sólo rutas observadas. |
 
 Cada métrica numérica se guarda con `n_total`, `n_applicable`, `n_scored`,
 `n_missing`, `n_error` y `n_not_applicable`. Debe cumplirse
@@ -222,6 +180,54 @@ Los errores y casos ausentes se cuentan por separado. El runner es local y no
 publica nada en Langfuse, pero cada caso conserva su `trace_id` y su enlace.
 
 ## Resultados medidos
+
+### Corrida actual (24-10-2026)
+
+Golden de 110 casos × tres modos: 330/330 resultados completos, cero errores
+técnicos, 1092,4 s. Respuesta y extracción usaron `gpt-6-luna`; router y
+guardarraíl usaron Jev (`jev-latest`, 0,4; umbrales 0,9/0,95). El manifiesto
+fija el commit base `99ff2f48`, fingerprint del árbol ejecutado
+`3c074a5069b273f0…`, hash del manual y firma del alias activo
+`allianz-manual-active` (118 puntos).
+
+| Modo | Métrica | Valor | n_scored | n_missing | n_error | n_not_applicable |
+|---|---|---:|---:|---:|---:|---:|
+| question | `answer_status_accuracy` | 0,566 | 53 | 0 | 0 | 57 |
+| question | `citation_id_validity` | 0,385 | 110 | 0 | 0 | 0 |
+| question | `evidence_bundle_coverage` | 0,483 | 110 | 0 | 0 | 0 |
+| claim | `applicability_accuracy` | 0,500 | 6 | 103 | 0 | 1 |
+| claim | `convention_accuracy` | 0,000 | 2 | 103 | 0 | 5 |
+| claim | `claim_decision_accuracy` | 0,500 | 6 | 103 | 0 | 1 |
+| claim | `citation_id_validity` | 0,036 | 110 | 0 | 0 | 0 |
+| claim | `evidence_bundle_coverage` | 0,015 | 110 | 0 | 0 | 0 |
+| auto | `router_match` (Jev, 0,4) | 0,882 | 110 | 0 | 0 | 0 |
+
+El modo `claim` pidió aclaración en 103/110 casos. Los datos más solicitados
+fueron ubicación dentro del ámbito (102 casos), estacionamiento habitual en
+España (103), matriculación española (101) y aseguradora adherida (100); además,
+faltó el número de vehículos en 50 y confirmar colisión directa en 66. Las
+aclaraciones figuran como faltantes/no puntuables, no como errores técnicos.
+La validez y cobertura de citas puntúan cero cuando no se entrega una cita. La
+accuracy de decisión 0,500 sólo se calculó sobre seis casos y **no demuestra
+calidad suficiente para resolver siniestros**. Antes de presentar el sistema
+como resolutor listo, hay que adjudicar la política de ámbito y completar el
+golden con los hechos necesarios, o mejorar la extracción sin convertir hechos
+desconocidos en verdaderos.
+
+En el A/B actual del router, Jev acertó 97/110 (88,2 %) y OpenAI Luna 96/110
+(87,3 %), ambos sin errores. Los manifiestos comparten commit base, fingerprint,
+hash del manual y firma del índice. Artefactos locales:
+`data/evaluation/results/2026-10-24-final-jev-luna-all-modes-normalized/` y
+`data/evaluation/results/2026-10-24-router-openai-luna-e2e-current/`.
+
+Las campañas anteriores se ejecutaron antes de añadir la compatibilidad local
+de `LANGFUSE_BASE_URL=http://host.docker.internal:3000` para el contenedor. La
+corrida host utilizaba `http://127.0.0.1:3000`; la diferencia sólo afecta a la
+composición de entorno Docker. El fingerprint final del servidor, visible en
+`/health/config`, quedó en `b7896fb27b94e334…` después de ese ajuste.
+
+La corrida de 24-10 sustituye el estado pendiente anterior. La corrida de
+`2026-09-03` que sigue se conserva como referencia histórica y no recalculable.
 
 Corrida completa sobre los 110 casos × 3 modos, `2026-09-03`, commit
 `3b452ee`, modelo `gpt-5.6-luna` en las tres etapas para acotar el coste,

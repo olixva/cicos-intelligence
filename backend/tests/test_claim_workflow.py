@@ -55,8 +55,12 @@ class _Evidence(EvidenceReader):
     page: PageEvidence
 
     def get(self, evidence_id: str) -> PageEvidence:
-        assert evidence_id == self.page.evidence_id
-        return self.page
+        if evidence_id == self.page.evidence_id:
+            return self.page
+        if evidence_id.startswith("sha256:") and ":page:" in evidence_id:
+            page_number = int(evidence_id.rsplit(":page:", maxsplit=1)[1])
+            return PageEvidence(evidence_id, "b" * 64, page_number, "texto", None, None, ())
+        raise KeyError(evidence_id)
 
 
 class _InterviewExtractor(ClaimFactExtractor):
@@ -82,6 +86,15 @@ class _InterviewExtractor(ClaimFactExtractor):
             (
                 ClaimFact("vehicle_count", "2", None, "dos vehículos"),
                 ClaimFact("direct_collision", "true", None, "sí, choque directo"),
+                ClaimFact("accident_location_in_scope", "true", None, "accidente en España"),
+                ClaimFact("vehicles_registered_in_spain", "true", None, "matriculados en España"),
+                ClaimFact("insurer_adhered", "true", None, "entidades adheridas"),
+                ClaimFact(
+                    "vehicles_habitually_parked_in_spain",
+                    "false",
+                    None,
+                    "no aplica estacionamiento habitual",
+                ),
                 ClaimFact("maneuver_a", "detenido", "A", "A estaba detenido"),
             ),
             InterviewPlan("ready"),
@@ -186,7 +199,7 @@ def test_claim_graph_requests_missing_prerequisites_without_inventing_a_conclusi
     assert "cuántos vehículos" in execution.result.conditions[0]
 
 
-def test_claim_graph_uses_the_llm_interview_question_before_emitting_a_result() -> None:
+def test_claim_graph_uses_only_deterministic_missing_information_for_follow_up() -> None:
     from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
         LangGraphClaimWorkflow,
     )
@@ -215,7 +228,9 @@ def test_claim_graph_uses_the_llm_interview_question_before_emitting_a_result() 
     execution = asyncio.run(workflow.run(ClaimInput("Dos vehículos chocaron en un cruce.")))
 
     assert execution.needs_input is True
-    assert execution.missing_information == (question.prompt,)
+    assert question.prompt not in execution.missing_information
+    assert any("colisión directa" in item for item in execution.missing_information)
+    assert any("EEE" in item for item in execution.missing_information)
 
 
 def test_claim_graph_exposes_a_dedicated_interview_planning_node() -> None:
@@ -262,7 +277,7 @@ def test_claim_graph_resumes_after_an_answer_without_repeating_the_question() ->
     assert resumed.needs_input is False
 
 
-def test_claim_graph_surfaces_a_coverage_gap_without_asking_again() -> None:
+def test_claim_graph_does_not_invent_a_terminal_coverage_gap_from_the_llm() -> None:
     from infrastructure.adapters.outbound.claim_workflow.langgraph_workflow import (
         LangGraphClaimWorkflow,
     )
@@ -274,6 +289,17 @@ def test_claim_graph_surfaces_a_coverage_gap_without_asking_again() -> None:
                 (
                     ClaimFact("vehicle_count", "2", None, "dos vehículos"),
                     ClaimFact("direct_collision", "true", None, "choque directo"),
+                    ClaimFact("accident_location_in_scope", "true", None, "en España"),
+                    ClaimFact(
+                        "vehicles_registered_in_spain", "true", None, "matriculados en España"
+                    ),
+                    ClaimFact("insurer_adhered", "true", None, "aseguradoras adheridas"),
+                    ClaimFact(
+                        "vehicles_habitually_parked_in_spain",
+                        "false",
+                        None,
+                        "no consta estacionamiento habitual",
+                    ),
                     ClaimFact("traffic_light", "rojo", "A", "A tenía rojo"),
                 ),
                 InterviewPlan(
@@ -293,7 +319,8 @@ def test_claim_graph_surfaces_a_coverage_gap_without_asking_again() -> None:
     execution = asyncio.run(workflow.run(ClaimInput("Dos vehículos chocaron en un cruce.")))
 
     assert execution.needs_input is False
-    assert execution.result.blocks[0].text.startswith("El manual indexado")
+    assert execution.result.decision == "undetermined"
+    assert all("manual indexado" not in block.text.lower() for block in execution.result.blocks)
 
 
 # --------------------------------------------------------------------------
@@ -308,6 +335,7 @@ def test_claim_graph_surfaces_a_coverage_gap_without_asking_again() -> None:
 
 
 _PAGE_101 = "sha256:" + "b" * 64 + ":page:101"
+_PAGE_10 = "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:10"
 
 
 _MATRIX_RULE = LoadedRule(
@@ -339,13 +367,14 @@ _EXCEPTIONS = (
 )
 
 
-def _run(facts: tuple[ClaimFact, ...]) -> ClaimExecution:
+def _run(
+    facts: tuple[ClaimFact, ...], evidence_reader: EvidenceReader | None = None
+) -> ClaimExecution:
     workflow = LangGraphClaimWorkflow(
         fact_extractor=_Extractor(ExtractedClaimFacts(("A", "B"), facts, InterviewPlan("ready"))),
         retriever=_Retriever("Tabla de culpabilidad CIDE."),
-        evidence_repository=_Evidence(
-            PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())
-        ),
+        evidence_repository=evidence_reader
+        or _Evidence(PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())),
         rules=(_MATRIX_RULE,),
         matrix_cells=_CELLS,
         matrix_exceptions=_EXCEPTIONS,
@@ -354,7 +383,15 @@ def _run(facts: tuple[ClaimFact, ...]) -> ClaimExecution:
 
 
 def _base_facts(**boxes: str) -> tuple[ClaimFact, ...]:
-    declared = {"daa_box_a": "A1", "daa_box_b": "B8", **boxes}
+    declared = {
+        "accident_location_in_scope": "true",
+        "vehicles_registered_in_spain": "true",
+        "insurer_adhered": "true",
+        "vehicles_habitually_parked_in_spain": "false",
+        "daa_box_a": "A1",
+        "daa_box_b": "B8",
+        **boxes,
+    }
     return (
         ClaimFact("vehicle_count", "2", None, "dos vehículos"),
         ClaimFact("direct_collision", "true", None, "colisión directa"),
@@ -364,11 +401,13 @@ def _base_facts(**boxes: str) -> tuple[ClaimFact, ...]:
 
 
 def test_a_declared_daa_pair_resolves_the_claim_by_the_cide_table() -> None:
-    result = _run(_base_facts()).result
+    execution = _run(_base_facts())
+    result = execution.result
 
     assert result.applicability == "applicable"
     assert result.convention == "CIDE"
     assert result.decision == "resolved"
+    assert result.liable_party == "B"
     assert any(
         evaluation.rule_id == "cide-matrix-lookup" and evaluation.result == "matched"
         for evaluation in result.rules_evaluated
@@ -376,6 +415,25 @@ def test_a_declared_daa_pair_resolves_the_claim_by_the_cide_table() -> None:
     narrative = " ".join(block.text for block in result.blocks)
     assert "B" in narrative
     assert any(_PAGE_101 in block.evidence_ids for block in result.blocks)
+    materialized_ids = {
+        source.evidence_id for context in execution.context for source in context.sources
+    }
+    assert _PAGE_101 in materialized_ids
+
+
+def test_a_claim_cannot_resolve_if_its_basis_page_cannot_be_materialized() -> None:
+    class _Page56Only(EvidenceReader):
+        def get(self, evidence_id: str) -> PageEvidence:
+            if evidence_id == "manual:page:56":
+                return PageEvidence(evidence_id, "a" * 64, 56, "texto", None, None, ())
+            raise KeyError(evidence_id)
+
+    execution = _run(_base_facts(), evidence_reader=_Page56Only())
+
+    assert execution.result.decision == "undetermined"
+    assert execution.result.liable_party is None
+    assert execution.result.blocks == ()
+    assert execution.result.missing_information
 
 
 def test_a_narrative_without_declared_boxes_never_resolves_by_the_table() -> None:
@@ -415,6 +473,7 @@ def test_a_starred_cell_resolves_when_the_observation_is_ruled_out() -> None:
 
     assert result.decision == "resolved"
     assert result.convention == "CIDE"
+    assert result.liable_party == "B"
 
 
 def test_a_starred_cell_withdraws_the_attribution_when_the_observation_holds() -> None:
@@ -444,19 +503,24 @@ _DOCUMENT_HASH = "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c83
 class _FactsExtractor(ClaimFactExtractor):
     facts: tuple[ClaimFact, ...]
     parties: tuple[str, ...] = ("A", "B")
+    interview_plan: InterviewPlan = InterviewPlan("ready")
 
     async def extract(self, claim: ClaimInput) -> ExtractedClaimFacts:
-        return ExtractedClaimFacts(self.parties, self.facts, InterviewPlan("ready"))
+        return ExtractedClaimFacts(self.parties, self.facts, self.interview_plan)
 
 
-def _run_shipped(facts: tuple[ClaimFact, ...]) -> ClaimExecution:
+def _run_shipped(
+    facts: tuple[ClaimFact, ...], interview_plan: InterviewPlan | None = None
+) -> ClaimExecution:
     artifacts = load_rules_artifacts(
         _REPO / "data" / "rules",
         expected_document_hash=_DOCUMENT_HASH,
         evidence_roots=(_REPO / "data" / "extractions",),
     )
     workflow = LangGraphClaimWorkflow(
-        fact_extractor=_FactsExtractor(facts),
+        fact_extractor=_FactsExtractor(
+            facts, interview_plan=interview_plan or InterviewPlan("ready")
+        ),
         retriever=_Retriever("Normas subsidiarias ASCIDE."),
         evidence_repository=_Evidence(
             PageEvidence("manual:page:56", "a" * 64, 56, "texto", None, None, ())
@@ -469,7 +533,15 @@ def _run_shipped(facts: tuple[ClaimFact, ...]) -> ClaimExecution:
 
 
 def _base(**extra: str) -> tuple[ClaimFact, ...]:
-    values = {"vehicle_count": "2", "direct_collision": "true", **extra}
+    values = {
+        "vehicle_count": "2",
+        "direct_collision": "true",
+        "accident_location_in_scope": "true",
+        "vehicles_registered_in_spain": "true",
+        "insurer_adhered": "true",
+        "vehicles_habitually_parked_in_spain": "false",
+        **extra,
+    }
     return tuple(ClaimFact(name, value, None, value) for name, value in values.items())
 
 
@@ -483,10 +555,21 @@ def test_parked_vehicle_resolves_to_the_colliding_vehicle() -> None:
     assert result.applicability == "applicable"
     assert result.convention == "ASCIDE"
     assert result.decision == "resolved"
+    assert result.liable_party == "B"
     assert any(
         evaluation.rule_id == "ascide-b5-parked-vehicle" and evaluation.result == "matched"
         for evaluation in result.rules_evaluated
     )
+
+
+def test_parked_vehicle_rule_does_not_resolve_without_structured_colliding_party() -> None:
+    result = _run_shipped(
+        _base(one_vehicle_parked="true", collision_with_parked_vehicle="true")
+    ).result
+
+    assert result.decision == "undetermined"
+    assert result.liable_party is None
+    assert result.missing_information
 
 
 def test_exit_from_parking_resolves_to_the_exiting_vehicle() -> None:
@@ -496,6 +579,7 @@ def test_exit_from_parking_resolves_to_the_exiting_vehicle() -> None:
 
     assert result.decision == "resolved"
     assert result.convention == "ASCIDE"
+    assert result.liable_party == "A"
 
 
 def test_exit_from_parking_defers_when_disputed_as_incorporation() -> None:
@@ -512,6 +596,27 @@ def test_reverse_vs_rear_impact_resolves_to_the_front_damage_vehicle() -> None:
 
     assert result.decision == "resolved"
     assert result.convention == "ASCIDE"
+    assert result.liable_party == "A"
+
+
+def test_llm_interview_plan_cannot_downgrade_a_deterministic_resolved_claim() -> None:
+    question = InterviewQuestion(
+        id="extra",
+        prompt="¿Puedes añadir algún detalle más?",
+        reason="La entrevista sugiere ampliar el relato.",
+    )
+    execution = _run_shipped(
+        _base(
+            lane_change_acknowledged_by_both="true",
+            contradictory_versions="true",
+            lane_change_vehicle="A",
+        ),
+        interview_plan=InterviewPlan("ask", (question,)),
+    )
+
+    assert execution.result.decision == "resolved"
+    assert execution.result.liable_party == "A"
+    assert execution.needs_input is False
 
 
 def test_door_opening_resolves_only_without_a_specified_action() -> None:
@@ -521,6 +626,7 @@ def test_door_opening_resolves_only_without_a_specified_action() -> None:
 
     assert result.decision == "resolved"
     assert result.convention == "CIDE"
+    assert result.liable_party == "B"
 
 
 def test_door_opening_defers_when_the_action_is_specified() -> None:
@@ -529,6 +635,19 @@ def test_door_opening_defers_when_the_action_is_specified() -> None:
     ).result
 
     assert result.decision != "resolved"
+
+
+def test_out_of_scope_result_cites_the_manual_scope_page() -> None:
+    result = _run_shipped(
+        _base(
+            accident_location_in_scope="false",
+            vehicles_habitually_parked_in_spain="false",
+        )
+    ).result
+
+    assert result.applicability == "not_applicable"
+    assert result.blocks
+    assert _PAGE_10 in result.blocks[0].evidence_ids
 
 
 # --------------------------------------------------------------------------

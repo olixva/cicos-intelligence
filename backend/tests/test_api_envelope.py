@@ -27,6 +27,7 @@ from domain.models.routing import (
     RouteExecution,
 )
 from domain.models.rule_evaluation import RuleEvaluation
+from infrastructure.adapters.inbound.api.routes.queries import _evidence_items
 from infrastructure.adapters.inbound.api.schemas.envelope import (
     EnvelopeResponse,
     _langfuse_trace_url,  # pyright: ignore[reportPrivateUsage]
@@ -79,6 +80,7 @@ class _FakeClaim:
                 applicability="applicable",
                 convention="CIDE",
                 decision="resolved",
+                liable_party="A",
                 party_ids=("A", "B"),
                 facts=(),
                 contradictions=(),
@@ -120,6 +122,7 @@ class _FakeResolve:
                     applicability="applicable",
                     convention="CIDE",
                     decision="resolved",
+                    liable_party="A",
                     party_ids=("A", "B"),
                     facts=(),
                     contradictions=(),
@@ -276,6 +279,7 @@ def test_envelope_dispatches_auto_mode_through_the_router() -> None:
     assert body["requested_mode"] == "auto"
     assert body["resolved_mode"] == "claim"
     assert body["result"]["kind"] == "claim"
+    assert body["result"]["liable_party"] == "A"
     assert len(resolve.last) == 1
     assert resolve.last[0] == QueryInput("Siniestro entre A y B.", "es")
     assert len(answer.last) == 0
@@ -330,6 +334,20 @@ def test_envelope_projects_evidence_items_without_asset_paths() -> None:
     ]
     assert "image_path" not in response.text
     assert "/api/v1/manual/pdf" not in response.text
+
+
+def test_all_source_pages_in_a_chunk_are_projected_as_evidence() -> None:
+    first = _page()
+    second = PageEvidence("sha256:abc:page:2", "abc", 2, "segunda página", None, None, ())
+    context = ContextEvidence(
+        evidence_ids=(first.evidence_id, second.evidence_id),
+        text="fragmento que abarca dos páginas",
+        sources=(first, second),
+    )
+
+    evidence = _evidence_items((context,))
+
+    assert tuple(item.evidence_id for item in evidence) == (first.evidence_id, second.evidence_id)
 
 
 def test_envelope_rejects_blank_text_with_422() -> None:
@@ -676,6 +694,7 @@ class _TracedClaim:
                 applicability="applicable",
                 convention="CIDE",
                 decision="resolved",
+                liable_party="A",
                 party_ids=("A", "B"),
                 facts=(),
                 contradictions=(),
@@ -1235,6 +1254,7 @@ def _build_envelope_claim() -> EnvelopeResponse:
                 applicability="applicable",
                 convention="CIDE",
                 decision="resolved",
+                liable_party="A",
                 party_ids=("A", "B"),
                 facts=(),
                 contradictions=(),
@@ -1296,6 +1316,7 @@ def _build_envelope_auto_claim() -> EnvelopeResponse:
                     applicability="applicable",
                     convention="CIDE",
                     decision="resolved",
+                    liable_party="A",
                     party_ids=("A", "B"),
                     facts=(),
                     contradictions=(),

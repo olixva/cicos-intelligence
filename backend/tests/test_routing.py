@@ -92,6 +92,7 @@ class _CounterAnalyzeClaim:
                 applicability="applicable",
                 convention="CIDE",
                 decision="resolved",
+                liable_party="A",
                 party_ids=("A", "B"),
                 facts=(),
                 contradictions=(),

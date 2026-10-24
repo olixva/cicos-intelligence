@@ -1,18 +1,4 @@
-"""ASGI factory entry point for local end-to-end testing.
-
-uvicorn's ``--factory`` flag invokes the importable callable with no
-arguments, which leaves every profile kwarg at ``None``. Without any
-profile, every workflow factory short-circuits to ``None`` and
-``build_api`` raises the aggregate-fail ``RuntimeError``. This module
-exposes the factory with the local ``baseline`` profile wired in and a
-real Qdrant probe so ``/health/ready`` reflects the actual state of
-the active alias (``allianz-manual-active``).
-
-The return type is intentionally unannotated: ``build_api.__annotations__["return"]``
-contains the literal token ``"return"`` which is not a valid identifier
-in a type hint. Letting pyright infer ``FastAPI`` from the implementation
-keeps the surface simple.
-"""
+"""ASGI factory entry point for local end-to-end testing."""
 
 from __future__ import annotations
 
@@ -22,29 +8,29 @@ import urllib.error
 import urllib.request
 from dataclasses import asdict
 from typing import cast
+from urllib.parse import quote
 
 from bootstrap import build_api
+from infrastructure.adapters.outbound.retriever.qdrant_retriever import (
+    InvalidIndexDataError,
+    signature_from_metadata,
+)
 
 _ACTIVE_ALIAS = "allianz-manual-active"
 
 
-def _qdrant_active_index_identity() -> dict[str, object] | None:
-    """Resolve the active alias to its collection and signed index metadata.
-
-    Network, parsing and signature errors yield ``None``. The health route
-    then exposes missing provenance, and ``/health/ready`` remains not ready.
-    """
-
-    from infrastructure.adapters.outbound.retriever.qdrant_retriever import (
-        InvalidIndexDataError,
-        signature_from_metadata,
-    )
-
-    qdrant_url = (
+def _qdrant_url() -> str:
+    """Resolve the shared Qdrant URL used by query, health and ingestion."""
+    return (
         os.environ.get("QDRANT_URL")
         or os.environ.get("ALLIANZ_QDRANT_URL")
         or "http://127.0.0.1:6333"
     ).rstrip("/")
+
+
+def _qdrant_active_index_identity() -> dict[str, object] | None:
+    """Resolve the active alias and require a non-empty, signed collection."""
+    qdrant_url = _qdrant_url()
     try:
         with urllib.request.urlopen(f"{qdrant_url}/aliases", timeout=2) as response:
             payload = json.loads(response.read())
@@ -59,9 +45,8 @@ def _qdrant_active_index_identity() -> dict[str, object] | None:
     aliases = result.get("aliases", [])
     if not isinstance(aliases, list):
         return None
-    alias_entries = cast(list[object], aliases)
     active: dict[str, object] | None = None
-    for raw_alias in alias_entries:
+    for raw_alias in cast(list[object], aliases):
         if not isinstance(raw_alias, dict):
             continue
         alias = cast(dict[str, object], raw_alias)
@@ -74,9 +59,10 @@ def _qdrant_active_index_identity() -> dict[str, object] | None:
     target = active.get("collection_name")
     if not isinstance(target, str) or not target:
         return None
-
     try:
-        with urllib.request.urlopen(f"{qdrant_url}/collections/{target}", timeout=2) as response:
+        with urllib.request.urlopen(
+            f"{qdrant_url}/collections/{quote(target, safe='')}", timeout=2
+        ) as response:
             details = json.loads(response.read())
     except urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError:
         return None
@@ -108,14 +94,12 @@ def _qdrant_active_index_identity() -> dict[str, object] | None:
 
 
 def _qdrant_alias_is_published() -> bool:
-    """Return True iff the active alias resolves to a signed, non-empty index."""
-
+    """Readiness requires the same signed active-index check as provenance."""
     return _qdrant_active_index_identity() is not None
 
 
 def app():
-    """Return the local FastAPI app with the ``baseline`` profile and a real ready probe."""
-
+    """Return the local baseline API with readiness and index provenance wired."""
     return build_api(
         profile_name="baseline",
         required_index_ready=_qdrant_alias_is_published,

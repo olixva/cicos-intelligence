@@ -34,18 +34,76 @@ def test_unknown_prerequisite_stays_undetermined() -> None:
     result = assess_applicability(ApplicabilityFacts(None, None), evidence_ids=("manual:page:56",))
 
     assert result.status == "undetermined"
-    assert result.missing_information == (
-        "Confirmar cuántos vehículos intervinieron.",
-        "Confirmar si existió colisión directa entre los dos vehículos.",
+    assert "Confirmar cuántos vehículos intervinieron." in result.missing_information
+    assert (
+        "Confirmar si existió colisión directa entre los dos vehículos."
+        in result.missing_information
     )
+    assert any("EEE" in item for item in result.missing_information)
 
 
 def test_two_vehicles_with_direct_collision_is_applicable_at_the_gate() -> None:
     from domain.rules.applicability import ApplicabilityFacts, assess_applicability
 
-    result = assess_applicability(ApplicabilityFacts(2, True), evidence_ids=("manual:page:56",))
+    result = assess_applicability(
+        ApplicabilityFacts(
+            2,
+            True,
+            accident_location_in_scope=True,
+            vehicles_registered_in_spain=True,
+            insurer_adhered=True,
+            vehicles_habitually_parked_in_spain=False,
+        ),
+        evidence_ids=("manual:page:56",),
+    )
 
     assert result.status == "applicable"
+
+
+def test_convention_scope_requires_location_and_an_eligible_vehicle_basis() -> None:
+    from domain.rules.applicability import ApplicabilityFacts, assess_applicability
+
+    result = assess_applicability(
+        ApplicabilityFacts(
+            2,
+            True,
+            accident_location_in_scope=True,
+            vehicles_registered_in_spain=True,
+            insurer_adhered=False,
+            vehicles_habitually_parked_in_spain=False,
+        ),
+        evidence_ids=("manual:page:10",),
+    )
+
+    assert result.status == "not_applicable"
+    assert "entidad adherida" in " ".join(result.reasons)
+
+
+def test_habitual_parking_in_spain_is_an_explicit_alternative_scope_basis() -> None:
+    from domain.rules.applicability import ApplicabilityFacts, assess_applicability
+
+    result = assess_applicability(
+        ApplicabilityFacts(
+            2,
+            True,
+            accident_location_in_scope=True,
+            vehicles_registered_in_spain=False,
+            insurer_adhered=False,
+            vehicles_habitually_parked_in_spain=True,
+        ),
+        evidence_ids=("manual:page:10",),
+    )
+
+    assert result.status == "applicable"
+
+
+def test_missing_convention_scope_facts_require_clarification() -> None:
+    from domain.rules.applicability import ApplicabilityFacts, assess_applicability
+
+    result = assess_applicability(ApplicabilityFacts(2, True), evidence_ids=("manual:page:10",))
+
+    assert result.status == "undetermined"
+    assert any("EEE" in item for item in result.missing_information)
 
 
 # --------------------------------------------------------------------------
@@ -404,6 +462,7 @@ def test_a_resolved_decision_requires_a_matched_rule() -> None:
             applicability="applicable",
             convention="CIDE",
             decision="resolved",
+            liable_party="A",
             party_ids=("A", "B"),
             facts=(),
             contradictions=(),
@@ -456,8 +515,62 @@ def test_a_resolved_decision_is_allowed_when_a_rule_matched() -> None:
                 rationale="Dos vehículos.",
             ),
         ),
+        liable_party="A",
     )
     assert analysis.decision == "resolved"
+
+
+def test_a_resolved_decision_requires_a_structured_liable_party() -> None:
+    from domain.models.decision import ClaimAnalysis, InvalidDecisionError
+
+    with pytest.raises(InvalidDecisionError, match="liable party"):
+        ClaimAnalysis(
+            applicability="applicable",
+            convention="CIDE",
+            decision="resolved",
+            party_ids=("A", "B"),
+            facts=(),
+            contradictions=(),
+            conditions=(),
+            missing_information=(),
+            blocks=(),
+            rules_evaluated=(
+                RuleEvaluation(
+                    rule_id="cide-matrix-lookup",
+                    inputs=(),
+                    result="matched",
+                    evidence_ids=_EVIDENCE,
+                    rationale="Celda resolutiva.",
+                ),
+            ),
+        )
+
+
+def test_a_resolved_decision_rejects_a_liable_party_outside_the_claim() -> None:
+    from domain.models.decision import ClaimAnalysis, InvalidDecisionError
+
+    with pytest.raises(InvalidDecisionError, match="party_ids"):
+        ClaimAnalysis(
+            applicability="applicable",
+            convention="CIDE",
+            decision="resolved",
+            party_ids=("A", "B"),
+            facts=(),
+            contradictions=(),
+            conditions=(),
+            missing_information=(),
+            blocks=(),
+            rules_evaluated=(
+                RuleEvaluation(
+                    rule_id="cide-matrix-lookup",
+                    inputs=(),
+                    result="matched",
+                    evidence_ids=_EVIDENCE,
+                    rationale="Celda resolutiva.",
+                ),
+            ),
+            liable_party="C",
+        )
 
 
 def test_shipped_lane_change_rule_matches_on_acknowledged_lane_change() -> None:
@@ -868,6 +981,7 @@ def test_inapplicable_convention_cannot_return_a_resolved_decision() -> None:
             applicability="not_applicable",
             convention=None,
             decision="resolved",
+            liable_party="A",
             party_ids=("A", "B"),
             facts=(),
             contradictions=(),

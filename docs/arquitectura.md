@@ -137,16 +137,15 @@ classify ─▶ dispatch ─┬─▶ to_question ─┐
                       └─▶ to_clarification ┘
 ```
 
-El clasificador es una llamada a un modelo barato con un enum cerrado
-(`question | claim | clarification_required`) y el prompt `auto-router`
-versionado en Langfuse. Una decisión fuera del enum es un error, no un valor
-por defecto.
+El clasificador devuelve una decisión de un enum cerrado
+(`question | claim | clarification_required`). Por defecto usa Jev con respuesta
+tipada; una decisión fuera del enum es un error, no un valor por defecto.
 
-Con `ALLIANZ_ROUTER_BACKEND=jev` el clasificador es un modelo de decisiones
-tipadas (`JevQueryClassifier`): una pregunta `choice` sobre el mismo enum, sin
-prompt y con la confianza de la distribución como criterio para pedir
-aclaración. Es una alternativa opt-in, no el comportamiento por defecto; ver
-`operacion.md`.
+`JevQueryClassifier` hace una pregunta `choice` sobre el enum, sin prompt y con
+la confianza de la distribución como criterio para pedir aclaración. Con
+`ALLIANZ_ROUTER_BACKEND=openai` se selecciona el clasificador de OpenAI y su
+prompt `auto-router` versionado en Langfuse. Jev superó el A/B del golden y el
+umbral predeterminado es 0,4; ver `operacion.md`.
 
 Sobre esa decisión hay un **override heurístico**: si el router no dice
 `claim` pero el texto contiene vocabulario inequívoco de relato de siniestro,

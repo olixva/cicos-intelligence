@@ -101,6 +101,7 @@ def _claim_result(analysis: ClaimAnalysis, execution: ClaimExecution) -> ClaimRe
         applicability=analysis.applicability,
         convention=analysis.convention,
         decision=analysis.decision,
+        liable_party=analysis.liable_party,
         party_ids=analysis.party_ids,
         facts=tuple(_claim_fact(fact) for fact in analysis.facts),
         contradictions=tuple(
@@ -220,6 +221,7 @@ class ClaimResult(_ResponseModel):
     applicability: Literal["applicable", "not_applicable", "undetermined"]
     convention: Literal["CIDE", "ASCIDE"] | None
     decision: Literal["resolved", "conditional", "undetermined", "not_assessed"]
+    liable_party: str | None = None
     party_ids: tuple[str, ...] = ()
     facts: tuple[dict[str, object], ...] = ()
     contradictions: tuple[dict[str, object], ...] = ()

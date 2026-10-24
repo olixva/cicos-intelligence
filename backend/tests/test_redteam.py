@@ -101,8 +101,7 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
     monkeypatch.setenv("ALLIANZ_JEV_GUARD_INJECTION", "0.81")
     monkeypatch.setenv("ALLIANZ_JEV_GUARD_OFF_TOPIC", "0.93")
     monkeypatch.setenv("ALLIANZ_EVALUATION_CONFIG_SOURCE", "makefile:.env+ops/local.env+LOCAL_ENV")
-    commits = iter(("redteam-start-commit", "redteam-finish-commit"))
-    monkeypatch.setattr(runner, "_git_commit", lambda: next(commits))
+    monkeypatch.setattr(runner, "_git_commit", lambda: "redteam-test-commit")
 
     async def fake_run_all(_cases, _concurrency, _base_url, *, expected_configuration):
         assert expected_configuration["input_guard"] == {
@@ -110,7 +109,22 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
             "injection_threshold": 0.81,
             "off_topic_threshold": 0.93,
         }
-        return [
+        identity = {
+            "alias_name": "allianz-manual-active",
+            "collection_name": "allianz-test-collection",
+            "points_count": 118,
+            "index_signature": {
+                "document_hash": expected_configuration["provenance"]["document_hash"]
+            },
+        }
+        backend_configuration = {
+            **expected_configuration,
+            "provenance": {
+                **expected_configuration["provenance"],
+                "active_index_identity": identity,
+            },
+        }
+        results = [
             (attack, RedTeamVerdict("pass", "safe_response", ()), {"status_code": 200}),
             (
                 control,
@@ -118,6 +132,7 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
                 {"status_code": 200},
             ),
         ]
+        return results, backend_configuration
 
     monkeypatch.setattr(runner, "_run_all", fake_run_all)
 
@@ -128,21 +143,19 @@ def test_redteam_manifest_records_guard_backend_and_thresholds(
         "injection_threshold": 0.81,
         "off_topic_threshold": 0.93,
     }
-    assert manifest["effective_configuration"]["input_guard"] == manifest["input_guard"]
-    assert manifest["effective_configuration"]["router"] == manifest["router"]
-    provenance = manifest["effective_configuration"]["provenance"]
-    assert provenance["build_commit"] == "redteam-start-commit"
-    assert len(provenance["build_fingerprint"]) == 64
-    assert provenance["configured_document_hash"] == runner.DOCUMENT_HASH
-    assert provenance["active_index_identity"] == {
-        "index_signature": {"document_hash": runner.DOCUMENT_HASH}
-    }
     assert manifest["configuration_source"] == "makefile:.env+ops/local.env+LOCAL_ENV"
-    assert manifest["commit"] == "redteam-start-commit"
-    assert manifest["effective_configuration"]["provenance"]["build_commit"] == manifest["commit"]
+    assert manifest["commit"] == "redteam-test-commit"
     assert manifest["cases_sha256"] == sha256(cases_path.read_bytes()).hexdigest()
     assert manifest["document"] == {"sha256": runner.DOCUMENT_HASH, "page_count": 111}
     assert manifest["concurrency"] == 4
+    assert manifest["effective_configuration"]["provenance"]["active_index_identity"] == {
+        "alias_name": "allianz-manual-active",
+        "collection_name": "allianz-test-collection",
+        "points_count": 118,
+        "index_signature": {
+            "document_hash": manifest["effective_configuration"]["provenance"]["document_hash"]
+        },
+    }
 
 
 def test_shipped_dataset_is_valid_and_balanced() -> None:

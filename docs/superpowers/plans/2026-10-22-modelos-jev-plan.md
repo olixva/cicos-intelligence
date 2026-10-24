@@ -55,12 +55,12 @@
 - Produce `EvaluableTurn.from_envelope(response: Mapping[str, object], requested_mode: str) -> EvaluableTurn` y `EvaluableTurn.from_error(error: BaseException) -> EvaluableTurn`, con `route_decision: str | None`, `result_kind: str | None`, `needs_input: bool`, `terminal_status: str | None` y `technical_error: str | None`.
 - `run_baseline.py` consume ese contrato; escribe un archivo por caso/modo de forma atómica y admite `--resume` sólo si el manifiesto de identidad (golden, modos, modelos y commit) coincide.
 
-- [x] **Step 1: Escribir pruebas fallidas** `test_auto_claim_clarification_keeps_route_decision`, `test_http_error_is_preserved_as_technical_error`, `test_unknown_metric_does_not_abort_aggregation`, `test_resume_reuses_complete_records_and_retries_errors` y `test_case_json_is_atomically_replaced`. Incluir `auto → claim → clarification` con `route_decision="claim"` y `needs_input=True`.
-- [x] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation_normalization.py -q`** y confirmar fallo por interfaz ausente.
-- [x] **Step 3: Implementar `EvaluableTurn` y `from_envelope`** en los dos módulos nuevos; derivar la decisión de ruta y el resultado final de campos separados del envelope.
-- [x] **Step 4: Adaptar el runner** para guardar cada caso/modo mediante escritura temporal más rename, resumir sólo registros completos compatibles y volver a ejecutar registros con error; una métrica desconocida se registra por caso y no aborta `_aggregate`.
-- [x] **Step 5: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation_normalization.py backend/tests/test_evaluation.py -q`**; verificar que los casos ya persistidos sobreviven a una reanudación simulada.
-- [x] **Step 6: Commit** `fix(eval): normalize outcomes and preserve partial runs` (`c8a10db`).
+- [ ] **Step 1: Escribir pruebas fallidas** `test_auto_claim_clarification_keeps_route_decision`, `test_http_error_is_preserved_as_technical_error`, `test_unknown_metric_does_not_abort_aggregation`, `test_resume_reuses_complete_records_and_retries_errors` y `test_case_json_is_atomically_replaced`. Incluir `auto → claim → clarification` con `route_decision="claim"` y `needs_input=True`.
+- [ ] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation_normalization.py -q`** y confirmar fallo por interfaz ausente.
+- [ ] **Step 3: Implementar `EvaluableTurn` y `from_envelope`** en los dos módulos nuevos; derivar la decisión de ruta y el resultado final de campos separados del envelope.
+- [ ] **Step 4: Adaptar el runner** para guardar cada caso/modo mediante escritura temporal más rename, resumir sólo registros completos compatibles y volver a ejecutar registros con error; una métrica desconocida se registra por caso y no aborta `_aggregate`.
+- [ ] **Step 5: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation_normalization.py backend/tests/test_evaluation.py -q`**; verificar que los casos ya persistidos sobreviven a una reanudación simulada.
+- [ ] **Step 6: Commit** `fix(eval): normalize outcomes and preserve partial runs`.
 
 ### Task 2: Corregir denominadores y medir evidencia AND/OR
 
@@ -75,13 +75,13 @@
 - Produce `MetricAggregate(n_total: int, n_applicable: int, n_scored: int, n_missing: int, n_error: int, n_not_applicable: int, mean: float | None)`; cada agregado cumple `n_total = n_scored + n_missing + n_error + n_not_applicable` y `n_applicable = n_total - n_not_applicable`.
 - Produce `citation_id_validity(*, cited: Collection[str], valid_pool: Collection[str], citations_required: bool = False) -> float | None`, `evidence_bundle_coverage(*, cited: Collection[str], requirements: Sequence[EvidenceRequirement]) -> float | None`, `over_resolution_rate_against_reference(*, predicted_decisions: Sequence[str], expected_decisions: Sequence[str]) -> float | None` y `resolution_support_rate(*, result: Mapping[str, object]) -> float | None`.
 
-- [x] **Step 1: Escribir pruebas fallidas** `test_all_of_bundle_requires_each_citation`, `test_any_of_accepts_one_complete_bundle`, `test_required_missing_citations_score_zero`, `test_metric_aggregate_counts_close_total` y `test_missing_and_error_are_not_scored`.
-- [x] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation.py -q`** y confirmar que los casos nuevos fallan.
-- [x] **Step 3: Implementar `MetricAggregate` en `application/models/evaluation.py` y los evaluadores** separando validez de ID respecto al catálogo y cobertura de evidencia exigida por el golden; un requisito se cubre si algún bundle `any_of` incluye todos sus IDs `all_of`, y una cita obligatoria ausente puntúa 0.
-- [x] **Step 4: Integrar los agregados al runner**; separar `over_resolution_rate_against_reference` de `resolution_support_rate`, que comprueba regla matched, actor y evidencia estructurados. Si el envelope aún no expone actor, registrar la medida como missing; no inferirlo del texto libre.
-- [x] **Step 5: Recalcular los resultados históricos sólo desde sus archivos `per-case`**, guardando una salida nueva con `recomputed_from`; si los archivos originales no están disponibles, dejar el histórico marcado como no recalculable y no inventar agregados.
-- [x] **Step 6: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation.py backend/tests/test_evaluation_normalization.py -q`** y comprobar las identidades de denominadores.
-- [x] **Step 7: Commit** `fix(eval): report honest denominators and evidence coverage` (`e98a106`).
+- [ ] **Step 1: Escribir pruebas fallidas** `test_all_of_bundle_requires_each_citation`, `test_any_of_accepts_one_complete_bundle`, `test_required_missing_citations_score_zero`, `test_metric_aggregate_counts_close_total` y `test_missing_and_error_are_not_scored`.
+- [ ] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation.py -q`** y confirmar que los casos nuevos fallan.
+- [ ] **Step 3: Implementar `MetricAggregate` en `application/models/evaluation.py` y los evaluadores** separando validez de ID respecto al catálogo y cobertura de evidencia exigida por el golden; un requisito se cubre si algún bundle `any_of` incluye todos sus IDs `all_of`, y una cita obligatoria ausente puntúa 0.
+- [ ] **Step 4: Integrar los agregados al runner**; separar `over_resolution_rate_against_reference` de `resolution_support_rate`, que comprueba regla matched, actor y evidencia estructurados. Si el envelope aún no expone actor, registrar la medida como missing; no inferirlo del texto libre.
+- [ ] **Step 5: Recalcular los resultados históricos sólo desde sus archivos `per-case`**, guardando una salida nueva con `recomputed_from`; si los archivos originales no están disponibles, dejar el histórico marcado como no recalculable y no inventar agregados.
+- [ ] **Step 6: Ejecutar `uv run --project backend pytest backend/tests/test_evaluation.py backend/tests/test_evaluation_normalization.py -q`** y comprobar las identidades de denominadores.
+- [ ] **Step 7: Commit** `fix(eval): report honest denominators and evidence coverage`.
 
 ### Task 3: Actualizar defaults OpenAI y documentar la configuración segura
 
@@ -99,12 +99,12 @@
 - Defaults: `OPENAI_ANSWER_MODEL=gpt-6.1-sol`, `OPENAI_CLAIM_EXTRACTION_MODEL=gpt-6.1-sol` hasta decidir Luna con datos, `ALLIANZ_ROUTER_MODEL=gpt-6-luna`.
 - Se mantienen las variables y firmas de Responses API; `ALLIANZ_ROUTER_BACKEND` queda como opción separada.
 
-- [x] **Step 1: Escribir pruebas fallidas `test_openai_model_defaults` y `test_openai_model_environment_overrides_defaults`** en `test_model_configuration.py`.
-- [x] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_model_configuration.py backend/tests/test_routing.py -q`** y confirmar fallo de los defaults.
-- [x] **Step 3: Actualizar defaults y comentarios** en bootstrap, workflow, heurísticas y `.env.example`; no cambiar embeddings ni referencias históricas a modelos de corridas antiguas.
-- [x] **Step 4: Actualizar documentación** para separar configuración propuesta, comprobaciones reales pendientes y resultados históricos; describir la selección segura Sol para extracción antes de aprobar Luna.
-- [x] **Step 5: Ejecutar las pruebas focalizadas** y revisar con `rg -n 'gpt-5\\.6'` que sólo queden referencias identificadas como históricas o fixtures.
-- [x] **Step 6: Commit** `feat(models): update OpenAI defaults to GPT-6` (`964590c`).
+- [ ] **Step 1: Escribir pruebas fallidas `test_openai_model_defaults` y `test_openai_model_environment_overrides_defaults`** en `test_model_configuration.py`.
+- [ ] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_model_configuration.py backend/tests/test_routing.py -q`** y confirmar fallo de los defaults.
+- [ ] **Step 3: Actualizar defaults y comentarios** en bootstrap, workflow, heurísticas y `.env.example`; no cambiar embeddings ni referencias históricas a modelos de corridas antiguas.
+- [ ] **Step 4: Actualizar documentación** para separar configuración propuesta, comprobaciones reales pendientes y resultados históricos; describir la selección segura Sol para extracción antes de aprobar Luna.
+- [ ] **Step 5: Ejecutar las pruebas focalizadas** y revisar con `rg -n 'gpt-5\\.6'` que sólo queden referencias identificadas como históricas o fixtures.
+- [ ] **Step 6: Commit** `feat(models): update OpenAI defaults to GPT-6`.
 
 ### Task 4: Validar OpenAI y comparar modelos de extracción
 
@@ -118,11 +118,11 @@
 - Usa `run_baseline.py` y el mismo golden adjudicado, mismo commit de código, perfil, concurrencia, índice y prompts; sólo cambia `OPENAI_CLAIM_EXTRACTION_MODEL` entre `gpt-6.1-sol` y `gpt-6-luna`.
 - Cada corrida conserva manifiesto, resultados por caso, uso/coste disponible, errores y latencia.
 
-- [x] **Step 1: Comprobar el catálogo y acceso real** a `gpt-6-luna` mediante `OPENAI_API_KEY` del entorno; lanzar humo sintético de pregunta y claim con salida estructurada. No se invocó Sol por instrucción expresa del usuario.
-- [ ] **Step 2: Ejecutar el mismo golden completo con Sol y Luna** en dos procesos backend. Comparación de extracción pendiente: el usuario limitó las llamadas OpenAI de esta campaña a Luna.
+- [ ] **Step 1: Comprobar el catálogo y acceso real** a `gpt-6.1-sol` y `gpt-6-luna` mediante `OPENAI_API_KEY` del entorno; lanzar humo de pregunta y claim sintéticos con salida estructurada.
+- [ ] **Step 2: Ejecutar el mismo golden completo con Sol y Luna** en dos procesos backend, guardando resultados en carpetas nuevas; si faltan credenciales, continuar las tareas locales y dejar esta puerta explícitamente pendiente.
 - [ ] **Step 3: Comparar** errores de proveedor, campos de extracción, métricas de decisión, nuevas resoluciones injustificadas, tokens/coste y latencia con denominadores corregidos.
 - [ ] **Step 4: Mantener Luna sólo si no produce nuevas resoluciones injustificadas y no empeora materialmente métricas de seguridad adjudicadas**; de lo contrario conservar Sol. Registrar el criterio y la evidencia en memoria y validación pendiente.
-- [x] **Step 5: Commit** `docs(eval): record GPT-6 extraction comparison` (`3f59476`); el commit registra que la comparación Sol/Luna no se ejecutó y deja Sol como default de extracción.
+- [ ] **Step 5: Commit** `docs(eval): record GPT-6 extraction comparison` (incluyendo el default final si la puerta se resolvió).
 
 ### Task 5: Verificar Jev y promover el router sólo si supera el A/B
 
@@ -137,13 +137,13 @@
 - `JevDecisionModel.decide(state, questions) -> DecisionResult` valida una respuesta para cada clave, tipo correcto y probabilidades en `[0, 1]`; `DecisionResult` conserva modelo y uso.
 - El manifiesto identifica proveedor/modelo/umbral del router y el resultado se compara con el router OpenAI sobre los mismos casos.
 
-- [x] **Step 1: Añadir pruebas fallidas** `test_response_requires_every_asked_question`, `test_choice_probability_out_of_range_is_rejected` y `test_provider_error_body_is_not_exposed`; verificar respuesta ausente, tipo incorrecto y cuerpo remoto no expuesto.
-- [x] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_decision_model.py -q`** y confirmar los casos nuevos.
-- [x] **Step 3: Hacer una llamada sintética real** con preguntas `noul` y `choice`; respuesta, probabilidades, modelo y usage verificados. Los tests unitarios cubren timeout/HTTP y ausencia de clave.
-- [x] **Step 4: Ejecutar A/B del golden** con OpenAI Luna y Jev; se registraron exactitud end-to-end, matrices, errores, duración, tokens y coste estimado. El barrido inicial probó `0.4`, `0.6`, `0.8`; luego se repitió el A/B de `0.4` y OpenAI con manifiestos y `per-case` nativos.
-- [x] **Step 5: Promover `jev` como router predeterminado**; en la repetición Jev `0.4` obtuvo 97/110 frente a OpenAI Luna 94/110, contando errores y rutas ausentes como fallos del flujo `auto`. OpenAI queda seleccionable; no hay fallback silencioso.
-- [x] **Step 6: Ejecutar tests focalizados de cliente/bootstrap y guardar resultados fuera de Git**; los manifiestos retenidos identifican proveedor, modelo y umbral.
-- [x] **Step 7: Commit** `feat(models): promote validated Jev defaults` (`75da632`).
+- [ ] **Step 1: Añadir pruebas fallidas** `test_response_requires_every_asked_question`, `test_choice_probability_out_of_range_is_rejected` y `test_provider_error_body_is_not_exposed`; verificar respuesta ausente, tipo incorrecto y cuerpo remoto no expuesto.
+- [ ] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_decision_model.py -q`** y confirmar los casos nuevos.
+- [ ] **Step 3: Hacer una llamada sintética real** con una pregunta `noul` y otra `choice`; comprobar respuestas, probabilidades, modelo, usage, timeout/HTTP y clave faltante. Ajustar sólo el adaptador Jev si el contrato observado difiere.
+- [ ] **Step 4: Ejecutar A/B del golden** con `ALLIANZ_ROUTER_BACKEND=openai` y `jev`; registrar exactitud, matriz de confusión por clase, errores, latencia y uso/coste disponible. Barrer `ALLIANZ_JEV_ROUTER_MIN_CONFIDENCE=0.4, 0.6, 0.8` sin cambiar el dataset.
+- [ ] **Step 5: Promover `jev` como router predeterminado sólo si la exactitud sobre todos los casos del golden iguala o supera OpenAI**; contar los errores técnicos como fallos y conservar cada caso en el denominador. Si no, dejar `openai` por defecto y documentar Jev como opción. No añadir fallback silencioso.
+- [ ] **Step 6: Ejecutar tests focalizados de cliente/bootstrap y guardar resultados fuera de Git**; comprobar que los manifiestos identifican proveedor, modelo y umbral.
+- [ ] **Step 7: Commit** `feat(router): promote Jev only after golden comparison`.
 
 ### Task 6: Validar guardarraíl Jev con red-team y decidir su default
 
@@ -158,13 +158,13 @@
 - `ALLIANZ_INPUT_GUARD=off|jev` controla el guardarraíl independientemente del router; el manifiesto guarda backend, threshold de inyección y threshold off-topic.
 - La promoción exige cero ataques exitosos y `over_refusal_rate` Jev no mayor que la referencia `off`.
 
-- [x] **Step 1: Añadir `test_redteam_manifest_records_guard_backend_and_thresholds` y `test_regex_guard_runs_before_jev_guard`**; conservar `test_guard_fails_open_when_the_service_is_down` como prueba de fallo abierto.
-- [x] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_decision_model.py backend/tests/test_redteam.py -q`**; las pruebas focalizadas pasan.
-- [x] **Step 3: Ejecutar la suite red-team completa** con guard `off` y `jev`, sobre el mismo backend/configuración; no hubo ataques fallidos, y se inspeccionaron controles benignos.
-- [x] **Step 4: Activar `jev` por defecto**; el éxito de ataque fue 0 y el sobre-rechazo igualó la referencia `off`.
-- [x] **Step 5: Mantener el juez Jev opt-in y marcar sus scores como exploratorios** hasta medir acuerdo con etiquetas humanas.
-- [x] **Step 6: Registrar manifiestos, resultados, umbrales y límites** sin relatos personales ni secretos.
-- [x] **Step 7: Commit** `feat(models): promote validated Jev defaults` (`75da632`).
+- [ ] **Step 1: Añadir `test_redteam_manifest_records_guard_backend_and_thresholds` y `test_regex_guard_runs_before_jev_guard`**; conservar `test_guard_fails_open_when_the_service_is_down` como prueba de fallo abierto.
+- [ ] **Step 2: Ejecutar `uv run --project backend pytest backend/tests/test_decision_model.py backend/tests/test_redteam.py -q`** y confirmar que los campos/regresiones nuevos fallan.
+- [ ] **Step 3: Ejecutar la suite red-team completa** contra el mismo backend/configuración primero con guardarraíl `off` y luego `jev`; inspeccionar cada ataque fallido y una muestra de controles benignos.
+- [ ] **Step 4: Activar `jev` por defecto sólo si el ataque exitoso es 0 y el sobre-rechazo no supera `off`**; en otro caso conservar `off` y dejar el adaptador opt-in.
+- [ ] **Step 5: Mantener el juez Jev opt-in y marcar sus scores como exploratorios** mientras no exista muestra con etiquetas humanas y acuerdo medido; no usarlos para aprobar la promoción.
+- [ ] **Step 6: Registrar manifests, resultados, thresholds elegidos y limitaciones en la documentación** sin incluir relatos con datos personales ni secretos.
+- [ ] **Step 7: Commit** `feat(guardrails): gate Jev on red-team results`.
 
 ### Task 7: Cerrar trazabilidad y ejecutar puertas de entrega
 
@@ -175,26 +175,19 @@
 - Modify: `docs/entrega/validacion-pendiente.md`
 - Review: `.env.example`, manifiestos locales, `git status` y referencias a secretos
 
-- [x] **Step 1: Consolidar en memoria** fecha, IDs, mediciones de tokens/duración, denominadores, estimación de coste y límites; distinguir los resultados parciales.
+- [x] **Step 1: Consolidar en memoria** fecha, IDs y configuración observada, denominadores disponibles y ausencia de mediciones de latencia/coste; no presentar resultados parciales como completos.
 - [x] **Step 2: Confirmar** que los jueces Jev no calibrados siguen etiquetados como exploratorios y que no queda como pendiente ninguna comprobación que sí se ejecutó.
 - [x] **Step 3: Ejecutar `make check-all` y `make test-e2e`**; resolver fallos de esta rama y guardar salida reproducible.
 - [x] **Step 4: Revisar `git diff --check`, búsqueda de claves, modelo de embedding intacto y referencias antiguas sólo históricas; verificar que resultados y secretos no se hayan añadido a Git.
 - [x] **Step 5: Commit** documentación y cierre local de Jev/modelos.
 
-**Cierre de revisión independiente:** la métrica ahora se denomina
-`router_end_to_end_accuracy_all_labeled` y declara que incluye dispatch y
-disponibilidad de respuesta/extracción, no sólo clasificación. `/health/config`
-expone modelos y umbrales sin credenciales; ambos runners cotejan ese snapshot
-antes de enviar casos y abortan ante divergencia. El endpoint confirma el
-commit y la huella del árbol de trabajo del servidor, además de la firma real
-de la colección detrás del alias activo de Qdrant; los runners cotejan el hash
-del documento firmado con el esperado. El manifiesto red-team guarda commit,
-hash de casos, hash/páginas del manual y concurrencia. Los A/B finales
-volvieron a ejecutarse en commit `75da632`, con 110 archivos por caso nativos;
-ambas pasadas parciales se reanudaron y su limitación de duración del manifiesto
-se documenta. La duración acumulada aparece en el manifiesto, el resumen y la
-consola y tiene prueba de regresión. La
-muestra benigna sigue siendo sólo n=3 y el umbral requiere un holdout.
+**Cierre de revisión independiente:** `router_accuracy_all_labeled` incorpora
+errores y rutas ausentes como fallos; los runners usan los mismos archivos de
+configuración que `make serve-backend` y registran esa fuente; el manifiesto
+red-team añade commit, hash de casos, hash/páginas del manual y concurrencia;
+el router conserva modelo/tokens también tras el override heurístico; los
+errores del juez quedan en `n_error` de sus métricas sin invalidar el resultado
+determinista.
 
 ## Self-review del plan
 

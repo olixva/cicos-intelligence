@@ -191,18 +191,21 @@ def _evidence_items(context: tuple[ContextEvidence, ...]) -> tuple[EvidenceItem,
     """
 
     items: list[EvidenceItem] = []
+    seen: set[str] = set()
     for entry in context:
-        if not entry.sources:
-            continue
-        first_source = entry.sources[0]
-        items.append(
-            EvidenceItem(
-                evidence_id=entry.evidence_ids[0],
-                document_hash=first_source.document_hash,
-                pdf_page=first_source.pdf_page,
-                delivery=entry.delivery,
+        for source in entry.sources:
+            evidence_id = source.evidence_id
+            if evidence_id in seen:
+                continue
+            seen.add(evidence_id)
+            items.append(
+                EvidenceItem(
+                    evidence_id=evidence_id,
+                    document_hash=source.document_hash,
+                    pdf_page=source.pdf_page,
+                    delivery=entry.delivery,
+                )
             )
-        )
     return tuple(items)
 
 

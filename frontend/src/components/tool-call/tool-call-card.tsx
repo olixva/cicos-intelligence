@@ -364,6 +364,7 @@ function ApplyDecisionBody({ toolCall }: { toolCall: ToolCall }) {
         convention?: string | null;
         applicability?: Applicability;
         decision?: Decision;
+        liable_party?: string | null;
         conditions?: string[];
       }
     | undefined;
@@ -395,6 +396,11 @@ function ApplyDecisionBody({ toolCall }: { toolCall: ToolCall }) {
         <span className={cn('rounded border px-2 py-0.5 text-[11px]', decisionTone)}>
           {decision ? decisionLabel(decision) : 'Sin determinar'}
         </span>
+        {payload?.liable_party && (
+          <span className="rounded border border-success/30 bg-success/10 px-2 py-0.5 text-[11px] text-success">
+            Responsable: {payload.liable_party}
+          </span>
+        )}
       </div>
 
       {conditions.length > 0 && (
