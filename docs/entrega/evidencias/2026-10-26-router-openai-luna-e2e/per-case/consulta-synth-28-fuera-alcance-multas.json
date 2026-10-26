@@ -1,0 +1,189 @@
+{
+  "auto": {
+    "response": {
+      "request_id": "f00ac033-b7f9-4199-adf2-789a69b5a31a",
+      "requested_mode": "auto",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "El fragmento del manual CIDE/ASCIDE/CICOS de noviembre de 2004 no indica cómo se reparten entre aseguradoras las multas o sanciones administrativas de tráfico. Sí señala que los Convenios se aplican únicamente a los daños materiales propios de los vehículos y que otros daños se atienden al margen de ellos; eso no permite deducir cómo se distribuyen esas sanciones.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:26",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:27",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:28"
+            ]
+          },
+          {
+            "text": "No he podido establecer a partir del contexto si una aseguradora debe asumir, compartir o reembolsar una multa de tráfico. El manual también menciona penalizaciones entre entidades dentro de la tramitación del Convenio, pero el extracto no las identifica como multas o sanciones administrativas de tráfico. Esta referencia corresponde a un manual de 2004, no a una exposición del derecho vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:79",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:80",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:81"
+            ]
+          }
+        ],
+        "trace_id": "3195ff9a4b5bebdfac7aa57fed98f5be",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/3195ff9a4b5bebdfac7aa57fed98f5be"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:96",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 96,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:97",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 97,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:98",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 98,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:26",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 26,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:27",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 27,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:28",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 28,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:11",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 11,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:12",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 12,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:79",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 79,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:80",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 80,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:81",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 81,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:38",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 38,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:39",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 39,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:40",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 40,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:25",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 25,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 84,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 85,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:86",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 86,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:87",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 87,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "39cb229e344812fc58fe24457fdd5cd0",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/39cb229e344812fc58fe24457fdd5cd0",
+        "router_provider": "openai",
+        "router_model": "gpt-6-luna",
+        "router_input_tokens": "304",
+        "router_output_tokens": "71"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "resolved_mode": "question",
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial",
+      "expected_intent": "question",
+      "router_match": 1.0,
+      "router_provider": "openai",
+      "router_model": "gpt-6-luna",
+      "router_input_tokens": 304,
+      "router_output_tokens": 71
+    },
+    "elapsed_s": 287.9641865829981
+  }
+}

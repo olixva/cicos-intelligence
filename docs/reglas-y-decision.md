@@ -90,10 +90,14 @@ citar la página que la sostiene.
 ## La tabla de culpabilidad CIDE
 
 La tabla de la página 101 cruza las circunstancias declaradas por cada parte
-en el apartado 12 del parte amistoso europeo (D.A.A.). Está transcrita entera
-—324 celdas— con doble transcripción independiente y adjudicación humana
-firmada. No se autotranscribe desde las tablas de Docling: una tabla mal leída
-que reparte responsabilidad no es un error tolerable.
+en el apartado 12 del parte amistoso europeo (D.A.A.). Sus 324 celdas se
+transcribieron por dos vías independientes: lectura visual de la página y
+extracción estricta de la capa de texto del PDF. Las dos transcripciones
+coincidieron; no hubo diferencias que adjudicar. El autor firmó la revisión del
+artefacto. La doble lectura automatizada y esa firma no sustituyen una revisión
+por una persona experta en convenios antes de cualquier uso operativo. No se
+autotranscribe desde las tablas de Docling: una tabla mal leída que reparte
+responsabilidad no es un error tolerable.
 
 `decide_from_daa_matrix` distingue cuatro resultados que la interfaz no puede
 confundir:

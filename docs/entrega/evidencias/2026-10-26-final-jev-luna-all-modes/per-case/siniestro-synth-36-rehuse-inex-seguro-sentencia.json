@@ -1,0 +1,462 @@
+{
+  "claim": {
+    "response": {
+      "request_id": "09c1f266-da90-44bd-98db-28ad20914fd1",
+      "requested_mode": "claim",
+      "resolved_mode": "clarification",
+      "result": {
+        "kind": "clarification",
+        "message": "Necesito información adicional para poder resolver el siniestro.",
+        "missing_fields": [
+          "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+          "Confirmar si los vehículos están matriculados en España.",
+          "Confirmar si sus aseguradoras están adheridas al Convenio.",
+          "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+        ]
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:83",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 83,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 84,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 85,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:46",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 46,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:67",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 67,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:68",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 68,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:69",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 69,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 57,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 58,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 59,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:61",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 61,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:62",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 62,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "thread_id": "ac989c11-c642-4e28-8493-b25abfbcbdbd",
+        "trace_id": "f3bf4c01a3417531d4f3df87956819d2",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/f3bf4c01a3417531d4f3df87956819d2"
+      }
+    },
+    "turn": {
+      "route_decision": "claim",
+      "result_kind": "clarification",
+      "needs_input": true,
+      "terminal_status": "clarification"
+    },
+    "evaluation": {
+      "result_kind": "clarification",
+      "route_decision": "claim",
+      "needs_input": true,
+      "missing_fields": [
+        "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+        "Confirmar si los vehículos están matriculados en España.",
+        "Confirmar si sus aseguradoras están adheridas al Convenio.",
+        "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+      ],
+      "citation_id_validity": 0.0,
+      "evidence_bundle_coverage": 0.0,
+      "cited_count": 0,
+      "fact_count": 0
+    },
+    "elapsed_s": 987.7452818750025
+  },
+  "question": {
+    "response": {
+      "request_id": "d3f7f759-c4e9-4043-b324-f07dadb529ce",
+      "requested_mode": "question",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "Según el manual CIDE/ASCIDE/CICOS de noviembre de 2004 —que no debe tomarse como descripción del derecho vigente—, el plazo indicado para rehusar por inexistencia de seguro es de tres días hábiles. Que el rehúse se haya formulado dentro de ese plazo no impide por sí solo la aplicación posterior del Convenio en el supuesto que el manual describe.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:83",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85"
+            ]
+          },
+          {
+            "text": "El manual establece que, si tras uno o más rehusés por inexistencia de seguro la Acreedora tuvo que demandar al causante y una resolución judicial demuestra que la Entidad Deudora tenía seguro con los mismos datos, se aplica el Convenio y la Deudora debe asumir un Módulo de penalización para compensar los gastos ocasionados a la Acreedora. Por tanto, la firmeza de la sentencia no basta, según lo aportado, para confirmar que se cumple esa condición: habría que verificar que la resolución acredita la existencia del seguro de B con los datos del caso.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48"
+            ]
+          },
+          {
+            "text": "No puedo determinar con el contexto si la sentencia descrita contiene efectivamente ese pronunciamiento, ni cuál sería el importe del Módulo: el fragmento aportado solo indica que debe asumirse un Módulo de penalización y no da su cuantía.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48"
+            ]
+          }
+        ],
+        "trace_id": "f79ee543fcb0f90f9a63b1b77e89059a",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/f79ee543fcb0f90f9a63b1b77e89059a"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:83",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 83,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 84,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 85,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:46",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 46,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 57,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 58,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 59,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:67",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 67,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:68",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 68,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:69",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 69,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:49",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 49,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:61",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 61,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:62",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 62,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:50",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 50,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:51",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 51,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "f79ee543fcb0f90f9a63b1b77e89059a",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/f79ee543fcb0f90f9a63b1b77e89059a"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "answer_status": "partial",
+      "answer_status_accuracy": null,
+      "citation_id_validity": 0.2857142857142857,
+      "evidence_bundle_coverage": 0.2,
+      "cited_count": 7,
+      "expected_pool_size": 5
+    },
+    "elapsed_s": 995.8970310000004
+  },
+  "auto": {
+    "response": {
+      "request_id": "3ad7b8f2-3b20-4b5d-85ac-a18241a151f3",
+      "requested_mode": "auto",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "Según el manual CIDE/ASCIDE/CICOS de noviembre de 2004 —no como descripción del derecho vigente—, el rehúse dentro de plazo no impide por sí solo aplicar el Convenio. Si una resolución judicial demuestra que la aseguradora de B tenía el seguro, con los mismos datos, el Convenio se aplica y esa aseguradora debe asumir un Módulo de penalización para compensar los gastos causados a la Aseguradora de A. Por tanto, la respuesta es afirmativa si la sentencia firme establece ese extremo; el mero hecho de que condene a B por los mismos hechos no permite confirmar, con lo aportado, que la sentencia haya declarado la existencia del seguro con los datos coincidentes.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48"
+            ]
+          },
+          {
+            "text": "El manual fija en tres días hábiles el plazo para el rehúse por inexistencia de seguro, de modo que, según el supuesto planteado, B habría rehusado dentro de ese plazo. Aun así, la regla anterior contempla expresamente que una resolución judicial posterior que pruebe la existencia del seguro puede llevar a aplicar el Convenio y el módulo de penalización.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:83",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85"
+            ]
+          },
+          {
+            "text": "No puedo establecer con este extracto el importe concreto del módulo ni los pasos detallados para regularizarlo; el manual remite esos aspectos al Manual de Regularizaciones.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:67",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:68",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:69"
+            ]
+          }
+        ],
+        "trace_id": "9e3c7a5fb852fed5a8bcd2ed82d64ca7",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/9e3c7a5fb852fed5a8bcd2ed82d64ca7"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:83",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 83,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 84,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 85,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:46",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 46,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 57,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 58,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 59,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:67",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 67,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:68",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 68,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:69",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 69,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:49",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 49,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:61",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 61,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:62",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 62,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:50",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 50,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:51",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 51,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "d589b3dfc01c6aa317e057bd5ece7d32",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/d589b3dfc01c6aa317e057bd5ece7d32",
+        "router_provider": "typesafe",
+        "router_model": "jev-1.14.0",
+        "router_input_tokens": "549",
+        "router_output_tokens": "41"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "resolved_mode": "question",
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial",
+      "expected_intent": "claim",
+      "router_match": 0.0,
+      "router_provider": "typesafe",
+      "router_model": "jev-1.14.0",
+      "router_input_tokens": 549,
+      "router_output_tokens": 41
+    },
+    "elapsed_s": 1008.5428647090012
+  }
+}

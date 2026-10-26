@@ -1,0 +1,327 @@
+{
+  "question": {
+    "response": {
+      "request_id": "d4db55d7-2692-4dd3-93e7-90f73470cd57",
+      "requested_mode": "question",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "El manual indica que, cuando la entidad Deudora manifiesta «sin antecedentes», una declaración de la Acreedora que omita alguno de los datos obligatorios puede ser inválida y dar derecho a rehusar la reclamación conforme al artículo 16. Sin embargo, el fragmento disponible no incluye la lista completa de esos datos obligatorios, por lo que no permite confirmar que el lugar del accidente o los datos del conductor contrario sean campos cuya omisión justifique el rehúse.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:35",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:36"
+            ]
+          },
+          {
+            "text": "En el texto aportado, el lugar del accidente aparece entre los datos aconsejables cuando se disponga de ellos. No queda establecido si los datos del conductor contrario son obligatorios ni si su falta, en estas circunstancias, permite a B rehusar. Por tanto, con esta evidencia no puede determinarse que B tenga derecho a rehusar específicamente por esas dos omisiones. Esta respuesta describe el manual de noviembre de 2004 y no lo presenta como derecho vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:34",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:35"
+            ]
+          }
+        ],
+        "trace_id": "bad7a3cd865e21c686b8a9b0b07b9f4d",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/bad7a3cd865e21c686b8a9b0b07b9f4d"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:35",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 35,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:36",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 36,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:34",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 34,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:37",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 37,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:99",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 99,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 100,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:97",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 97,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:98",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 98,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:38",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 38,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "bad7a3cd865e21c686b8a9b0b07b9f4d",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/bad7a3cd865e21c686b8a9b0b07b9f4d"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "answer_status": "partial",
+      "answer_status_accuracy": null,
+      "citation_id_validity": 0.0,
+      "evidence_bundle_coverage": 0.0,
+      "cited_count": 4,
+      "expected_pool_size": 6
+    },
+    "elapsed_s": 1006.3854916249984
+  },
+  "claim": {
+    "response": {
+      "request_id": "cf65f961-080d-4a9a-b1ab-c4226ea4ee20",
+      "requested_mode": "claim",
+      "resolved_mode": "clarification",
+      "result": {
+        "kind": "clarification",
+        "message": "Necesito información adicional para poder resolver el siniestro.",
+        "missing_fields": [
+          "Confirmar cuántos vehículos intervinieron.",
+          "Confirmar si existió colisión directa entre los dos vehículos.",
+          "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+          "Confirmar si los vehículos están matriculados en España.",
+          "Confirmar si sus aseguradoras están adheridas al Convenio.",
+          "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+        ]
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:35",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 35,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:36",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 36,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:34",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 34,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:37",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 37,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:97",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 97,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:98",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 98,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:99",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 99,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "thread_id": "d845fb64-21f4-415a-ad42-1064ac270a7f",
+        "trace_id": "24053dd4c027d579a787d4593951e315",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/24053dd4c027d579a787d4593951e315"
+      }
+    },
+    "turn": {
+      "route_decision": "claim",
+      "result_kind": "clarification",
+      "needs_input": true,
+      "terminal_status": "clarification"
+    },
+    "evaluation": {
+      "result_kind": "clarification",
+      "route_decision": "claim",
+      "needs_input": true,
+      "missing_fields": [
+        "Confirmar cuántos vehículos intervinieron.",
+        "Confirmar si existió colisión directa entre los dos vehículos.",
+        "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+        "Confirmar si los vehículos están matriculados en España.",
+        "Confirmar si sus aseguradoras están adheridas al Convenio.",
+        "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+      ],
+      "citation_id_validity": 0.0,
+      "evidence_bundle_coverage": 0.0,
+      "cited_count": 0,
+      "fact_count": 0
+    },
+    "elapsed_s": 1014.8475761250011
+  },
+  "auto": {
+    "response": {
+      "request_id": "2dc4fe5e-f8a9-47a0-9705-99f2afac2839",
+      "requested_mode": "auto",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "Sí. Según el manual CIDE/ASCIDE/CICOS de noviembre de 2004, en el supuesto de “sin antecedentes”, si la declaración de la Acreedora omite un dato obligatorio, no es válida y la presunta Deudora puede rehusar la reclamación conforme al artículo 16. El lugar del accidente aparece expresamente entre los datos mínimos exigidos; por tanto, su omisión permite fundamentar el rehúse. El manual también indica que deben figurar todos los apartados del modelo en el formato de la declaración.\n\nNo puedo establecer con el extracto si el campo concreto «datos del conductor contrario» es, por sí mismo, un dato obligatorio: la lista de datos mínimos aportada no lo menciona expresamente, aunque exige todos los apartados del modelo. Esta respuesta describe únicamente lo que señala el manual de 2004 y no lo presenta como derecho vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:30",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:31",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:32",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:33",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:34",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:35",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:36"
+            ]
+          }
+        ],
+        "trace_id": "5d1c681b48ad8ca252a7336e047a60de",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/5d1c681b48ad8ca252a7336e047a60de"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:35",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 35,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:36",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 36,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:34",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 34,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:37",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 37,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:99",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 99,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 100,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:97",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 97,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:98",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 98,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:30",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 30,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:31",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 31,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:32",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 32,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:33",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 33,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "754cf64002df93d0ef6f7103abe04c68",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/754cf64002df93d0ef6f7103abe04c68",
+        "router_provider": "typesafe",
+        "router_model": "jev-1.14.0",
+        "router_input_tokens": "522",
+        "router_output_tokens": "41"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "resolved_mode": "question",
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial",
+      "expected_intent": "claim",
+      "router_match": 0.0,
+      "router_provider": "typesafe",
+      "router_model": "jev-1.14.0",
+      "router_input_tokens": 522,
+      "router_output_tokens": 41
+    },
+    "elapsed_s": 1021.959912667
+  }
+}

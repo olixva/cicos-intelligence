@@ -1,0 +1,375 @@
+{
+  "claim": {
+    "response": {
+      "request_id": "5160232f-03eb-418d-bb6a-74ddc7c7d594",
+      "requested_mode": "claim",
+      "resolved_mode": "clarification",
+      "result": {
+        "kind": "clarification",
+        "message": "Necesito información adicional para poder resolver el siniestro.",
+        "missing_fields": [
+          "Confirmar cuántos vehículos intervinieron.",
+          "Confirmar si existió colisión directa entre los dos vehículos.",
+          "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+          "Confirmar si los vehículos están matriculados en España.",
+          "Confirmar si sus aseguradoras están adheridas al Convenio.",
+          "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+        ]
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:30",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 30,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:31",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 31,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:32",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 32,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:33",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 33,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 100,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 101,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:99",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 99,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:29",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 29,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:28",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 28,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 102,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "thread_id": "e5a21674-ca8a-427f-826c-1537b63b81f4",
+        "trace_id": "9de623bb25cf0746ad13781ed26be04a",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/9de623bb25cf0746ad13781ed26be04a"
+      }
+    },
+    "turn": {
+      "route_decision": "claim",
+      "result_kind": "clarification",
+      "needs_input": true,
+      "terminal_status": "clarification"
+    },
+    "evaluation": {
+      "result_kind": "clarification",
+      "route_decision": "claim",
+      "needs_input": true,
+      "missing_fields": [
+        "Confirmar cuántos vehículos intervinieron.",
+        "Confirmar si existió colisión directa entre los dos vehículos.",
+        "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+        "Confirmar si los vehículos están matriculados en España.",
+        "Confirmar si sus aseguradoras están adheridas al Convenio.",
+        "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+      ],
+      "citation_id_validity": 0.0,
+      "evidence_bundle_coverage": 0.0,
+      "cited_count": 0,
+      "fact_count": 0
+    },
+    "elapsed_s": 1169.3453969170005
+  },
+  "question": {
+    "response": {
+      "request_id": "c25a7a3f-cfc6-4cbd-8ecb-d94027c1a684",
+      "requested_mode": "question",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "El contexto no indica qué maniobra concreta representa cada una de las casillas A0, A5, A12 y A17. Sí señala que, si solo está cumplimentado el apartado 12, las cruces se valoran conforme a la tabla de culpabilidad CIDE; pero con las casillas A mencionadas, sin conocer también las casillas B marcadas, no puedo determinar quién resulta culpable. El material corresponde al manual de noviembre de 2004 y no permite establecer por sí solo cuál es la regla vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102"
+            ]
+          }
+        ],
+        "trace_id": "fea871eac5e0c1a4e0117db225d90ef0",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/fea871eac5e0c1a4e0117db225d90ef0"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:30",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 30,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:31",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 31,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:32",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 32,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:33",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 33,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 100,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 101,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:28",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 28,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:29",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 29,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:99",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 99,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 102,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:73",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 73,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:74",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 74,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:25",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 25,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:26",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 26,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "fea871eac5e0c1a4e0117db225d90ef0",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/fea871eac5e0c1a4e0117db225d90ef0"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "answer_status": "partial",
+      "answer_status_accuracy": null,
+      "citation_id_validity": 0.0,
+      "evidence_bundle_coverage": 0.0,
+      "cited_count": 2,
+      "expected_pool_size": 7
+    },
+    "elapsed_s": 1171.6056533750016
+  },
+  "auto": {
+    "response": {
+      "request_id": "e09df816-ee8b-40be-9ad3-d80f2332e572",
+      "requested_mode": "auto",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "insufficient_evidence",
+        "blocks": [
+          {
+            "text": "Según la tabla CIDE del manual, las circunstancias de A se cruzan con las de B (columnas B0–B17) para obtener un resultado. El contexto no incluye qué maniobra representa cada casilla A0, A5, A12 y A17, ni indica las casillas marcadas para el vehículo B; por tanto, no puedo identificar esas maniobras ni determinar quién resulta culpable con los datos aportados. La tabla y la regla citadas pertenecen al manual de noviembre de 2004, no se presentan aquí como derecho vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102"
+            ]
+          }
+        ],
+        "trace_id": "f98c5e8bbc2727cfa0d3383779f0f49d",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/f98c5e8bbc2727cfa0d3383779f0f49d"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:30",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 30,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:31",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 31,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:32",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 32,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:33",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 33,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 100,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 101,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:28",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 28,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:29",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 29,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:99",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 99,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 102,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:73",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 73,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:74",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 74,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:25",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 25,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:26",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 26,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "2804ea5e77b76901f1dd52f59b5afbf0",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/2804ea5e77b76901f1dd52f59b5afbf0",
+        "router_provider": "typesafe",
+        "router_model": "jev-1.14.0",
+        "router_input_tokens": "486",
+        "router_output_tokens": "41"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "insufficient_evidence"
+    },
+    "evaluation": {
+      "resolved_mode": "question",
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "insufficient_evidence",
+      "expected_intent": "claim",
+      "router_match": 0.0,
+      "router_provider": "typesafe",
+      "router_model": "jev-1.14.0",
+      "router_input_tokens": 486,
+      "router_output_tokens": 41
+    },
+    "elapsed_s": 1182.1509104590004
+  }
+}

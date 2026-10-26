@@ -10,6 +10,10 @@ Documentación de lo que está construido en este repositorio.
 | [api.md](api.md) | Contrato HTTP: sobre unificada, streaming y errores |
 | [evaluacion.md](evaluacion.md) | Golden set, métricas y resultados medidos |
 | [operacion.md](operacion.md) | Servicios locales, variables, puesta en marcha y verificación |
+| [entrega/README.md](entrega/README.md) | Índice de entrega y trazabilidad con el enunciado |
+| [entrega/memoria.md](entrega/memoria.md) | Memoria técnica del TFM |
+| [entrega/presentacion.pptx](entrega/presentacion.pptx) | Presentación de defensa |
+| [entrega/guion-defensa.md](entrega/guion-defensa.md) | Agenda y guion de demostración para 30–45 minutos |
 
 ## Otros contenidos
 

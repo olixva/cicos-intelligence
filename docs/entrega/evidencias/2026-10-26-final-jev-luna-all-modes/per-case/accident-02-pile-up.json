@@ -1,0 +1,701 @@
+{
+  "question": {
+    "response": {
+      "request_id": "e2606456-6534-4251-8d5c-5281113f49a6",
+      "requested_mode": "question",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "El manual CIDE/ASCIDE/CICOS de noviembre de 2004 indica que una colisión en cadena —con o sin desplazamiento— no se tramita mediante Convenio si la secuencia de colisiones entre los vehículos no se interrumpe. En el ejemplo de cinco vehículos, contempla Convenio entre A y B, pero no entre E, D y C. Por tanto, si el accidente descrito fue una secuencia ininterrumpida, esa es la orientación que ofrece el manual para el Convenio; las acusaciones entre conductores, por sí solas, no permiten determinar aquí quién es responsable. El extracto tampoco permite establecer cómo se resuelven las reclamaciones por las lesiones ni si la lluvia cambia el análisis. Esta es información de un manual de 2004, no una exposición del derecho vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59"
+            ]
+          }
+        ],
+        "trace_id": "4e373dd4590cecf6f80e2068566eba16",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/4e373dd4590cecf6f80e2068566eba16"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 57,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 58,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 59,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 56,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:74",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 74,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:75",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 75,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:18",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 18,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:19",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 19,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:5",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 5,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:24",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 24,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:25",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 25,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "4e373dd4590cecf6f80e2068566eba16",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/4e373dd4590cecf6f80e2068566eba16"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "answer_status": "partial",
+      "answer_status_accuracy": null,
+      "citation_id_validity": 0.5,
+      "evidence_bundle_coverage": 0.6666666666666666,
+      "cited_count": 4,
+      "expected_pool_size": 5
+    },
+    "elapsed_s": 17.587218374996155
+  },
+  "claim": {
+    "response": {
+      "request_id": "9d93a05b-88b3-49da-94da-dead7386e78b",
+      "requested_mode": "claim",
+      "resolved_mode": "claim",
+      "result": {
+        "kind": "claim",
+        "applicability": "not_applicable",
+        "convention": null,
+        "decision": "not_assessed",
+        "liable_party": null,
+        "party_ids": [],
+        "facts": [
+          {
+            "name": "vehicle_count",
+            "value": "5",
+            "asserted_by": null,
+            "source_text": "a multi-vehicle pile-up occurs on the highway involving five cars"
+          },
+          {
+            "name": "chain_collision",
+            "value": "true",
+            "asserted_by": null,
+            "source_text": "a multi-vehicle pile-up occurs on the highway involving five cars"
+          },
+          {
+            "name": "direct_collision",
+            "value": "true",
+            "asserted_by": null,
+            "source_text": "a multi-vehicle pile-up occurs on the highway involving five cars"
+          },
+          {
+            "name": "third_vehicle_identified",
+            "value": "true",
+            "asserted_by": null,
+            "source_text": "involving five cars"
+          },
+          {
+            "name": "weather_conditions",
+            "value": "heavy rain",
+            "asserted_by": null,
+            "source_text": "During heavy rain"
+          },
+          {
+            "name": "blame_assertions",
+            "value": "Each driver blames the driver behind them for the collision.",
+            "asserted_by": null,
+            "source_text": "Each driver blames the driver behind them for the collision."
+          },
+          {
+            "name": "injuries",
+            "value": "ranging from minor to severe",
+            "asserted_by": null,
+            "source_text": "There are injuries ranging from minor to severe."
+          }
+        ],
+        "contradictions": [],
+        "conditions": [],
+        "missing_information": [],
+        "blocks": [
+          {
+            "text": "No procede aplicar el Convenio con los hechos confirmados. Los Convenios requieren la intervención de exactamente dos vehículos. Hay un tercer vehículo identificado que interviene en el accidente. La colisión en cadena no se tramita por Convenio.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+            ]
+          }
+        ],
+        "rules_evaluated": [
+          {
+            "rule_id": "convention-scope",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Los Convenios CIDE/ASCIDE se aplican a accidentes de circulación en el EEE o países del Sistema de Certificado Internacional, con vehículos matriculados en España asegurados en entidad adherida, o con estacionamiento habitual en España (art. 2 LRCSCVM). No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          },
+          {
+            "rule_id": "cide-requires-two-vehicles",
+            "result": "matched",
+            "inputs": [
+              {
+                "name": "vehicle_count",
+                "value": "5"
+              }
+            ],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56"
+            ],
+            "rationale": "Para la aplicación de los Convenios CIDE/ASCIDE es requisito indispensable la intervención de sólo dos vehículos. Se activa con vehicle_count=5. vehicle_count != 2 ⇒ Convenio no aplicable."
+          },
+          {
+            "rule_id": "cide-requires-direct-collision",
+            "result": "not_matched",
+            "inputs": [
+              {
+                "name": "direct_collision",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [],
+            "rationale": "Entre los dos vehículos intervinientes debe existir colisión directa. No se activa con direct_collision=true."
+          },
+          {
+            "rule_id": "third-vehicle-identified-excludes-convention",
+            "result": "matched",
+            "inputs": [
+              {
+                "name": "third_vehicle_identified",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+            ],
+            "rationale": "La existencia de un tercer vehículo identificado que interviene en el accidente, con o sin colisión directa con los otros dos, invalida la aplicación de los Convenios. Se activa con third_vehicle_identified=true. third_vehicle_identified = true ⇒ Convenio no aplicable."
+          },
+          {
+            "rule_id": "chain-collision-excludes-convention",
+            "result": "matched",
+            "inputs": [
+              {
+                "name": "chain_collision",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+            ],
+            "rationale": "La colisión en cadena, con o sin desplazamiento, no se considera Convenio. Hay cadena si la secuencia de colisiones entre los vehículos implicados no se interrumpe en algún momento. Se activa con chain_collision=true. chain_collision = true ⇒ Convenio no aplicable."
+          },
+          {
+            "rule_id": "alcohol-does-not-exclude-convention",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "No se considera la alcoholemia ni la conducción bajo la influencia de bebidas alcohólicas, drogas, estupefacientes o sustancias psicotrópicas como motivo de exclusión: en estos casos son de aplicación los Convenios. Faltan hechos para evaluarla: driver_under_influence."
+          },
+          {
+            "rule_id": "ascide-b5-parked-vehicle",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.5, vehículos aparcados: cuando existe un vehículo mal aparcado y se le pretende imputar la responsabilidad por ese motivo, es siempre culpable el vehículo que colisiona con el aparcado. Faltan hechos para evaluarla: one_vehicle_parked, collision_with_parked_vehicle."
+          },
+          {
+            "rule_id": "ascide-b6-exit-from-parking",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.6, salida de estacionamientos, callejones, vías cortadas, garajes, zonas de aparcamiento y recintos cerrados: culpable el vehículo que realice la maniobra de salida, incluso aunque indique que no ha iniciado todavía dicha maniobra. Faltan hechos para evaluarla: exit_manoeuvre_by."
+          },
+          {
+            "rule_id": "ascide-b9-reverse-vs-rear-impact",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.9, marcha atrás/alcance trasero: ante disparidad de versiones, si uno alega alcance por la parte trasera y el otro declara colisión en su parte delantera por marcha atrás del adverso, incluso para estacionar, se considera responsable el conductor del vehículo que presente los daños en la parte delantera. Faltan hechos para evaluarla: contradictory_versions, front_damage_vehicle."
+          },
+          {
+            "rule_id": "ascide-b10-lane-change",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.10, cambio de carril/alcance trasero: cuando ambos implicados reconozcan el cambio de carril por parte de uno de los dos y exista discrepancia sobre la responsabilidad, se considera culpable el que cambia de carril, aunque alegue que estaba parado, con independencia de la ubicación de los daños. Faltan hechos para evaluarla: lane_change_acknowledged_by_both, contradictory_versions."
+          },
+          {
+            "rule_id": "ascide-b11-roundabout",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.11, rotondas: si ambos manifiestan circular por una rotonda y uno alega que el otro entra mientras el otro alega que el contrario sale o cambia de carril, resulta culpable el vehículo que pudiera estar accediendo a la rotonda, salvo que ambos tengan daños en los laterales no angulares, en cuyo caso es culpable el que tenga los daños en el lateral derecho. No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          },
+          {
+            "rule_id": "ascide-traffic-light-amber",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Semáforos: en ASCIDE prevalecen las normas genéricas de prioridad, primero la señalización vertical u horizontal y después la prioridad de los vehículos que vengan de la derecha. Si uno dice pasar en ámbar no intermitente y el otro en verde, se considera culpable al que admite pasar en ámbar. Faltan hechos para evaluarla: traffic_light_junction, admitted_amber."
+          },
+          {
+            "rule_id": "cide-door-opening",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Puertas: cuando del anverso de la D.A.A. se desprenda que se trata de un tema de puertas y no se especifique si se efectúa la acción de abrir o si ya estaba abierta, se considerará Entidad Deudora la aseguradora del vehículo que pudiera estar ejercitando la acción de abrir la puerta. Faltan hechos para evaluarla: door_involved, door_vehicle."
+          },
+          {
+            "rule_id": "cide-matrix-lookup",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Tabla de culpabilidad CIDE: cuando sólo esté cumplimentado el apartado 12 de la D.A.A., las cruces marcadas determinan la responsabilidad según la tabla. Ante contradicción entre los apartados 12 y 13 prevalece el 12, salvo error manifiesto acreditado por el 13 apoyado en los apartados 10, 11 o 14. No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          }
+        ],
+        "trace_id": "0c6dfb3ba26a05b328cd012d30c72d19",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/0c6dfb3ba26a05b328cd012d30c72d19"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 57,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 58,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 59,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 56,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:74",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 74,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:75",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 75,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:18",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 18,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:19",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 19,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "0c6dfb3ba26a05b328cd012d30c72d19",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/0c6dfb3ba26a05b328cd012d30c72d19"
+      }
+    },
+    "turn": {
+      "route_decision": "claim",
+      "result_kind": "claim",
+      "needs_input": false,
+      "terminal_status": "not_assessed"
+    },
+    "evaluation": {
+      "applicability": "not_applicable",
+      "convention": null,
+      "decision": "not_assessed",
+      "applicability_accuracy": 1.0,
+      "convention_accuracy": null,
+      "claim_decision_accuracy": 1.0,
+      "citation_id_validity": 1.0,
+      "evidence_bundle_coverage": 0.6666666666666666,
+      "cited_count": 2,
+      "fact_count": 7,
+      "resolution_support_rate": null
+    },
+    "elapsed_s": 18.607947625001543
+  },
+  "auto": {
+    "response": {
+      "request_id": "2a133482-5d45-40b5-9782-e182150bd67d",
+      "requested_mode": "auto",
+      "resolved_mode": "claim",
+      "result": {
+        "kind": "claim",
+        "applicability": "not_applicable",
+        "convention": null,
+        "decision": "not_assessed",
+        "liable_party": null,
+        "party_ids": [],
+        "facts": [
+          {
+            "name": "vehicle_count",
+            "value": "5",
+            "asserted_by": null,
+            "source_text": "a multi-vehicle pile-up occurs on the highway involving five cars"
+          },
+          {
+            "name": "direct_collision",
+            "value": "true",
+            "asserted_by": null,
+            "source_text": "a multi-vehicle pile-up occurs"
+          },
+          {
+            "name": "chain_collision",
+            "value": "true",
+            "asserted_by": null,
+            "source_text": "a multi-vehicle pile-up occurs on the highway involving five cars"
+          },
+          {
+            "name": "third_vehicle_identified",
+            "value": "true",
+            "asserted_by": null,
+            "source_text": "involving five cars"
+          },
+          {
+            "name": "driver_blame",
+            "value": "Each driver blames the driver behind them for the collision.",
+            "asserted_by": null,
+            "source_text": "Each driver blames the driver behind them for the collision."
+          },
+          {
+            "name": "weather",
+            "value": "heavy rain",
+            "asserted_by": null,
+            "source_text": "During heavy rain"
+          },
+          {
+            "name": "injuries",
+            "value": "ranging from minor to severe",
+            "asserted_by": null,
+            "source_text": "There are injuries ranging from minor to severe."
+          }
+        ],
+        "contradictions": [],
+        "conditions": [],
+        "missing_information": [],
+        "blocks": [
+          {
+            "text": "No procede aplicar el Convenio con los hechos confirmados. Los Convenios requieren la intervención de exactamente dos vehículos. Hay un tercer vehículo identificado que interviene en el accidente. La colisión en cadena no se tramita por Convenio.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+            ]
+          }
+        ],
+        "rules_evaluated": [
+          {
+            "rule_id": "convention-scope",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Los Convenios CIDE/ASCIDE se aplican a accidentes de circulación en el EEE o países del Sistema de Certificado Internacional, con vehículos matriculados en España asegurados en entidad adherida, o con estacionamiento habitual en España (art. 2 LRCSCVM). No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          },
+          {
+            "rule_id": "cide-requires-two-vehicles",
+            "result": "matched",
+            "inputs": [
+              {
+                "name": "vehicle_count",
+                "value": "5"
+              }
+            ],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56"
+            ],
+            "rationale": "Para la aplicación de los Convenios CIDE/ASCIDE es requisito indispensable la intervención de sólo dos vehículos. Se activa con vehicle_count=5. vehicle_count != 2 ⇒ Convenio no aplicable."
+          },
+          {
+            "rule_id": "cide-requires-direct-collision",
+            "result": "not_matched",
+            "inputs": [
+              {
+                "name": "direct_collision",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [],
+            "rationale": "Entre los dos vehículos intervinientes debe existir colisión directa. No se activa con direct_collision=true."
+          },
+          {
+            "rule_id": "third-vehicle-identified-excludes-convention",
+            "result": "matched",
+            "inputs": [
+              {
+                "name": "third_vehicle_identified",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+            ],
+            "rationale": "La existencia de un tercer vehículo identificado que interviene en el accidente, con o sin colisión directa con los otros dos, invalida la aplicación de los Convenios. Se activa con third_vehicle_identified=true. third_vehicle_identified = true ⇒ Convenio no aplicable."
+          },
+          {
+            "rule_id": "chain-collision-excludes-convention",
+            "result": "matched",
+            "inputs": [
+              {
+                "name": "chain_collision",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57"
+            ],
+            "rationale": "La colisión en cadena, con o sin desplazamiento, no se considera Convenio. Hay cadena si la secuencia de colisiones entre los vehículos implicados no se interrumpe en algún momento. Se activa con chain_collision=true. chain_collision = true ⇒ Convenio no aplicable."
+          },
+          {
+            "rule_id": "alcohol-does-not-exclude-convention",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "No se considera la alcoholemia ni la conducción bajo la influencia de bebidas alcohólicas, drogas, estupefacientes o sustancias psicotrópicas como motivo de exclusión: en estos casos son de aplicación los Convenios. Faltan hechos para evaluarla: driver_under_influence."
+          },
+          {
+            "rule_id": "ascide-b5-parked-vehicle",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.5, vehículos aparcados: cuando existe un vehículo mal aparcado y se le pretende imputar la responsabilidad por ese motivo, es siempre culpable el vehículo que colisiona con el aparcado. Faltan hechos para evaluarla: one_vehicle_parked, collision_with_parked_vehicle."
+          },
+          {
+            "rule_id": "ascide-b6-exit-from-parking",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.6, salida de estacionamientos, callejones, vías cortadas, garajes, zonas de aparcamiento y recintos cerrados: culpable el vehículo que realice la maniobra de salida, incluso aunque indique que no ha iniciado todavía dicha maniobra. Faltan hechos para evaluarla: exit_manoeuvre_by."
+          },
+          {
+            "rule_id": "ascide-b9-reverse-vs-rear-impact",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.9, marcha atrás/alcance trasero: ante disparidad de versiones, si uno alega alcance por la parte trasera y el otro declara colisión en su parte delantera por marcha atrás del adverso, incluso para estacionar, se considera responsable el conductor del vehículo que presente los daños en la parte delantera. Faltan hechos para evaluarla: contradictory_versions, front_damage_vehicle."
+          },
+          {
+            "rule_id": "ascide-b10-lane-change",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.10, cambio de carril/alcance trasero: cuando ambos implicados reconozcan el cambio de carril por parte de uno de los dos y exista discrepancia sobre la responsabilidad, se considera culpable el que cambia de carril, aunque alegue que estaba parado, con independencia de la ubicación de los daños. Faltan hechos para evaluarla: lane_change_acknowledged_by_both, contradictory_versions."
+          },
+          {
+            "rule_id": "ascide-b11-roundabout",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.11, rotondas: si ambos manifiestan circular por una rotonda y uno alega que el otro entra mientras el otro alega que el contrario sale o cambia de carril, resulta culpable el vehículo que pudiera estar accediendo a la rotonda, salvo que ambos tengan daños en los laterales no angulares, en cuyo caso es culpable el que tenga los daños en el lateral derecho. No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          },
+          {
+            "rule_id": "ascide-traffic-light-amber",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Semáforos: en ASCIDE prevalecen las normas genéricas de prioridad, primero la señalización vertical u horizontal y después la prioridad de los vehículos que vengan de la derecha. Si uno dice pasar en ámbar no intermitente y el otro en verde, se considera culpable al que admite pasar en ámbar. Faltan hechos para evaluarla: traffic_light_junction, admitted_amber."
+          },
+          {
+            "rule_id": "cide-door-opening",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Puertas: cuando del anverso de la D.A.A. se desprenda que se trata de un tema de puertas y no se especifique si se efectúa la acción de abrir o si ya estaba abierta, se considerará Entidad Deudora la aseguradora del vehículo que pudiera estar ejercitando la acción de abrir la puerta. Faltan hechos para evaluarla: door_involved, door_vehicle."
+          },
+          {
+            "rule_id": "cide-matrix-lookup",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Tabla de culpabilidad CIDE: cuando sólo esté cumplimentado el apartado 12 de la D.A.A., las cruces marcadas determinan la responsabilidad según la tabla. Ante contradicción entre los apartados 12 y 13 prevalece el 12, salvo error manifiesto acreditado por el 13 apoyado en los apartados 10, 11 o 14. No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          }
+        ],
+        "trace_id": "12afce222ee79ed162a1ea6d60a50864",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/12afce222ee79ed162a1ea6d60a50864"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:57",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 57,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:58",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 58,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:59",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 59,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:48",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 48,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:56",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 56,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:74",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 74,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:75",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 75,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:18",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 18,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:19",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 19,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "51687a0007725684c4ed18ab7ca03ebe",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/51687a0007725684c4ed18ab7ca03ebe",
+        "router_provider": "typesafe",
+        "router_model": "jev-1.14.0",
+        "router_input_tokens": "460",
+        "router_output_tokens": "41"
+      }
+    },
+    "turn": {
+      "route_decision": "claim",
+      "result_kind": "claim",
+      "needs_input": false,
+      "terminal_status": "not_assessed"
+    },
+    "evaluation": {
+      "resolved_mode": "claim",
+      "route_decision": "claim",
+      "result_kind": "claim",
+      "needs_input": false,
+      "terminal_status": "not_assessed",
+      "expected_intent": "claim",
+      "router_match": 1.0,
+      "router_provider": "typesafe",
+      "router_model": "jev-1.14.0",
+      "router_input_tokens": 460,
+      "router_output_tokens": 41
+    },
+    "elapsed_s": 24.713120915999752
+  }
+}

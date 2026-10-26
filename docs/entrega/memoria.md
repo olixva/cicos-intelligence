@@ -1,8 +1,8 @@
 # Memoria de decisiones — CICOS Intelligence
 
 Sistema RAG sobre el *Manual de convenios CIDE/ASCIDE/CICOS* (edición de
-noviembre de 2004, 111 páginas), construido como prueba técnica y entregado como
-Trabajo Fin de Máster del Máster en IA Generativa Avanzada.
+noviembre de 2004, 111 páginas), construido como prototipo técnico y preparado
+para su presentación como Trabajo Fin de Máster (TFM).
 
 **Cómo leer este documento.** Cada área técnica se cuenta con la misma
 estructura: *qué se decidió y por qué*, *cómo está hoy* (lo que existe y se puede
@@ -88,29 +88,28 @@ superar sus puertas, mientras el juez permanece opt-in:
 
 | Uso | Dónde | Estado |
 |---|---|---|
-| Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | default `jev-latest`, confianza mínima 0,4 | 97/110 correctos (88,2 %); OpenAI Luna: 96/110 (87,3 %) |
+| Router del modo `auto` (`ALLIANZ_ROUTER_BACKEND=jev`) | default `jev-latest`, confianza mínima 0,4 | 97/110 correctos (88,2 %); OpenAI Luna: 97/110 (88,2 %) |
 | Guardarraíl semántico (`ALLIANZ_INPUT_GUARD=jev`) | tras filtro regex; falla abierto | Red-team: 0/27 ataques exitosos y 0/3 controles benignos rechazados; default Jev |
 | Juez (`run_baseline.py --judge jev`) | *context precision* y *groundedness* | Implementado; opt-in y no calibrado con humanos |
 
-**A/B del router (24-10-2026).** Se compararon 110 casos en modo `auto`, con
-OpenAI Luna en respuesta/extracción, concurrencia 2 y la misma huella de código,
-hash del manual e identidad activa de Qdrant. Jev (`jev-latest`, umbral 0,4)
-acertó 97/110 (88,2 %); OpenAI Luna, 96/110 (87,3 %). Ambas corridas acabaron
-110/110 sin errores técnicos. Jev supera el gate por un caso y permanece como
-default; OpenAI Luna sigue disponible con `ALLIANZ_ROUTER_BACKEND=openai`, sin
-fallback silencioso. Los resultados anteriores del 22-10 (95 frente a 97)
-carecen de huella e identidad activa en sus manifiestos y quedan como
-históricos. El barrido 0,4/0,6/0,8 también es histórico.
+**A/B del router (26-10-2026).** Se compararon 110 casos en modo `auto`, con
+OpenAI Luna en respuesta/extracción, concurrencia 2 y el mismo golden,
+fingerprint de código, hash del manual e identidad activa de Qdrant. Jev
+(`jev-latest`, umbral 0,4) y OpenAI Luna acertaron 97/110 (88,2 %) cada uno,
+sin errores tras reanudar una llamada OpenAI que agotó el timeout. En esta
+muestra no hay diferencia de exactitud; Jev queda como default tipado y OpenAI
+Luna sigue disponible con `ALLIANZ_ROUTER_BACKEND=openai`, sin fallback
+silencioso. Los resultados anteriores del 22-10 carecen de huella e identidad
+activa y quedan como históricos. El barrido 0,4/0,6/0,8 también es histórico.
 
-**A/B del guardarraíl (24-10-2026; 30 casos, 27 ataques y 3 controles).** Con
-router Jev y guard `off` tuvo éxito 1/27 ataques (3,7 %) y no rechazó
-controles. Con guard Jev a 0,9/0,95 no tuvo ataques exitosos ni falsos
-rechazos (0/27, 0/3). La comprobación adicional con router OpenAI Luna y guard
-Jev también dio 0/27 y 0/3. Jev supera el gate y queda como default;
-`ALLIANZ_INPUT_GUARD=off` sigue disponible explícitamente. La caída de TypeSafe
-sigue siendo fail-open; el filtro regex se ejecuta antes y no llama a Jev si ya
-bloquea. Estas campañas tienen hash del dataset, huella del código e identidad
-del índice activo.
+**Red-team (26-10-2026; 30 casos por configuración).** Con router Jev y guard
+`off`, router Jev y guard Jev, y router OpenAI Luna y guard Jev, las tres
+configuraciones registraron 0/27 ataques exitosos y 0/3 controles benignos
+rechazados. Esta muestra no demuestra mejora causal al activar Jev; sí confirma
+que no vulneró los casos incluidos. `ALLIANZ_INPUT_GUARD=off` sigue disponible
+explícitamente. El guard falla abierto si TypeSafe no responde; el filtro regex
+se ejecuta antes y no llama a Jev si ya bloquea. Las campañas tienen hash del
+dataset, huella del código e identidad del índice activo.
 
 **Humo sintético OpenAI (22-10-2026, commit `9aa5fd9`).** Los adaptadores de
 respuesta, extracción de hechos y router aceptaron salida estructurada con `gpt-6-luna`: respuesta
@@ -122,9 +121,14 @@ llamó a `gpt-6.1-sol`. La exportación de trazas no conectó con Langfuse local
 
 **Límites.** El juez Jev no se ha calibrado con etiquetas humanas, así que sus
 puntuaciones siguen siendo exploratorias. No se comparó Sol/Luna para
-extracción porque las llamadas live de OpenAI se limitaron a Luna. TypeSafe no
-publica su política de retención: no enviar relatos reales con datos personales
-hasta confirmarla. No se infiere ahorro monetario sin precio y coste medido.
+extracción porque las llamadas live de OpenAI se limitaron a Luna. TypeSafe
+publica que no entrena con solicitudes/respuestas; la retención depende de los
+datos y acuerdos, y ofrece ZDR a clientes Enterprise previa configuración. Su
+servicio se aloja en Estados Unidos. Antes de relatos reales hay que revisar el
+contrato, el DPA, la configuración y la transferencia internacional aplicable;
+no se verificó un acuerdo ni ZDR para este prototipo ([guía de retención](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained),
+[política de privacidad](https://typesafe.ai/legal/privacy-policy)). No se
+infiere ahorro monetario sin precio y coste medido.
 
 ### 2.2 Embeddings y dimensiones
 
@@ -269,48 +273,53 @@ precision*) a partir del texto de cada página entregada; las métricas
 
 ### 3.4 Resultados y lectura honesta
 
-**Corrida actual (24-10-2026).** Se ejecutaron los 110 casos en `question`,
-`claim` y `auto` (330/330 respuestas, 0 errores técnicos, 1092,4 s). Respuesta
+**Corrida final (26-10-2026).** Se ejecutaron los 110 casos en `question`,
+`claim` y `auto` (330/330 respuestas, 0 errores técnicos, 1244,9 s). Respuesta
 y extracción usaron `gpt-6-luna`; router Jev (`jev-latest`, confianza 0,4) y
-guard Jev (0,9/0,95). El manifiesto fija el commit base `99ff2f48`, el
-fingerprint del árbol ejecutado `3c074a5069b273f0…`, el hash del manual y la
-firma del alias activo `allianz-manual-active` (118 puntos).
+guard Jev (0,9/0,95). El manifiesto registra el commit base `660595e1`, la
+huella de fuentes `f9e6a230efee0209…`, el hash del golden y del manual, y el
+alias activo `allianz-manual-active` (118 puntos). La huella cubre
+`backend/src`, `backend/scripts`, `configs` y `prompts` del árbol ejecutado.
 
 | Modo | Métrica | Valor | n_scored | n_missing | n_error | n_not_applicable |
 |---|---|---:|---:|---:|---:|---:|
-| question | `answer_status_accuracy` | 0,566 | 53 | 0 | 0 | 57 |
-| question | `citation_id_validity` | 0,385 | 110 | 0 | 0 | 0 |
-| question | `evidence_bundle_coverage` | 0,483 | 110 | 0 | 0 | 0 |
-| claim | `applicability_accuracy` | 0,500 | 6 | 103 | 0 | 1 |
-| claim | `convention_accuracy` | 0,000 | 2 | 103 | 0 | 5 |
-| claim | `claim_decision_accuracy` | 0,500 | 6 | 103 | 0 | 1 |
+| question | `answer_status_accuracy` | 0,509 | 53 | 0 | 0 | 57 |
+| question | `citation_id_validity` | 0,408 | 110 | 0 | 0 | 0 |
+| question | `evidence_bundle_coverage` | 0,495 | 110 | 0 | 0 | 0 |
+| claim | `applicability_accuracy` | 0,500 | 8 | 101 | 0 | 1 |
+| claim | `convention_accuracy` | 0,000 | 2 | 101 | 0 | 7 |
+| claim | `claim_decision_accuracy` | 0,625 | 8 | 101 | 0 | 1 |
 | claim | `citation_id_validity` | 0,036 | 110 | 0 | 0 | 0 |
 | claim | `evidence_bundle_coverage` | 0,015 | 110 | 0 | 0 | 0 |
 | auto | `router_match` Jev 0,4 | 0,882 | 110 | 0 | 0 | 0 |
+| cross-mode | `over_resolution_rate_against_reference` | 0,000 | 8 | 49 | 0 | 53 |
 
-**Lectura.** El router Jev acertó 97/110 (88,2 %). La comparación actual con
-OpenAI Luna acertó 96/110 (87,3 %), sin errores en ninguna corrida; Jev supera
-el gate por un caso. En el modo documental, la cobertura de paquetes de
-evidencia es 0,483. En el modo siniestro, 103/110 respuestas pidieron
-aclaraciones; los campos más frecuentes fueron ubicación dentro del ámbito
-(102), estacionamiento habitual en España (103), matrícula española (101) y
-aseguradora adherida (100). La validez de citas (0,036) y cobertura (0,015)
-reflejan que esas respuestas no aportan las citas que el golden exige.
+**Lectura.** Jev y OpenAI Luna acertaron 97/110 (88,2 %) cada uno en el A/B
+final del router, sin errores técnicos finales. Jev obtuvo 45 aciertos en
+`claim` y 52 en `question`; además produjo 2 rutas `clarification_required`,
+envió 10 casos `claim` a `question` y 1 caso `question` a `claim`. OpenAI obtuvo
+56/57 aciertos en `claim` y 41/53 en `question`. La muestra no distingue la
+exactitud de ambos routers.
 
-La exactitud 0,500 de decisión de siniestro se basa en sólo seis casos puntuados
-y **no acredita resolución fiable**. El sistema conserva el comportamiento
-prudente de pedir los datos que necesita; la puerta de calidad para resolver
-claims queda pendiente de adjudicar la política de ámbito y alinear el golden
-con los hechos exigidos. No se debe presentar este resultado como una mejora de
-resolución hasta cerrar esa revisión.
+En modo documental, la cobertura de requisitos de evidencia es 0,495 y la
+validez de citas 0,408. En modo siniestro, **101/110 respuestas pidieron
+aclaraciones**; los datos más frecuentes fueron estacionamiento habitual en
+España (101 casos), ámbito territorial (99), matrícula española (99),
+aseguradora adherida (99), colisión directa (65) y número de vehículos (52).
+La validez de citas (0,036) y cobertura (0,015) siguen siendo bajas.
 
-Artefactos completos en
-`data/evaluation/results/2026-10-24-final-jev-luna-all-modes-normalized/` y
-`data/evaluation/results/2026-10-24-router-openai-luna-e2e-current/` (ignorados
-por Git). Tras esas campañas se añadió compatibilidad del endpoint local de
-Langfuse con `host.docker.internal` para el contenedor; las llamadas host de
-estas evaluaciones usaron `127.0.0.1`. El ajuste no cambia los flujos de
-consulta; el fingerprint final del servidor se registra en `/health/config`.
+La exactitud 0,625 de decisión de siniestro se basa en sólo ocho casos puntuados
+y **no acredita resolución fiable**. La tasa observada de sobre-resolución fue
+0/8 casos puntuables; 49 quedaron sin comparar. Hace falta que una persona
+experta revise la política de ámbito y el golden antes de presentar el flujo
+`claim` como resolutor. No se concluye ahorro monetario: los tokens de Jev y
+OpenAI no son medidas comparables de coste y no hay tarifa TypeSafe configurada.
+
+Los artefactos completos están versionados en
+[`docs/entrega/evidencias/`](evidencias/README.md), incluidos manifiestos,
+métricas, casos y checksums. La corrida histórica de `2026-09-03` que sigue no
+se puede recalcular con los artefactos originales y no representa el
+comportamiento de esta versión.
 
 **Referencia histórica (03-09-2026).** La corrida `gpt-5.6-luna` obtuvo 329 de
 330 ejecuciones sin error. Sus cifras publicadas (`answer_status_accuracy`
@@ -425,13 +434,18 @@ entrevistas abiertas y el servicio no escala a varias réplicas.
 
 ## 5. Trazabilidad y alerta temprana
 
-### 5.1 Trazabilidad (existe)
+### 5.1 Trazabilidad (implementada; comprobación local)
 
-- **Cada petición** recibe un `request_id` y devuelve `trace_id` y `langfuse_url`
-  en los metadatos de la respuesta: de cualquier respuesta se llega a su traza.
-- **Langfuse** registra cada ejecución de los grafos con spans anidados (cada
-  nodo, cada llamada al modelo vía el wrapper de OpenAI), agrupadas por
-  `session_id`.
+- Cada petición recibe un `request_id`. Las consultas, las rutas `auto` y los
+  análisis de siniestro incluyen `trace_id` y enlace de Langfuse. Cuando el
+  análisis `claim` se interrumpe para pedir información, la respuesta conserva
+  `thread_id` para reanudarlo y publica la traza en los metadatos.
+- **Langfuse** registra spans del grafo y las llamadas a modelo cuando está
+  disponible. El 26-10-2026 se consultó una traza local mediante
+  [`/api/public/v2/observations`](https://langfuse.com/docs/api-and-data-platform/features/observations-api): devolvió siete observaciones (`question_workflow`,
+  `retrieve`, `generate`, `validate`, generación OpenAI y embeddings) con
+  campos de modelo, uso y coste. Esto comprueba la persistencia de datos de esa
+  ejecución; el enlace no se abrió manualmente en el navegador.
 - La respuesta incluye el **contexto y la evidencia**, de modo que se puede
   reconstruir *qué vio el modelo* para responder.
 - Prompts por versión, índice por firma, publicación por hash y reglas por
@@ -488,13 +502,13 @@ tiempo». **Es un filtro de alcance, no de seguridad:** cubre solo español y se
 elude con vocabulario de siniestro. La defensa frente a la inyección no descansa
 aquí sino en el diseño (§6.2). *Mejora:* un límite de longitud del texto, que hoy no existe en el esquema de
 entrada, y un clasificador semántico. Este último **está implementado como
-opción** (`ALLIANZ_INPUT_GUARD=jev`, §2.1.1): dos preguntas `noul` (intento de
+predeterminado** (`ALLIANZ_INPUT_GUARD=jev`, §2.1.1): dos preguntas `noul` (intento de
 manipular al asistente; consulta ajena al dominio) con umbrales altos por
 defecto, que **falla abierto** si el servicio no responde porque las defensas de
-§6.2 siguen activas. Su efecto se mide con la propia suite de red-teaming:
-ejecutarla con y sin guarda y comparar la tasa de éxito del atacante y el
-sobre-rechazo de los controles benignos. Sin esa medición, los umbrales son una
-hipótesis.
+§6.2 siguen activas. En las tres campañas actuales (router Jev+guard off, Jev+Jev y OpenAI Luna+Jev)
+se observaron 0/27 ataques exitosos y 0/3 controles benignos rechazados por
+variante. Esta muestra no demuestra una ventaja causal del guard; los umbrales
+siguen sujetos a recalibración.
 
 ### 6.2 Salida: defensa en profundidad sin depender del modelo
 
@@ -550,14 +564,13 @@ algún ataque tiene éxito, de modo que puede bloquear un despliegue en CI.
 los veredictos y dos defensas estructurales: que un chunk envenenado nunca llegue
 al rol *developer* y que el texto del usuario no pueda cerrar el bloque de datos.
 
-**Campaña actual contra el sistema vivo (24-10-2026; 30 casos, 27 ataques y 3 controles).**
-Con router Jev y guard `off` se observó 1/27 ataques exitosos (3,7 %) y 0/3
-controles rechazados. Con el guard Jev a 0,9/0,95 se observaron 0/27 ataques y
-0/3 controles rechazados, tanto con router Jev como con router OpenAI Luna. La
-comparación actual conserva huella del código e identidad del índice activo;
-las corridas del 22-10 se consideran históricas por carecer de esa procedencia.
-Se revisaron los casos por categoría; los resultados por caso y sus límites
-están en `docs/evaluacion.md` y en los artefactos locales de
+**Campañas actuales contra el sistema vivo (26-10-2026; 30 casos, 27 ataques y 3 controles por configuración).**
+Con router Jev+guard `off`, router Jev+guard Jev y router OpenAI Luna+guard Jev
+se observaron 0/27 ataques exitosos y 0/3 controles benignos rechazados en cada
+variante. La suite no demuestra que el guard Jev mejore frente a `off`; muestra
+que ninguna configuración vulneró estos casos sintéticos. Las tres campañas
+conservan huella del código e identidad del índice activo. Los resultados por
+caso y sus límites están en `docs/evaluacion.md` y en los artefactos locales de
 `data/evaluation/results/`.
 
 **Limitaciones.** 30 casos es una batería de humo, no una campaña exhaustiva; los
@@ -577,15 +590,15 @@ catálogo de circunstancias de la D.A.A.
 
 - Cada artefacto valida contra un **esquema JSON**, lleva su **hash** y una
   **atestación** (revisor, fecha).
-- La matriz se transcribió **dos veces de forma independiente** (una desde la
-  imagen y otra desde la capa de texto del PDF) y se comprobaron simetría e
-  invariantes. Las dos transcripciones las hicieron modelos de IA y no hubo
-  divergencias que adjudicar; la aprobación final es de una persona.
+- La matriz se transcribió **dos veces por vías independientes** (lectura visual
+  de la página y extracción estricta de la capa de texto del PDF) y se
+  comprobaron simetría e invariantes. Ambas vías coincidieron; el autor firmó
+  la revisión del artefacto.
 - El lenguaje de condiciones es **cerrado**: un operador desconocido es un error,
   no se ignora en silencio.
 
-**Cómo debe leerse:** es *doble lectura por IA más aprobación humana única*, no la
-revisión de un experto en siniestros. Para producción haría falta que un
+**Cómo debe leerse:** es *doble transcripción automatizada más firma del autor*,
+no una revisión de un experto en siniestros. Para producción haría falta que un
 tramitador o jurista valide el ruleset, que las firmas sean criptográficas y que
 haya revisión por dos personas con registro de cambios.
 
@@ -621,48 +634,34 @@ Estas notas son un punto de partida, no un dictamen jurídico.
   un uso real, entraría en alguna categoría de alto riesgo, y mantener la
   supervisión humana (la entrevista *human-in-the-loop* y la abstención van en
   esa dirección).
-- **Transparencia:** cada respuesta cita sus fuentes y expone su traza, lo que
-  facilita explicar y auditar una decisión.
+- **Transparencia:** las respuestas incluyen citas y metadatos de traza; las
+  aclaraciones de `claim` exponen también el hilo que se reanuda.
 
 ---
 
-## 8. Cómo se desarrolló: copilotos y desarrollo guiado por especificación
+## 8. Proceso de desarrollo y trazabilidad
 
-El sistema se construyó con un flujo **guiado por especificación (SDD)** asistido
-por agentes de código (Claude Code), no escribiendo código a mano ni «pidiendo
-código y viendo qué sale». El ciclo, que se puede reconstruir en el historial de
-git, fue:
+El repositorio conserva documentos de diseño y planes de implementación bajo
+[`docs/superpowers/specs/`](../superpowers/specs/) y
+[`docs/superpowers/plans/`](../superpowers/plans/), junto con el código,
+las pruebas y las herramientas de evaluación. El diseño de Jev documenta por
+separado las decisiones sobre el router y el guardarraíl; el plan registra sus
+puertas de promoción y las comprobaciones previstas.
 
-1. **Especificación y diseño primero.** Un documento de diseño aprobado
-   (`docs/specs/…-allianz-rag-design.md`) y un protocolo de evaluación (golden
-   set, métricas, matriz de cobertura) antes de escribir código.
-2. **Plan de implementación** por tareas pequeñas y verificables, con un
-   documento de traspaso (*handoff*) que permitía a un agente continuar con el
-   contexto necesario.
-3. **Ejecución por el agente con puertas de calidad automáticas**: `ruff`,
-   `pyright` estricto, `pytest`, `eslint`, `tsc`, `vitest` y el *build*. Un cambio
-   que rompe una puerta no se da por terminado.
-4. **Revisión adversarial**: la propia evaluación y la revisión del golden set
-   pasaron por pasos de resolución independiente, crítica y adjudicación,
-   siguiendo el mismo patrón de «un agente produce, otro critica».
-5. **Contrato de API como fuente de verdad**: el frontend genera sus tipos desde
-   `openapi.json`; un cambio de contrato sin regenerar rompe la comprobación de
-   tipos.
+La arquitectura separa el dominio de los proveedores: las reglas deterministas
+deciden los casos estructurados, Jev resuelve tareas de clasificación con
+respuestas tipadas y OpenAI redacta la respuesta documental y extrae hechos.
+El contrato OpenAPI alimenta los tipos del frontend. La secuencia de
+verificación automatizada está disponible en `make check-all` y
+`make test-e2e`; los runners reproducen el golden sintético y la batería
+red-team.
 
-**Qué aportó y qué riesgos tuvo.** Aportó velocidad y consistencia (160
-*commits* con puertas verdes, cobertura de más de 500 tests). El riesgo principal
-es el contrario: **un agente puede dar por bueno lo que solo parece correcto**.
-Dos ejemplos de este mismo proyecto: la documentación declaraba una «doble
-transcripción independiente con adjudicación humana» cuando en realidad las dos
-lecturas fueron de IA y la aprobación fue de una persona; y una ruta absoluta de
-la máquina del autor quedó en el script de evaluación sin que ninguna puerta lo
-detectara. La mitigación es la que se ha aplicado en esta memoria: auditar al
-final, contrastar la documentación con el código y declarar los límites.
-
-> Nota de transparencia: los documentos de proceso (especificaciones, planes,
-> estado) se retiraron del árbol de trabajo para dejar un repositorio de entrega
-> limpio, pero se conservan en el historial de git y se pueden recuperar con
-> `git show <commit>:<ruta>`.
+Estas evidencias permiten describir decisiones y controles del repositorio,
+pero no atribuir cada actividad a una herramienta o persona concreta. La
+revisión del golden no la realizó una persona experta del dominio. La matriz
+CIDE conserva dos transcripciones automatizadas y una firma del autor; tampoco
+se presenta como validación experta. La revisión final contrasta las
+afirmaciones de esta memoria con el código y los artefactos conservados.
 
 ---
 
@@ -670,10 +669,10 @@ final, contrastar la documentación con el código y declarar los límites.
 
 | Área | Estado | Siguiente paso |
 |---|---|---|
-| Abstención y no-invención | 🟡 Implementada; medida actual pendiente (el 0 publicado es histórico y no recalculable aquí) | Medir `over_resolution_rate_against_reference` en una corrida completa y fijar el umbral de CI |
+| Abstención y no-invención | 🟡 Implementada; `over_resolution_rate_against_reference` = 0/8 puntuables, 49 sin puntuación | Aumentar los casos comparables y fijar el umbral de CI |
 | Decisión determinista de siniestros | ✅ Reglas firmadas | Validación por experto del dominio |
 | Recuperación híbrida | ✅ | Métricas de retrieval y ablaciones |
-| Evaluación del RAG | 🟡 Solo métricas deterministas; cifras previas a una corrección | Re-medir; recall@k; fidelidad con juez calibrado |
+| Evaluación del RAG | 🟡 Métricas deterministas repetidas con la huella final | Añadir recall@k; calibrar fidelidad con juez humano |
 | Elección de embeddings/chunking | 🟡 Razonada, no medida | Comparativa sobre el golden |
 | Trazabilidad | ✅ Langfuse, `trace_id`, versiones inmutables | — |
 | Alertas de deriva / coste / guardrails | ❌ Solo diseño (§5.2) | Exportador de métricas + alertas |

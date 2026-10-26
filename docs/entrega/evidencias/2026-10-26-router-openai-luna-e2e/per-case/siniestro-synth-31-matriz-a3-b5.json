@@ -1,0 +1,345 @@
+{
+  "auto": {
+    "response": {
+      "request_id": "2ae2e6c3-19ed-45fc-9841-165312e8a738",
+      "requested_mode": "auto",
+      "resolved_mode": "claim",
+      "result": {
+        "kind": "claim",
+        "applicability": "undetermined",
+        "convention": null,
+        "decision": "conditional",
+        "liable_party": null,
+        "party_ids": [
+          "A",
+          "B"
+        ],
+        "facts": [
+          {
+            "name": "vehicle_count",
+            "value": "2",
+            "asserted_by": "Relato",
+            "source_text": "Vehículo A circula marcha atrás por una calle estrecha de dirección única. Vehículo B, que estaba estacionado en línea a la derecha en el sentido de la marcha de A, abre la puerta del conductor en el momento en que A pasa junto a él."
+          },
+          {
+            "name": "one_vehicle_parked",
+            "value": "true",
+            "asserted_by": "Relato",
+            "source_text": "Vehículo B, que estaba estacionado en línea a la derecha en el sentido de la marcha de A"
+          },
+          {
+            "name": "direct_collision",
+            "value": "true",
+            "asserted_by": "Relato",
+            "source_text": "La puerta golpea la parte trasera del vehículo A."
+          },
+          {
+            "name": "third_vehicle_identified",
+            "value": "false",
+            "asserted_by": "Relato",
+            "source_text": "Vehículo A circula marcha atrás por una calle estrecha de dirección única. Vehículo B, que estaba estacionado en línea a la derecha en el sentido de la marcha de A, abre la puerta del conductor en el momento en que A pasa junto a él."
+          },
+          {
+            "name": "door_involved",
+            "value": "true",
+            "asserted_by": "Relato",
+            "source_text": "Vehículo B, que estaba estacionado en línea a la derecha en el sentido de la marcha de A, abre la puerta del conductor en el momento en que A pasa junto a él. La puerta golpea la parte trasera del vehículo A."
+          },
+          {
+            "name": "door_opening_specified",
+            "value": "true",
+            "asserted_by": "Relato",
+            "source_text": "abre la puerta del conductor en el momento en que A pasa junto a él"
+          },
+          {
+            "name": "door_vehicle",
+            "value": "B",
+            "asserted_by": "Relato",
+            "source_text": "Vehículo B, que estaba estacionado en línea a la derecha en el sentido de la marcha de A, abre la puerta del conductor"
+          },
+          {
+            "name": "door_opened_by",
+            "value": "B",
+            "asserted_by": "Relato",
+            "source_text": "Vehículo B, que estaba estacionado en línea a la derecha en el sentido de la marcha de A, abre la puerta del conductor"
+          },
+          {
+            "name": "daa_box_a",
+            "value": "A3",
+            "asserted_by": "Relato",
+            "source_text": "A marca la casilla A3 (marcha atrás)"
+          },
+          {
+            "name": "daa_box_b",
+            "value": "B5",
+            "asserted_by": "Relato",
+            "source_text": "B marca la casilla B5 (puerta)"
+          },
+          {
+            "name": "daa_section_12_only",
+            "value": "true",
+            "asserted_by": "Relato",
+            "source_text": "Ambos conductores firman D.A.A. conjunta cumplimentando sólo el apartado 12 de circunstancias: A marca la casilla A3 (marcha atrás) y B marca la casilla B5 (puerta). No hay atestado."
+          }
+        ],
+        "contradictions": [],
+        "conditions": [
+          "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+          "Confirmar si los vehículos están matriculados en España.",
+          "Confirmar si sus aseguradoras están adheridas al Convenio.",
+          "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+        ],
+        "missing_information": [
+          "Confirmar si el accidente ocurrió en el EEE o en un país adherido al Sistema de Certificado Internacional.",
+          "Confirmar si los vehículos están matriculados en España.",
+          "Confirmar si sus aseguradoras están adheridas al Convenio.",
+          "Confirmar si algún vehículo tiene estacionamiento habitual en España."
+        ],
+        "blocks": [
+          {
+            "text": "Tabla de culpabilidad CIDE: la celda declarada no atribuye responsabilidad.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+            ]
+          }
+        ],
+        "rules_evaluated": [
+          {
+            "rule_id": "convention-scope",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Los Convenios CIDE/ASCIDE se aplican a accidentes de circulación en el EEE o países del Sistema de Certificado Internacional, con vehículos matriculados en España asegurados en entidad adherida, o con estacionamiento habitual en España (art. 2 LRCSCVM). No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          },
+          {
+            "rule_id": "cide-requires-two-vehicles",
+            "result": "not_matched",
+            "inputs": [
+              {
+                "name": "vehicle_count",
+                "value": "2"
+              }
+            ],
+            "evidence_ids": [],
+            "rationale": "Para la aplicación de los Convenios CIDE/ASCIDE es requisito indispensable la intervención de sólo dos vehículos. No se activa con vehicle_count=2."
+          },
+          {
+            "rule_id": "cide-requires-direct-collision",
+            "result": "not_matched",
+            "inputs": [
+              {
+                "name": "direct_collision",
+                "value": "true"
+              }
+            ],
+            "evidence_ids": [],
+            "rationale": "Entre los dos vehículos intervinientes debe existir colisión directa. No se activa con direct_collision=true."
+          },
+          {
+            "rule_id": "third-vehicle-identified-excludes-convention",
+            "result": "not_matched",
+            "inputs": [
+              {
+                "name": "third_vehicle_identified",
+                "value": "false"
+              }
+            ],
+            "evidence_ids": [],
+            "rationale": "La existencia de un tercer vehículo identificado que interviene en el accidente, con o sin colisión directa con los otros dos, invalida la aplicación de los Convenios. No se activa con third_vehicle_identified=false."
+          },
+          {
+            "rule_id": "chain-collision-excludes-convention",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "La colisión en cadena, con o sin desplazamiento, no se considera Convenio. Hay cadena si la secuencia de colisiones entre los vehículos implicados no se interrumpe en algún momento. Faltan hechos para evaluarla: chain_collision."
+          },
+          {
+            "rule_id": "alcohol-does-not-exclude-convention",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "No se considera la alcoholemia ni la conducción bajo la influencia de bebidas alcohólicas, drogas, estupefacientes o sustancias psicotrópicas como motivo de exclusión: en estos casos son de aplicación los Convenios. Faltan hechos para evaluarla: driver_under_influence."
+          },
+          {
+            "rule_id": "ascide-b5-parked-vehicle",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.5, vehículos aparcados: cuando existe un vehículo mal aparcado y se le pretende imputar la responsabilidad por ese motivo, es siempre culpable el vehículo que colisiona con el aparcado. Faltan hechos para evaluarla: collision_with_parked_vehicle."
+          },
+          {
+            "rule_id": "ascide-b6-exit-from-parking",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.6, salida de estacionamientos, callejones, vías cortadas, garajes, zonas de aparcamiento y recintos cerrados: culpable el vehículo que realice la maniobra de salida, incluso aunque indique que no ha iniciado todavía dicha maniobra. Faltan hechos para evaluarla: exit_manoeuvre_by."
+          },
+          {
+            "rule_id": "ascide-b9-reverse-vs-rear-impact",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.9, marcha atrás/alcance trasero: ante disparidad de versiones, si uno alega alcance por la parte trasera y el otro declara colisión en su parte delantera por marcha atrás del adverso, incluso para estacionar, se considera responsable el conductor del vehículo que presente los daños en la parte delantera. Faltan hechos para evaluarla: contradictory_versions, front_damage_vehicle."
+          },
+          {
+            "rule_id": "ascide-b10-lane-change",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.10, cambio de carril/alcance trasero: cuando ambos implicados reconozcan el cambio de carril por parte de uno de los dos y exista discrepancia sobre la responsabilidad, se considera culpable el que cambia de carril, aunque alegue que estaba parado, con independencia de la ubicación de los daños. Faltan hechos para evaluarla: lane_change_acknowledged_by_both, contradictory_versions."
+          },
+          {
+            "rule_id": "ascide-b11-roundabout",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Norma subsidiaria b.11, rotondas: si ambos manifiestan circular por una rotonda y uno alega que el otro entra mientras el otro alega que el contrario sale o cambia de carril, resulta culpable el vehículo que pudiera estar accediendo a la rotonda, salvo que ambos tengan daños en los laterales no angulares, en cuyo caso es culpable el que tenga los daños en el lateral derecho. No se evalúa automáticamente: la regla no declara una condición verificable sobre los hechos extraídos."
+          },
+          {
+            "rule_id": "ascide-traffic-light-amber",
+            "result": "insufficient_data",
+            "inputs": [],
+            "evidence_ids": [],
+            "rationale": "Semáforos: en ASCIDE prevalecen las normas genéricas de prioridad, primero la señalización vertical u horizontal y después la prioridad de los vehículos que vengan de la derecha. Si uno dice pasar en ámbar no intermitente y el otro en verde, se considera culpable al que admite pasar en ámbar. Faltan hechos para evaluarla: traffic_light_junction, admitted_amber."
+          },
+          {
+            "rule_id": "cide-door-opening",
+            "result": "not_matched",
+            "inputs": [
+              {
+                "name": "door_involved",
+                "value": "true"
+              },
+              {
+                "name": "door_vehicle",
+                "value": "B"
+              }
+            ],
+            "evidence_ids": [],
+            "rationale": "Puertas: cuando del anverso de la D.A.A. se desprenda que se trata de un tema de puertas y no se especifique si se efectúa la acción de abrir o si ya estaba abierta, se considerará Entidad Deudora la aseguradora del vehículo que pudiera estar ejercitando la acción de abrir la puerta. No se activa con door_involved=true, door_vehicle=B."
+          },
+          {
+            "rule_id": "cide-matrix-lookup",
+            "result": "matched",
+            "inputs": [],
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101"
+            ],
+            "rationale": "Tabla de culpabilidad CIDE: la celda declarada no atribuye responsabilidad."
+          }
+        ],
+        "trace_id": "ee06f8f7d06ead12960bcf0580374611",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/ee06f8f7d06ead12960bcf0580374611"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:66",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 66,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:67",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 67,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:68",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 68,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:30",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 30,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:31",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 31,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:32",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 32,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:33",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 33,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:65",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 65,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:16",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 16,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:100",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 100,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 101,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:46",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 46,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:47",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 47,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "32f930c3e0773b3b16bb81dd60c1bd3d",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/32f930c3e0773b3b16bb81dd60c1bd3d",
+        "router_provider": "openai",
+        "router_model": "gpt-6-luna",
+        "router_input_tokens": "397",
+        "router_output_tokens": "77"
+      }
+    },
+    "turn": {
+      "route_decision": "claim",
+      "result_kind": "claim",
+      "needs_input": true,
+      "terminal_status": "conditional"
+    },
+    "evaluation": {
+      "resolved_mode": "claim",
+      "route_decision": "claim",
+      "result_kind": "claim",
+      "needs_input": true,
+      "terminal_status": "conditional",
+      "expected_intent": "claim",
+      "router_match": 1.0,
+      "router_provider": "openai",
+      "router_model": "gpt-6-luna",
+      "router_input_tokens": 397,
+      "router_output_tokens": 77
+    },
+    "elapsed_s": 434.4694272909983
+  }
+}

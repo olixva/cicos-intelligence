@@ -1,0 +1,32 @@
+# Baseline runner — final-jev-luna-all-modes-f9e6a230-2026-10-26
+
+Casos: 110 · modos: question,claim,auto · duración: 1244.9s
+
+## question (110/110 completos)
+  - answer_status_accuracy: mean=0.509 (scored=53, applicable=53, total=110, missing=0, error=0, not_applicable=57, min=0.0, max=1.0)
+  - citation_id_validity: mean=0.408 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=1.0)
+  - cited_count: mean=3.391 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=1.0, max=12.0)
+  - evidence_bundle_coverage: mean=0.495 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=1.0)
+  - expected_pool_size: mean=5.382 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=1.0, max=10.0)
+## claim (110/110 completos)
+  - applicability_accuracy: mean=0.500 (scored=8, applicable=109, total=110, missing=101, error=0, not_applicable=1, min=0.0, max=1.0)
+  - citation_id_validity: mean=0.036 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=1.0)
+  - cited_count: mean=0.109 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=2.0)
+  - claim_decision_accuracy: mean=0.625 (scored=8, applicable=109, total=110, missing=101, error=0, not_applicable=1, min=0.0, max=1.0)
+  - convention: mean=n/a (scored=0, applicable=101, total=110, missing=101, error=0, not_applicable=9, min=None, max=None)
+  - convention_accuracy: mean=0.000 (scored=2, applicable=103, total=110, missing=101, error=0, not_applicable=7, min=0.0, max=0.0)
+  - evidence_bundle_coverage: mean=0.015 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=0.6666666666666666)
+  - fact_count: mean=0.473 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=8.0)
+  - resolution_support_rate: mean=n/a (scored=0, applicable=101, total=110, missing=101, error=0, not_applicable=9, min=None, max=None)
+## auto (110/110 completos)
+  - router_input_tokens: mean=476.491 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=432.0, max=566.0)
+  - router_match: mean=0.882 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=1.0)
+  - router_output_tokens: mean=41.027 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=41.0, max=44.0)
+
+## router_accuracy_all_labeled accuracy=0.882 (97/110; missing_or_error=0)
+## router_confusion_matrix (110 casos en auto)
+  - expected=claim predicted=claim -> 45
+  - expected=claim predicted=clarification_required -> 2
+  - expected=claim predicted=question -> 10
+  - expected=question predicted=claim -> 1
+  - expected=question predicted=question -> 52

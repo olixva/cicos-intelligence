@@ -308,7 +308,11 @@ class EnvelopeResponse(_ResponseModel):
                     missing_fields=execution.missing_information,
                 ),
                 evidence=evidence,
-                metadata={"thread_id": execution.thread_id},
+                metadata={
+                    "thread_id": execution.thread_id,
+                    "trace_id": trace_id,
+                    "langfuse_url": trace_url,
+                },
             )
         return cls(
             request_id=request_id,

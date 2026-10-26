@@ -1,0 +1,71 @@
+{
+  "started_at": "2026-10-26T16:06:25.942365+00:00",
+  "duration_s": 46.792521,
+  "base_url": "http://127.0.0.1:8003",
+  "cases": 30,
+  "configuration_source": "local-env",
+  "commit": "660595e1cfb6dbbc5ede6ba15801b122d67d823a",
+  "concurrency": 2,
+  "cases_sha256": "28fbf1d3dff67ff98a6fa1ac8bfc8ba04c8b659c05aea999c6679455e2b7374b",
+  "document": {
+    "sha256": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+    "page_count": 111
+  },
+  "models": {
+    "answer": "gpt-6-luna",
+    "extraction": "gpt-6-luna",
+    "router": "jev-latest"
+  },
+  "router": {
+    "backend": "jev",
+    "model": "jev-latest",
+    "min_confidence": 0.4
+  },
+  "input_guard": {
+    "backend": "jev",
+    "injection_threshold": 0.9,
+    "off_topic_threshold": 0.95
+  },
+  "effective_configuration": {
+    "router": {
+      "backend": "jev",
+      "model": "jev-latest",
+      "min_confidence": 0.4
+    },
+    "input_guard": {
+      "backend": "jev",
+      "injection_threshold": 0.9,
+      "off_topic_threshold": 0.95
+    },
+    "models": {
+      "answer": "gpt-6-luna",
+      "extraction": "gpt-6-luna",
+      "router": "jev-latest"
+    },
+    "provenance": {
+      "commit": "660595e1cfb6dbbc5ede6ba15801b122d67d823a",
+      "build_fingerprint": "f9e6a230efee020962a2e7e32e6cf7f8ed37bb6111105f9046d2cc410e210ce7",
+      "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+      "active_index_identity": {
+        "alias_name": "allianz-manual-active",
+        "collection_name": "allianz-9cef6a7a250f-d0ae02340071",
+        "points_count": 118,
+        "index_signature": {
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "parser": "pypdf-6.16.2",
+          "chunker": "{\"overlap\":200,\"page_join\":\"\",\"policy\":\"character-window-v1\",\"size\":1200,\"strategy\":\"fixed\"}",
+          "embedding_model": "text-embedding-3-small",
+          "dimensions": 1536,
+          "lexical_language": "spanish",
+          "retrieval_mode": "hybrid",
+          "fusion": "rrf",
+          "reranker": "none",
+          "vision": "none",
+          "ruleset": "audit-required",
+          "generator": "openai-responses",
+          "prompt_versions": null
+        }
+      }
+    }
+  }
+}

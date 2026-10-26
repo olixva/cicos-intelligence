@@ -73,8 +73,9 @@ catálogo oficial de [modelos OpenAI](https://developers.openai.com/api/docs/mod
   se selecciona con `ALLIANZ_ROUTER_BACKEND=openai`.
 
 - **Router predeterminado → Jev (`jev-latest`, umbral 0,4).** En el golden de
-  110 casos obtuvo 97/110 (88,2 %) frente a 96/110 (87,3 %) de OpenAI Luna.
-  OpenAI sigue disponible seleccionando `ALLIANZ_ROUTER_BACKEND=openai`.
+  110 casos Jev y OpenAI Luna acertaron 97/110 (88,2 %) cada uno, sin errores
+  tras reanudar una llamada OpenAI que agotó el timeout. OpenAI sigue disponible
+  seleccionando `ALLIANZ_ROUTER_BACKEND=openai`.
 
 Los IDs de `.env.example` son defaults de configuración. El humo sintético de
 Responses API con `gpt-6-luna` pasó para respuesta, extracción y router; Sol no
@@ -103,14 +104,25 @@ técnicos usan la jerarquía de `LanguageModelError`, de modo que la API los
 traduce igual que los del LLM.
 
 **Estado: verificado contra el servicio real con datos sintéticos y el golden.**
-El cliente respondió `noul` y `choice`; el router Jev acertó 97/110 con umbral
-0,4 (OpenAI Luna: 96/110). En el red-team, Jev bloqueó los 27 ataques y dejó
-pasar los 3 controles benignos (0 % de ataque exitoso y 0 % de sobre-rechazo).
-Por eso Jev es el default de router y guardarraíl; OpenAI y `off` siguen siendo
-overrides explícitos. No hay fallback silencioso. Los umbrales son los
-seleccionados en esta suite y requieren recalibración si cambia el golden.
-TypeSafe no publica su política de retención: hasta confirmarla, no enviarle
-relatos reales con datos personales.
+El cliente respondió `noul` y `choice`; en el golden, Jev y OpenAI Luna
+acertaron 97/110 (88,2 %) con umbral Jev 0,4 y sin errores tras reintentar una
+llamada OpenAI agotada. En tres campañas red-team actuales, Jev+guard `off`,
+Jev+guard Jev y OpenAI Luna+guard Jev registraron 0/27 ataques exitosos y
+0/3 controles benignos rechazados en cada configuración. Por tanto, esta suite
+no demuestra una mejora del guard frente a `off`; sólo muestra que ninguna de
+las tres variantes vulneró estos casos sintéticos. Jev sigue siendo el default
+tipado; OpenAI y `off` son overrides explícitos. No hay fallback silencioso.
+Los umbrales requieren recalibración si cambia el golden.
+TypeSafe publica que no entrena con solicitudes/respuestas; la retención depende
+de los datos, los acuerdos aplicables y cualquier opción Zero Data Retention
+(ZDR) acordada. El servicio se aloja en Estados Unidos, y ZDR está disponible
+para clientes Enterprise previa configuración. Antes de usar relatos reales,
+hay que revisar el contrato y DPA de la cuenta, confirmar ZDR si se requiere y
+resolver la transferencia internacional aplicable. Véanse la
+[guía de tratamiento y retención de TypeSafe](https://help.typesafe.ai/articles/5974925716-how-is-submitted-data-used-or-retained),
+su [política de privacidad](https://typesafe.ai/legal/privacy-policy) y la
+[oferta Enterprise](https://typesafe.ai/enterprise). No se afirma que esos
+controles estén contratados o configurados para este prototipo.
 
 ## Puesta en marcha desde cero
 
@@ -194,7 +206,12 @@ se hace ninguna llamada a un proveedor de modelos.
 Ambas partes tienen imagen propia como alternativa al entorno local:
 
 ```bash
-docker build -t allianz-backend -f backend/Dockerfile .
+ALLIANZ_BUILD_COMMIT=$(git rev-parse HEAD)
+ALLIANZ_BUILD_FINGERPRINT=$(uv run --project backend --no-sync python -c 'import sys; from pathlib import Path; sys.path.insert(0, "backend/src"); from application.services.evaluation_runtime_config import evaluation_build_fingerprint; print(evaluation_build_fingerprint(Path.cwd()))')
+docker build \
+  --build-arg "ALLIANZ_BUILD_COMMIT=$ALLIANZ_BUILD_COMMIT" \
+  --build-arg "ALLIANZ_BUILD_FINGERPRINT=$ALLIANZ_BUILD_FINGERPRINT" \
+  -t allianz-backend -f backend/Dockerfile .
 docker build -t allianz-frontend -f frontend/Dockerfile .
 docker run --rm -p 8000:8000 --env-file .env --env-file ops/local.env \
   -e QDRANT_URL=http://host.docker.internal:6333 \
@@ -208,6 +225,7 @@ docker run --rm -p 5173:5173 allianz-frontend
 El contenedor backend mantiene su caché de `uv` bajo `/tmp/uv-cache` para
 arrancar como usuario sin privilegios. `host.docker.internal` sólo se acepta
 como alias local de Docker para Langfuse; los endpoints remotos se rechazan.
-El 24-10-2026 se construyó `allianz-backend:tfm-check` y se verificó
-`/health/ready`, la configuración Jev/Luna y una petición sintética por cada
-modo (`question`, `claim`, `auto`); las tres devolvieron HTTP 200.
+La imagen recibe el commit y la huella del código como argumentos de build,
+porque no contiene `.git`; ambos aparecen en `/health/config` sin exponer
+credenciales. Usa los comandos anteriores para que la huella coincida con la
+campaña de evaluación de ese árbol.

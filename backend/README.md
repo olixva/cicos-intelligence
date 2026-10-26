@@ -31,7 +31,7 @@ backend/
 ├── scripts/               herramientas independientes (runner de evaluación,
 │                          comparación de parsers, export/chequeo de OpenAPI,
 │                          aprovisionamiento de prompts, transcripción de la matriz)
-└── tests/                 505 tests en 18 módulos, agrupados por área
+└── tests/                 602 tests agrupados por área
 ```
 
 Las dependencias apuntan siempre hacia dentro: el dominio no importa nada de
@@ -95,8 +95,9 @@ make check-backend    # ruff + formato + pyright estricto + pytest
 make test-backend     # sólo los tests
 ```
 
-Pyright corre en modo estricto sobre `src/` y está en cero. Los 505 tests
-están agrupados por área:
+Pyright corre en modo estricto sobre `src/` y está en cero. En la revisión final,
+pytest recopiló 602 tests: 601 aprobados y 1 omitido (un test de integración
+opcional de Docling). Están agrupados por área:
 
 | Fichero | Área |
 |---|---|

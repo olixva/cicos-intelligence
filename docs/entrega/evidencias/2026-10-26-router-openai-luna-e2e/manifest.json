@@ -1,0 +1,108 @@
+{
+  "label": "router-openai-luna-e2e-current-2026-10-26",
+  "started_at": "2026-10-26T16:02:42.601662+00:00",
+  "run_identity": {
+    "label": "router-openai-luna-e2e-current-2026-10-26",
+    "commit": "660595e1cfb6dbbc5ede6ba15801b122d67d823a",
+    "golden_sha256": "837dfb6da86bcdf6cb7e2a1477623141b83c021f5c697910da5dfa1af074d874",
+    "case_count": 110,
+    "modes": [
+      "auto"
+    ],
+    "concurrency": 2,
+    "base_url": "http://127.0.0.1:8002",
+    "judge": "none",
+    "configuration_source": "makefile:.env+ops/local.env+LOCAL_ENV",
+    "input_guard": {
+      "backend": "jev",
+      "injection_threshold": 0.9,
+      "off_topic_threshold": 0.95
+    },
+    "router": {
+      "backend": "openai",
+      "model": "gpt-6-luna",
+      "min_confidence": null
+    },
+    "models": {
+      "answer": "gpt-6-luna",
+      "extraction": "gpt-6-luna",
+      "router": "gpt-6-luna"
+    },
+    "effective_configuration": {
+      "router": {
+        "backend": "openai",
+        "model": "gpt-6-luna",
+        "min_confidence": null
+      },
+      "input_guard": {
+        "backend": "jev",
+        "injection_threshold": 0.9,
+        "off_topic_threshold": 0.95
+      },
+      "models": {
+        "answer": "gpt-6-luna",
+        "extraction": "gpt-6-luna",
+        "router": "gpt-6-luna"
+      },
+      "provenance": {
+        "commit": "660595e1cfb6dbbc5ede6ba15801b122d67d823a",
+        "build_fingerprint": "f9e6a230efee020962a2e7e32e6cf7f8ed37bb6111105f9046d2cc410e210ce7",
+        "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+        "active_index_identity": {
+          "alias_name": "allianz-manual-active",
+          "collection_name": "allianz-9cef6a7a250f-d0ae02340071",
+          "points_count": 118,
+          "index_signature": {
+            "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+            "parser": "pypdf-6.16.2",
+            "chunker": "{\"overlap\":200,\"page_join\":\"\",\"policy\":\"character-window-v1\",\"size\":1200,\"strategy\":\"fixed\"}",
+            "embedding_model": "text-embedding-3-small",
+            "dimensions": 1536,
+            "lexical_language": "spanish",
+            "retrieval_mode": "hybrid",
+            "fusion": "rrf",
+            "reranker": "none",
+            "vision": "none",
+            "ruleset": "audit-required",
+            "generator": "openai-responses",
+            "prompt_versions": null
+          }
+        }
+      }
+    }
+  },
+  "status": "complete",
+  "resume_count": 1,
+  "duration_segments_s": [
+    551.5833533330006,
+    30.58664974999556
+  ],
+  "duration_s": 582.1700030829961,
+  "pending_case_modes": 0,
+  "models": {
+    "answer": "gpt-6-luna",
+    "extraction": "gpt-6-luna",
+    "router": "gpt-6-luna"
+  },
+  "router": {
+    "backend": "openai",
+    "model": "gpt-6-luna",
+    "min_confidence": null
+  },
+  "input_guard": {
+    "backend": "jev",
+    "injection_threshold": 0.9,
+    "off_topic_threshold": 0.95
+  },
+  "commit": "660595e1cfb6dbbc5ede6ba15801b122d67d823a",
+  "golden_path": "data/evaluation/golden/development.jsonl",
+  "golden_sha256": "837dfb6da86bcdf6cb7e2a1477623141b83c021f5c697910da5dfa1af074d874",
+  "case_count": 110,
+  "modes": [
+    "auto"
+  ],
+  "concurrency": 2,
+  "base_url": "http://127.0.0.1:8002",
+  "judge": "none",
+  "configuration_source": "makefile:.env+ops/local.env+LOCAL_ENV"
+}

@@ -21,16 +21,20 @@ fuera de alcance.
 **Análisis de siniestros.** El modelo extrae hechos tipados del relato; la
 decisión la toman reglas deterministas: la puerta de aplicabilidad del
 Convenio, un ruleset de 14 reglas firmadas y la tabla de culpabilidad CIDE de
-18×18 transcrita a mano y atestada. Si falta un dato decisorio, el flujo se
-detiene y pregunta exactamente por él.
+18×18 transcrita por dos vías automatizadas y con revisión firmada por el autor.
+La matriz aún necesita revisión experta antes de cualquier uso operativo. Si
+falta un dato decisorio, el flujo se detiene y pregunta exactamente por él.
 
-**Enrutado automático.** Un clasificador con enum cerrado decide entre
-consulta, siniestro o petición de aclaración.
+**Enrutado automático.** Jev decide con una salida tipada entre consulta,
+siniestro o petición de aclaración; el router OpenAI Luna queda como opción de
+comparación.
 
-**Trazabilidad completa.** Cada cita es un `evidence_id` que abre el PDF
-original en la página exacta. Cada regla evaluada informa de sus entradas, su
-resultado y las páginas que la respaldan. Cada ejecución deja su traza en
-Langfuse con enlace directo desde la interfaz.
+**Trazabilidad.** Cada cita es un `evidence_id` que abre el PDF original en la
+página exacta. Cada regla evaluada informa de sus entradas, su resultado y las
+páginas que la respaldan. Las consultas, las rutas `auto` y los análisis de
+siniestro incluyen el identificador y el enlace de Langfuse cuando el servicio
+está configurado. Si `claim` se interrumpe para pedir datos, también conserva el
+`thread_id` para reanudarlo.
 
 ## Cómo está montado
 
@@ -81,8 +85,8 @@ make check-all       # backend + frontend + contratos OpenAPI
 
 | Gate | Qué cubre |
 |---|---|
-| `make check-backend` | ruff, formato, pyright estricto y 505 tests |
-| `make check-frontend` | eslint, tsc, 98 tests de Vitest y build de producción |
+| `make check-backend` | ruff, formato, pyright estricto y 602 tests (601 aprobados, 1 omitido) |
+| `make check-frontend` | eslint, tsc, 99 tests de Vitest y build de producción |
 | `make check-openapi` | que el contrato publicado y los tipos del cliente no hayan derivado |
 | `make test-e2e` | Playwright contra la aplicación real |
 
@@ -96,6 +100,9 @@ make check-all       # backend + frontend + contratos OpenAPI
 | [docs/api.md](docs/api.md) | Contrato HTTP |
 | [docs/evaluacion.md](docs/evaluacion.md) | Golden set, métricas y resultados |
 | [docs/operacion.md](docs/operacion.md) | Servicios, variables y comandos |
+| [docs/entrega/README.md](docs/entrega/README.md) | Índice de entrega y trazabilidad con el enunciado |
+| [docs/entrega/memoria.md](docs/entrega/memoria.md) | Memoria técnica del TFM |
+| [docs/entrega/presentacion.pptx](docs/entrega/presentacion.pptx) | Presentación de defensa |
 | [backend/README.md](backend/README.md) | Backend en detalle |
 | [frontend/README.md](frontend/README.md) | Frontend en detalle |
 
@@ -110,5 +117,7 @@ make check-all       # backend + frontend + contratos OpenAPI
 - **El alcance del Convenio no es responsabilidad civil general.** El sistema
   evalúa aplicabilidad y criterios convencionales; no emite una opinión general
   de responsabilidad.
-- **La tabla CIDE 18×18 exige doble transcripción independiente y attestation
-  firmada** antes de usarse para decidir, y así está transcrita.
+- **La matriz CIDE 18×18 se transcribió por dos vías automatizadas y el autor
+  firmó la revisión del artefacto.** No hubo diferencias entre las vías; eso no
+  equivale a una validación por una persona experta del dominio. Véase
+  [reglas y decisión](docs/reglas-y-decision.md).

@@ -1,0 +1,241 @@
+{
+  "question": {
+    "cases_total": 110,
+    "errors": 0,
+    "missing_cases": 0,
+    "metrics": {
+      "answer_status_accuracy": {
+        "n_total": 110,
+        "n_applicable": 53,
+        "n_scored": 53,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 57,
+        "mean": 0.5094339622641509,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "citation_id_validity": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.4083766233766234,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "cited_count": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 3.390909090909091,
+        "min": 1.0,
+        "max": 12.0
+      },
+      "evidence_bundle_coverage": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.4954545454545455,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "expected_pool_size": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 5.381818181818182,
+        "min": 1.0,
+        "max": 10.0
+      }
+    }
+  },
+  "claim": {
+    "cases_total": 110,
+    "errors": 0,
+    "missing_cases": 0,
+    "metrics": {
+      "applicability_accuracy": {
+        "n_total": 110,
+        "n_applicable": 109,
+        "n_scored": 8,
+        "n_missing": 101,
+        "n_error": 0,
+        "n_not_applicable": 1,
+        "mean": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "citation_id_validity": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.03636363636363636,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "cited_count": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.10909090909090909,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "claim_decision_accuracy": {
+        "n_total": 110,
+        "n_applicable": 109,
+        "n_scored": 8,
+        "n_missing": 101,
+        "n_error": 0,
+        "n_not_applicable": 1,
+        "mean": 0.625,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "convention": {
+        "n_total": 110,
+        "n_applicable": 101,
+        "n_scored": 0,
+        "n_missing": 101,
+        "n_error": 0,
+        "n_not_applicable": 9,
+        "mean": null,
+        "min": null,
+        "max": null
+      },
+      "convention_accuracy": {
+        "n_total": 110,
+        "n_applicable": 103,
+        "n_scored": 2,
+        "n_missing": 101,
+        "n_error": 0,
+        "n_not_applicable": 7,
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "evidence_bundle_coverage": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.014545454545454545,
+        "min": 0.0,
+        "max": 0.6666666666666666
+      },
+      "fact_count": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.4727272727272727,
+        "min": 0.0,
+        "max": 8.0
+      },
+      "resolution_support_rate": {
+        "n_total": 110,
+        "n_applicable": 101,
+        "n_scored": 0,
+        "n_missing": 101,
+        "n_error": 0,
+        "n_not_applicable": 9,
+        "mean": null,
+        "min": null,
+        "max": null
+      }
+    }
+  },
+  "auto": {
+    "cases_total": 110,
+    "errors": 0,
+    "missing_cases": 0,
+    "metrics": {
+      "router_input_tokens": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 476.4909090909091,
+        "min": 432.0,
+        "max": 566.0
+      },
+      "router_match": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.8818181818181818,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "router_output_tokens": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 41.027272727272724,
+        "min": 41.0,
+        "max": 44.0
+      }
+    }
+  },
+  "cross_mode": {
+    "router_confusion_matrix": {
+      "claim|claim": 45,
+      "question|question": 52,
+      "question|claim": 1,
+      "claim|question": 10,
+      "claim|clarification_required": 2
+    },
+    "abstention": {
+      "correct_rate": 1.0
+    },
+    "over_resolution_rate_against_reference": {
+      "n_total": 110,
+      "n_applicable": 57,
+      "n_scored": 8,
+      "n_missing": 49,
+      "n_error": 0,
+      "n_not_applicable": 53,
+      "mean": 0.0
+    },
+    "router_cases": 110,
+    "router_missing": 0,
+    "router_accuracy_all_labeled": {
+      "n_labeled": 110,
+      "n_predicted": 110,
+      "n_missing_or_error": 0,
+      "n_correct": 97,
+      "n_incorrect": 13,
+      "accuracy": 0.8818181818181818
+    }
+  }
+}

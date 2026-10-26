@@ -1,0 +1,72 @@
+{
+  "auto": {
+    "cases_total": 110,
+    "errors": 0,
+    "missing_cases": 0,
+    "metrics": {
+      "router_input_tokens": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 332.7818181818182,
+        "min": 292.0,
+        "max": 406.0
+      },
+      "router_match": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 0.8818181818181818,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "router_output_tokens": {
+        "n_total": 110,
+        "n_applicable": 110,
+        "n_scored": 110,
+        "n_missing": 0,
+        "n_error": 0,
+        "n_not_applicable": 0,
+        "mean": 73.50909090909092,
+        "min": 29.0,
+        "max": 274.0
+      }
+    }
+  },
+  "cross_mode": {
+    "router_confusion_matrix": {
+      "claim|claim": 56,
+      "question|question": 41,
+      "question|claim": 12,
+      "claim|question": 1
+    },
+    "abstention": {
+      "correct_rate": null
+    },
+    "over_resolution_rate_against_reference": {
+      "n_total": 0,
+      "n_applicable": 0,
+      "n_scored": 0,
+      "n_missing": 0,
+      "n_error": 0,
+      "n_not_applicable": 0,
+      "mean": null
+    },
+    "router_cases": 110,
+    "router_missing": 0,
+    "router_accuracy_all_labeled": {
+      "n_labeled": 110,
+      "n_predicted": 110,
+      "n_missing_or_error": 0,
+      "n_correct": 97,
+      "n_incorrect": 13,
+      "accuracy": 0.8818181818181818
+    }
+  }
+}

@@ -1368,6 +1368,36 @@ def test_envelope_claim_branch_emits_langfuse_url(monkeypatch: pytest.MonkeyPatc
     )
 
 
+def test_envelope_interrupted_claim_emits_langfuse_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LANGFUSE_PUBLIC_URL", "https://langfuse.example.com")
+    monkeypatch.delenv("LANGFUSE_BASE_URL", raising=False)
+    monkeypatch.setenv("LANGFUSE_PROJECT_ID", "allianz-rag")
+
+    analysis = _analysis()
+    env = EnvelopeResponse.from_claim(
+        request_id="req-claim-interrupted",
+        execution=ClaimExecution(
+            result=analysis,
+            context=(),
+            trace_id="trace-claim-interrupted",
+            needs_input=True,
+            thread_id="thread-claim-1",
+            missing_information=analysis.missing_information,
+        ),
+    )
+
+    assert env.resolved_mode == "clarification"
+    assert env.result.kind == "clarification"
+    assert env.metadata["thread_id"] == "thread-claim-1"
+    assert env.metadata["trace_id"] == "trace-claim-interrupted"
+    assert (
+        env.metadata["langfuse_url"]
+        == "https://langfuse.example.com/project/allianz-rag/traces/trace-claim-interrupted"
+    )
+
+
 def test_envelope_clarification_branch_emits_langfuse_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LANGFUSE_PUBLIC_URL", "https://langfuse.example.com")
     monkeypatch.delenv("LANGFUSE_BASE_URL", raising=False)

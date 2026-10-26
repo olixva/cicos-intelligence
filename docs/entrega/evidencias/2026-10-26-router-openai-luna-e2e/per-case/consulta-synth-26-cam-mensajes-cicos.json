@@ -1,0 +1,158 @@
+{
+  "auto": {
+    "response": {
+      "request_id": "9d91536b-4d53-4f65-b6cd-cc96654765f6",
+      "requested_mode": "auto",
+      "resolved_mode": "question",
+      "result": {
+        "kind": "question",
+        "status": "partial",
+        "blocks": [
+          {
+            "text": "Como selección práctica por fases —no como un ranking oficial de relevancia—, los mensajes cubren estas categorías:\n\n• Avisos: 001 (número de lote no correlativo), 003 (presunción de IE LCS), 005 (caducidad del mensaje), 007 (tipo de registro incorrecto) y 015 (carátula recibida en el SDD).\n• Reclamación y aceptación: 100 (formular reclamación por convenio), 104 (insistir en la reclamación y aportar datos), 201 (aceptar reclamación), 202 (aceptación tácita acreedora vía centro compensador) y 206 (aceptación tácita deudora vía centro compensador). También aparecen mensajes de aceptación por arbitraje, sin antecedentes y en fases de tramitación o interlocución.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:103"
+            ]
+          },
+          {
+            "text": "• Documentación y peritaje: 300 (no existen antecedentes), 305 (enviar declaración de inexistencia de siniestro al SDD), 307 (posible exceso de límite: enviar perito), 308 (recibida petición para enviar perito) y 309–311 (petición, recepción o envío de imagen de la declaración de accidente en el SDD).",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:103"
+            ]
+          },
+          {
+            "text": "• Rehúses y discrepancias sobre cobertura o datos: 400 (rehusar reclamación), 401 (inexistencia de seguro), 402 (según Reglamento R.C.S.O.), 404 (inexistencia de siniestro), 407 (intervención de más de dos vehículos), 408 (no colisión directa), 410 (presunción de IE LCS), 411 (rehusar tramitación por detección de IE LCS), 421 (matrícula correcta), 422 (póliza anulada antes del siniestro), 423 (póliza contratada después del siniestro) y 424 (no reconocer los datos aportados).",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:104",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:105",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:106"
+            ]
+          },
+          {
+            "text": "• Bajas y gestión de interlocución/arbitraje: 501 (baja por caducidad), 502 (por petición), 503 (por exceso de límite de peritaje), 506 (por detección de IE LCS), 508 (por desistimiento), 509 (por acuerdo de interlocutores) y 519 (baja pactada en tramitación). Los códigos 600–603 y 609–612 se refieren a intervención de interlocutores, acuerdos o traslados a la CVA; 605–608 identifican resultados o límites del arbitraje y de la intervención.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:105",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:106"
+            ]
+          },
+          {
+            "text": "• Saldos y compensación: también hay mensajes de envío de saldos y de penalizaciones; por ejemplo, 391–399 abarcan envíos de saldos diarios, mensuales o multilaterales, con distintas referencias a penalizaciones o compensación de siniestros.\n\nNo puedo establecer, a partir del extracto, cuáles son objetivamente los mensajes «más relevantes» ni reconstruir la tabla completa: el material aportado recoge solo fragmentos. Esta referencia corresponde al manual de noviembre de 2004 y no debe entenderse como una descripción del derecho vigente.",
+            "evidence_ids": [
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:104",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:105",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:3",
+              "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:4"
+            ]
+          }
+        ],
+        "trace_id": "2613efd3ab4d8294210ca066f7edd23e",
+        "trace_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/2613efd3ab4d8294210ca066f7edd23e"
+      },
+      "evidence": [
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:105",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 105,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:106",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 106,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:104",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 104,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:83",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 83,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:84",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 84,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:85",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 85,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:101",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 101,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:102",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 102,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:2",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 2,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:3",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 3,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:103",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 103,
+          "delivery": "text"
+        },
+        {
+          "evidence_id": "sha256:b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344:page:4",
+          "document_hash": "b9c70c74911fad7992a01f77d861a33f10f8313c96a9f58c09b2f448a54c8344",
+          "pdf_page": 4,
+          "delivery": "text"
+        }
+      ],
+      "metadata": {
+        "trace_id": "041e8d660ab8a1f4c1b40c658ce68c2b",
+        "langfuse_url": "http://127.0.0.1:3000/project/cmtklzgpm000trm07om22hcpa/traces/041e8d660ab8a1f4c1b40c658ce68c2b",
+        "router_provider": "openai",
+        "router_model": "gpt-6-luna",
+        "router_input_tokens": "305",
+        "router_output_tokens": "64"
+      }
+    },
+    "turn": {
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial"
+    },
+    "evaluation": {
+      "resolved_mode": "question",
+      "route_decision": "question",
+      "result_kind": "question",
+      "needs_input": false,
+      "terminal_status": "partial",
+      "expected_intent": "question",
+      "router_match": 1.0,
+      "router_provider": "openai",
+      "router_model": "gpt-6-luna",
+      "router_input_tokens": 305,
+      "router_output_tokens": 64
+    },
+    "elapsed_s": 30.576753959001508
+  }
+}

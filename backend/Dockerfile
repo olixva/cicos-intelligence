@@ -49,11 +49,19 @@ RUN uv sync --frozen --no-dev --group ingestion --extra local-rag
 # convention used by the local Docker setup.
 FROM python:3.14-slim AS runtime
 
+# Preserve source provenance even though the final image does not contain
+# .git. Pass both values at build time; the health/config endpoint exposes
+# them without revealing runtime credentials.
+ARG ALLIANZ_BUILD_COMMIT=unknown
+ARG ALLIANZ_BUILD_FINGERPRINT=unknown
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_CACHE_DIR=/tmp/uv-cache \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    ALLIANZ_BUILD_COMMIT=${ALLIANZ_BUILD_COMMIT} \
+    ALLIANZ_BUILD_FINGERPRINT=${ALLIANZ_BUILD_FINGERPRINT} \
     PATH="/app/backend/.venv/bin:${PATH}"
 
 # uv is required for the `uv run --no-sync` CMD below. Copy the static

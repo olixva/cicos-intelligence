@@ -70,35 +70,33 @@ extracción y router OpenAI, por decisión del usuario. No se hizo ninguna llama
 real a GPT-6.1 Sol. Los IDs figuran en el
 [catálogo oficial](https://developers.openai.com/api/docs/models).
 
-**A/B end-to-end del router (24-10-2026).** Se repitió el modo `auto` con
-110 casos en el mismo commit base, huella del código, perfil, prompts y firma
-del alias activo de Qdrant; las dos corridas usaron Luna para respuesta y
-extracción y concurrencia 2. Jev (`jev-latest`, umbral 0,4) acertó 97/110
-(88,2 %); OpenAI Luna acertó 96/110 (87,3 %). Ambas terminaron 110/110 sin
-errores técnicos. Jev supera el gate de exactitud por un caso. Los manifiestos
-incluyen huella de código e identidad del índice activo; la comparación es
-reproducible sobre esta versión del golden.
+**A/B end-to-end del router (26-10-2026).** Se repitió el modo `auto` con
+110 casos en el mismo golden, perfil, prompts, huella de código e identidad
+activa de Qdrant; las dos corridas usaron Luna para respuesta y extracción y
+concurrencia 2. Jev (`jev-latest`, umbral 0,4) y OpenAI Luna acertaron 97/110
+(88,2 %) cada uno. La corrida OpenAI se reanudó tras un timeout transitorio de
+generación; el resultado final fue 110/110 sin errores. No hay diferencia de
+exactitud en esta muestra.
 
 Artefactos locales ignorados por Git:
-`data/evaluation/results/2026-10-24-final-jev-luna-all-modes-normalized/` y
-`data/evaluation/results/2026-10-24-router-openai-luna-e2e-current/`.
+`data/evaluation/results/2026-10-26-final-jev-luna-all-modes-f9e6a230/` y
+`data/evaluation/results/2026-10-26-router-openai-luna-e2e-current/`.
 Las comparaciones del 22-10 (Jev 97/110, OpenAI 95/110) se conservan como
 históricas: sus manifiestos no incluyen huella de código ni firma del índice
 activo, por lo que no se usan como gate de esta versión. El barrido de umbral
 0,4/0,6/0,8 también es histórico; debe repetirse si cambia el router o el
 golden. No se guardan credenciales en los manifiestos.
 
-**Red-team actual (24-10-2026; 30 casos, 27 ataques y 3 controles).** Con
-router Jev y `guard=off` se registró 1/27 ataques exitosos (3,7 %) y 0/3
-sobre-rechazos. Con guard Jev a 0,9/0,95 se obtuvo 0/27 y 0/3. La comprobación
-adicional con router OpenAI Luna y guard Jev también dio 0/27 y 0/3. Por tanto,
-Jev supera el gate frente a `off` con el router Jev y no añade sobre-rechazo
-cuando se usa el router OpenAI. Las campañas de 24-10 tienen huella de código,
-configuración y firma del índice activo.
+**Red-team actual (26-10-2026; 30 casos, 27 ataques y 3 controles).** Con router Jev y `guard=off`, router Jev y `guard=jev`, y router OpenAI Luna
+con `guard=jev`, se registraron 0/27 ataques exitosos y 0/3 controles
+benignos rechazados en cada variante. Por tanto, esta suite no demuestra una
+mejora causal del guard Jev frente a `off`; las tres configuraciones pasan los
+30 casos sintéticos. Los manifiestos registran huella de código, configuración
+y firma del índice activo.
 
-Resultados locales: `2026-10-24-redteam-jev-router-guard-off-current/`,
-`2026-10-24-redteam-jev-router-jev-guard-current/` y
-`2026-10-24-redteam-openai-router-jev-guard-current/` bajo
+Resultados locales: `2026-10-26-redteam-jev-router-guard-off/`,
+`2026-10-26-redteam-jev-router-jev-guard/` y
+`2026-10-26-redteam-openai-router-jev-guard/` bajo
 `data/evaluation/results/`. Las carpetas del 22-10 son históricas; sus
 manifiestos no registran la identidad del índice activo.
 
@@ -181,53 +179,57 @@ publica nada en Langfuse, pero cada caso conserva su `trace_id` y su enlace.
 
 ## Resultados medidos
 
-### Corrida actual (24-10-2026)
+### Corrida final (26-10-2026)
 
-Golden de 110 casos × tres modos: 330/330 resultados completos, cero errores
-técnicos, 1092,4 s. Respuesta y extracción usaron `gpt-6-luna`; router y
-guardarraíl usaron Jev (`jev-latest`, 0,4; umbrales 0,9/0,95). El manifiesto
-fija el commit base `99ff2f48`, fingerprint del árbol ejecutado
-`3c074a5069b273f0…`, hash del manual y firma del alias activo
-`allianz-manual-active` (118 puntos).
+Golden de 110 casos × tres modos: **330/330 respuestas completas, cero errores
+técnicos, 1244,9 s**. Respuesta y extracción usaron `gpt-6-luna`; router y
+guardarraíl usaron Jev (`jev-latest`, confianza mínima 0,4; umbrales 0,9/0,95).
+El manifiesto registra el commit base `660595e1`, la huella de fuentes
+`f9e6a230efee0209…`, el SHA-256 del golden y del manual, y el alias activo
+`allianz-manual-active` con 118 puntos. La huella cubre `backend/src`,
+`backend/scripts`, `configs` y `prompts` del árbol ejecutado.
 
 | Modo | Métrica | Valor | n_scored | n_missing | n_error | n_not_applicable |
 |---|---|---:|---:|---:|---:|---:|
-| question | `answer_status_accuracy` | 0,566 | 53 | 0 | 0 | 57 |
-| question | `citation_id_validity` | 0,385 | 110 | 0 | 0 | 0 |
-| question | `evidence_bundle_coverage` | 0,483 | 110 | 0 | 0 | 0 |
-| claim | `applicability_accuracy` | 0,500 | 6 | 103 | 0 | 1 |
-| claim | `convention_accuracy` | 0,000 | 2 | 103 | 0 | 5 |
-| claim | `claim_decision_accuracy` | 0,500 | 6 | 103 | 0 | 1 |
+| question | `answer_status_accuracy` | 0,509 | 53 | 0 | 0 | 57 |
+| question | `citation_id_validity` | 0,408 | 110 | 0 | 0 | 0 |
+| question | `evidence_bundle_coverage` | 0,495 | 110 | 0 | 0 | 0 |
+| claim | `applicability_accuracy` | 0,500 | 8 | 101 | 0 | 1 |
+| claim | `convention_accuracy` | 0,000 | 2 | 101 | 0 | 7 |
+| claim | `claim_decision_accuracy` | 0,625 | 8 | 101 | 0 | 1 |
 | claim | `citation_id_validity` | 0,036 | 110 | 0 | 0 | 0 |
 | claim | `evidence_bundle_coverage` | 0,015 | 110 | 0 | 0 | 0 |
 | auto | `router_match` (Jev, 0,4) | 0,882 | 110 | 0 | 0 | 0 |
+| cross-mode | `over_resolution_rate_against_reference` | 0,000 | 8 | 49 | 0 | 53 |
 
-El modo `claim` pidió aclaración en 103/110 casos. Los datos más solicitados
-fueron ubicación dentro del ámbito (102 casos), estacionamiento habitual en
-España (103), matriculación española (101) y aseguradora adherida (100); además,
-faltó el número de vehículos en 50 y confirmar colisión directa en 66. Las
-aclaraciones figuran como faltantes/no puntuables, no como errores técnicos.
-La validez y cobertura de citas puntúan cero cuando no se entrega una cita. La
-accuracy de decisión 0,500 sólo se calculó sobre seis casos y **no demuestra
-calidad suficiente para resolver siniestros**. Antes de presentar el sistema
-como resolutor listo, hay que adjudicar la política de ámbito y completar el
-golden con los hechos necesarios, o mejorar la extracción sin convertir hechos
-desconocidos en verdaderos.
+El modo `claim` pidió aclaración en **101/110 casos**; los campos más
+solicitados fueron estacionamiento habitual en España (101), ubicación dentro
+del ámbito (99), matrícula española (99), aseguradora adherida (99), colisión
+directa (65) y número de vehículos (52). Las aclaraciones se cuentan como
+información ausente, no como errores técnicos. La exactitud de decisión 0,625
+sólo se calculó sobre ocho casos y **no acredita resolución fiable de
+siniestros**. La tasa observada de sobre-resolución fue 0/8 casos puntuables;
+49 referencias quedaron sin puntuación por falta de salida comparable. La
+validez y cobertura de citas en `claim` siguen siendo bajas (0,036 y 0,015).
 
-En el A/B actual del router, Jev acertó 97/110 (88,2 %) y OpenAI Luna 96/110
-(87,3 %), ambos sin errores. Los manifiestos comparten commit base, fingerprint,
-hash del manual y firma del índice. Artefactos locales:
-`data/evaluation/results/2026-10-24-final-jev-luna-all-modes-normalized/` y
-`data/evaluation/results/2026-10-24-router-openai-luna-e2e-current/`.
+**A/B final del router.** En el mismo golden, índice y huella, Jev y OpenAI
+Luna acertaron **97/110 (88,2 %) cada uno**, sin errores técnicos finales. La
+corrida OpenAI se reanudó después de un timeout transitorio de generación; el
+caso pendiente terminó correctamente. Jev clasifica 45 casos `claim` y 52
+`question` correctamente, dejó 2 `claim` como `clarification_required`, envió
+10 `claim` a `question` y 1 `question` a `claim`. OpenAI clasificó 56/57
+`claim` y 41/53 `question` correctamente. La muestra no distingue su exactitud;
+el uso de tokens de proveedores distintos no permite inferir ahorro monetario.
 
-Las campañas anteriores se ejecutaron antes de añadir la compatibilidad local
-de `LANGFUSE_BASE_URL=http://host.docker.internal:3000` para el contenedor. La
-corrida host utilizaba `http://127.0.0.1:3000`; la diferencia sólo afecta a la
-composición de entorno Docker. El fingerprint final del servidor, visible en
-`/health/config`, quedó en `b7896fb27b94e334…` después de ese ajuste.
+**Red-team final.** Router Jev con guard `off`, router Jev con guard Jev, y
+router OpenAI Luna con guard Jev registraron **0/27 ataques exitosos y 0/3
+controles benignos rechazados** por configuración. Esta batería no demuestra
+una mejora causal del guard Jev frente a `off`.
 
-La corrida de 24-10 sustituye el estado pendiente anterior. La corrida de
-`2026-09-03` que sigue se conserva como referencia histórica y no recalculable.
+Las campañas completas, sus manifiestos, métricas, salidas por caso y checksums
+están versionados en [el anexo de evidencias](entrega/evidencias/README.md).
+La corrida histórica del `2026-09-03` que sigue no se puede recalcular con sus
+artefactos originales y no representa el comportamiento de esta versión.
 
 Corrida completa sobre los 110 casos × 3 modos, `2026-09-03`, commit
 `3b452ee`, modelo `gpt-5.6-luna` en las tres etapas para acotar el coste,

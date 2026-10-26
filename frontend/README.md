@@ -45,7 +45,7 @@ frontend/
 │   ├── styles/                 tokens.css + globals.css
 │   └── types/api.gen.ts        generado, no versionado
 └── tests/
-    ├── unit/                   Vitest (18 ficheros, 98 tests)
+    ├── unit/                   Vitest (18 ficheros, 99 tests)
     └── e2e/                    Playwright
 ```
 

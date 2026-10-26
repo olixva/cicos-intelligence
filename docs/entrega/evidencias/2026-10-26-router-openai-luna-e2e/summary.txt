@@ -1,0 +1,15 @@
+# Baseline runner — router-openai-luna-e2e-current-2026-10-26
+
+Casos: 110 · modos: auto · duración: 582.2s
+
+## auto (110/110 completos)
+  - router_input_tokens: mean=332.782 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=292.0, max=406.0)
+  - router_match: mean=0.882 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=0.0, max=1.0)
+  - router_output_tokens: mean=73.509 (scored=110, applicable=110, total=110, missing=0, error=0, not_applicable=0, min=29.0, max=274.0)
+
+## router_accuracy_all_labeled accuracy=0.882 (97/110; missing_or_error=0)
+## router_confusion_matrix (110 casos en auto)
+  - expected=claim predicted=claim -> 56
+  - expected=claim predicted=question -> 1
+  - expected=question predicted=claim -> 12
+  - expected=question predicted=question -> 41
