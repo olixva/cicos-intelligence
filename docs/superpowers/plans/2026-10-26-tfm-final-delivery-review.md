@@ -75,4 +75,4 @@
 - [x] Run backend, frontend, OpenAPI and E2E gates; distinguish environment failures from product failures.
 - [x] Verify no credentials or ignored runtime results are staged unintentionally.
 - [x] Check links, numbers, dates, model names and `git diff --check`.
-- [ ] Commit the final delivery changes on this isolated branch and fast-forward local `main`; do not push.
+- [x] Commit the final delivery changes on this isolated branch and fast-forward local `main`; do not push.
