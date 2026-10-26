@@ -18,8 +18,9 @@ casos sintéticos; no se enviaron expedientes reales ni datos personales.
 - `make test-e2e`: 2/2 escenarios de Playwright aprobados.
 
 Los avisos de React/localStorage y el tamaño del bundle no hicieron fallar las
-puertas. La imagen Docker final se construye y prueba con la huella asociada al
-commit de entrega; el resultado se describe en `docs/operacion.md`.
+puertas. La imagen `allianz-backend:tfm-final-20261026`, construida desde el
+commit `2f31e866` con la huella `f9e6a230efee0209…`, pasó readiness y una
+petición sintética por cada modo; véase [operación](../operacion.md).
 
 ## Configuración y evaluación final
 

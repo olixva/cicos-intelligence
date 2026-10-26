@@ -10,7 +10,7 @@ enunciado y del golden; no se deben introducir expedientes reales.
 | 7–14 min | Datos y modelos | Ingesta PDF, fragmentos y citas; explicar que no hubo fine-tuning: se usa RAG con modelos preentrenados. Jev clasifica; OpenAI genera y extrae |
 | 14–24 min | Demostración | Una consulta con citas y un accidente sintético que termine en exclusión o aclaración, con la traza visible si Langfuse está disponible |
 | 24–31 min | Evaluación | Golden de 110 casos, comparación de router, métricas de citas, abstención y límites del modo `claim` |
-| 31–36 min | Riesgos y decisiones | Separación del LLM y las reglas, red-team, privacidad y validaciones que faltan |
+| 31–36 min | Riesgos y decisiones | Separación del LLM y las reglas, red-team, privacidad y validaciones que faltan; al explicar la slide 13, aclarar el límite de persistencia de `MemorySaver` |
 | 36–45 min | Preguntas | Responder dudas; ampliar la demo o la evaluación cuando haga falta |
 
 ## Demostración sugerida
@@ -48,3 +48,7 @@ denominadores y resultados completos.
 - **¿Está listo para producción?** No. Es un prototipo académico evaluado con
   datos sintéticos. Hace falta validación de dominio, privacidad, seguridad y
   rendimiento con datos autorizados antes de un piloto real.
+- **¿Se conserva una entrevista abierta si se reinicia el servicio?** El
+  prototipo permite reanudarla durante la ejecución, pero usa `MemorySaver`:
+  reiniciar el proceso pierde el estado y varias réplicas no comparten el
+  checkpoint.

@@ -30,11 +30,11 @@ siniestro o petición de aclaración; el router OpenAI Luna queda como opción d
 comparación.
 
 **Trazabilidad.** Cada cita es un `evidence_id` que abre el PDF original en la
-página exacta. Cada regla evaluada informa de sus entradas, su resultado y las
-páginas que la respaldan. Las consultas, las rutas `auto` y los análisis de
-siniestro incluyen el identificador y el enlace de Langfuse cuando el servicio
-está configurado. Si `claim` se interrumpe para pedir datos, también conserva el
-`thread_id` para reanudarlo.
+página exacta. Cada regla evaluada informa de sus entradas y su resultado;
+cuando hay evidencia, incluye sus `evidence_id` y las páginas del PDF. Las
+consultas, las rutas `auto` y los análisis de siniestro incluyen el identificador
+y el enlace de Langfuse cuando el servicio está configurado. Si `claim` se
+interrumpe para pedir datos, también conserva el `thread_id` para reanudarlo.
 
 ## Cómo está montado
 

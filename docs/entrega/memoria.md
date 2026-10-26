@@ -365,7 +365,7 @@ modo estricto sobre el código de producción.
  Usuario ─► Frontend (React 19, SSE) ─► API FastAPI /api/v1/queries
                                               │
                                   ┌───────────┴────────────┐
-                                  │   Router (mode=auto)   │  gpt-6-luna, enum cerrado
+                                  │   Router (mode=auto)   │  Jev (jev-latest), enum cerrado
                                   └───────┬────────┬───────┘
                           question        │        │        claim
               ┌───────────────────────────┘        └──────────────────────────┐
@@ -380,6 +380,8 @@ modo estricto sobre el código de producción.
                                                       explain ─► validate
         Trazas, prompts versionados y experimentos: Langfuse (+ Postgres/ClickHouse/Redis/MinIO)
 ```
+
+El router OpenAI `gpt-6-luna` queda disponible como referencia de comparación.
 
 Tres grafos LangGraph con nodos explícitos y observables. Para siniestros hay un
 `interrupt` con `thread_id`: cuando faltan hechos, el flujo pausa y devuelve una

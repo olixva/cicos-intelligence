@@ -38,10 +38,10 @@
 - Read: `docs/entrega/presentacion.pptx`
 - Read: current ignored evaluation manifests and summaries
 
-- [ ] Map each brief deliverable and evaluation criterion to repository evidence.
-- [ ] Verify current metrics, campaign identity, active index and model settings from artifacts.
-- [ ] Compare the recorded campaign commit/fingerprint with the final branch and rerun stale campaigns on the final code.
-- [ ] List inaccurate counts, broken links, placeholders and unverified claims before editing.
+- [x] Map each brief deliverable and evaluation criterion to repository evidence.
+- [x] Verify current metrics, campaign identity, active index and model settings from artifacts.
+- [x] Compare the recorded campaign commit/fingerprint with the final branch and rerun stale campaigns on the final code.
+- [x] List inaccurate counts, broken links, placeholders and unverified claims before editing.
 
 ### Task 2: Reconcile technical report and repository documentation
 
@@ -51,28 +51,28 @@
 - Modify: `docs/evaluacion.md`, `docs/operacion.md`, `README.md`, `docs/README.md`
 - Create if useful: `docs/entrega/README.md` and sanitized reproducibility artifacts
 
-- [ ] Update the report summary table and the README test counts from current results.
-- [ ] Repair references to missing specification files and stale process-document claims.
-- [ ] Make author-process wording evidence-based; remove statements that cannot be verified.
-- [ ] Include a traceability matrix for requirements, implementation, validation and known limits.
-- [ ] Preserve caveats, mark unverified integrations, and keep evaluation artifacts reproducible.
+- [x] Update the report summary table and the README test counts from current results.
+- [x] Repair references to missing specification files and stale process-document claims.
+- [x] Make author-process wording evidence-based; remove statements that cannot be verified.
+- [x] Include a traceability matrix for requirements, implementation, validation and known limits.
+- [x] Preserve caveats, mark unverified integrations, and keep evaluation artifacts reproducible.
 
 ### Task 3: Review and update the defense presentation
 
 **Files:**
 - Modify: `docs/entrega/presentacion.pptx`
 
-- [ ] Inspect every current slide and preserve its visual system.
-- [ ] Make the implementation plan, milestones, assumptions, risks and technical rationale explicit.
-- [ ] Add the current evaluation and Jev results, with denominators and claim-quality limitation.
-- [ ] Render and inspect all slides; correct content, overflow and layout issues.
+- [x] Inspect every current slide and preserve its visual system.
+- [x] Make the implementation plan, milestones, assumptions, risks and technical rationale explicit.
+- [x] Add the current evaluation and Jev results, with denominators and claim-quality limitation.
+- [x] Render and inspect all slides; correct content, overflow and layout issues.
 
 ### Task 4: Validate and integrate the delivery changes
 
 **Files:**
 - Final review of changed report, slides, README and evidence manifest
 
-- [ ] Run backend, frontend, OpenAPI and E2E gates; distinguish environment failures from product failures.
-- [ ] Verify no credentials or ignored runtime results are staged unintentionally.
-- [ ] Check links, numbers, dates, model names and `git diff --check`.
+- [x] Run backend, frontend, OpenAPI and E2E gates; distinguish environment failures from product failures.
+- [x] Verify no credentials or ignored runtime results are staged unintentionally.
+- [x] Check links, numbers, dates, model names and `git diff --check`.
 - [ ] Commit the final delivery changes on this isolated branch and fast-forward local `main`; do not push.

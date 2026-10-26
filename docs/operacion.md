@@ -227,5 +227,10 @@ arrancar como usuario sin privilegios. `host.docker.internal` sólo se acepta
 como alias local de Docker para Langfuse; los endpoints remotos se rechazan.
 La imagen recibe el commit y la huella del código como argumentos de build,
 porque no contiene `.git`; ambos aparecen en `/health/config` sin exponer
-credenciales. Usa los comandos anteriores para que la huella coincida con la
-campaña de evaluación de ese árbol.
+credenciales. El 26-10-2026 se construyó
+`allianz-backend:tfm-final-20261026` desde el commit `2f31e866` con la huella
+`f9e6a230efee0209…`. `/health/ready` devolvió `ready`; `/health/config` mostró
+esa misma procedencia, Jev y Luna, el hash del manual y el índice activo de 118
+puntos. Una petición sintética por modo (`question`, `claim`, `auto`) devolvió
+HTTP 200; `claim` pidió aclaraciones y conservó el metadato de traza. El smoke
+usó un puerto y contenedor aislados y no reinició los servicios locales.
