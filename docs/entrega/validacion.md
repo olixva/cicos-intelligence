@@ -1,4 +1,4 @@
-# Estado de validación y límites
+# Validación y límites
 
 Actualizado el 26-10-2026. Resume las comprobaciones reproducibles del código
 actual y los límites que deben acompañar a la entrega. Las evaluaciones usan
@@ -17,10 +17,8 @@ casos sintéticos; no se enviaron expedientes reales ni datos personales.
   chunk principal de 628 KB supera el umbral informativo de 500 KB.
 - `make test-e2e`: 2/2 escenarios de Playwright aprobados.
 
-Los avisos de React/localStorage y el tamaño del bundle no hicieron fallar las
-puertas. La imagen `allianz-backend:tfm-final-20261026`, construida desde el
-commit `2f31e866` con la huella `f9e6a230efee0209…`, pasó readiness y una
-petición sintética por cada modo; véase [operación](../operacion.md).
+Las puertas no fallaron por los avisos de Docling, React/JSDOM, PDF.js o por el
+tamaño del bundle.
 
 ## Configuración y evaluación final
 
@@ -68,10 +66,9 @@ Jev. Los resultados y la matriz completa figuran en
 
 ## Integraciones, privacidad y límites académicos
 
-La respuesta interrumpida de `claim` conserva `thread_id`, `trace_id` y el campo
-`langfuse_url`; un test de regresión y una petición sintética en Docker lo
-comprobaron. Se comprobó una traza mediante la API de Langfuse; el enlace no se
-abrió manualmente en su interfaz y no se midió coste.
+La rama `claim` interrumpida devuelve `thread_id`, `trace_id` y `langfuse_url`;
+las pruebas del contrato cubren esos metadatos. No se verificó manualmente el
+enlace en la interfaz de Langfuse ni se midió el coste.
 
 TypeSafe declara que no entrena con solicitudes y respuestas, que la retención
 depende de los datos y del acuerdo, y que ofrece ZDR a clientes Enterprise tras
@@ -88,7 +85,6 @@ convenios. La matriz CIDE coincide entre lectura visual y extracción estricta
 de texto, y el autor firmó el artefacto; eso no sustituye la revisión de un
 experto. El manual fuente es de 2004 y no sustituye normativa vigente.
 
-Antes de presentar, la persona autora debe revisar la descripción personal del
-proceso en §8 de la memoria y completar los datos de portada o formato que
-exija su universidad. No se atribuyen actividades no comprobables ni se inventa
-metadato institucional.
+Antes de presentar, la persona autora debe completar los datos de portada y los
+requisitos de formato que establezca su universidad. Este repositorio no inventa
+metadatos institucionales ni una revisión experta que no se haya realizado.

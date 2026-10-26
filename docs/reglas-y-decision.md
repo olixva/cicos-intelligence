@@ -132,8 +132,7 @@ abrió la puerta», la excepción retira la atribución y el resultado queda
 La respuesta llega como `clarifications` y el grafo se reanuda desde su
 checkpoint, sin repetir preguntas ya contestadas.
 
-Dos patrones que el planificador de entrevista tuvo que aprender a distinguir,
-porque rompían reglas enteras:
+Dos distinciones son esenciales para aplicar las reglas correctamente:
 
 - «el relato declara que un dato **no consta**» no es lo mismo que «hay que
   preguntarlo» — la condición de activación de `cide-door-opening` es
@@ -155,11 +154,16 @@ pendientes, la información que falta, los bloques de evidencia y
 `rules_evaluated`.
 
 `rules_evaluated` es la traza de auditoría: **cada regla que realmente
-corrió**, con las entradas que vio, su resultado (`matched`, `not_matched`,
-`insufficient_data`) y las páginas del manual detrás. Nunca un marcador de
-posición. Una regla de exclusión que no se activa se redacta como «no se
-activa con …», no como «no se cumple»: son cosas distintas y la segunda
-redacción llegó a leerse como lo contrario de lo que decía.
+corrió**, con su identificador, `inputs` (hechos registrados para la regla;
+pueden estar vacíos, incluso para `cide-matrix-lookup`), su estado (`matched`,
+`not_matched`, `insufficient_data`), la justificación y `evidence_ids`. El
+campo devuelve los IDs declarados por la regla cuando el resultado es
+`matched`; para `not_matched` e `insufficient_data` devuelve una lista vacía.
+Las reglas `matched` que sostienen una decisión resuelta deben incluir
+referencias válidas. Una regla de exclusión que no se activa se redacta como
+«no se activa con …», no como «no se cumple»:
+son cosas distintas y la segunda redacción llegó a leerse como lo contrario
+de lo que decía.
 
 Un `decision: resolved` exige una regla que haya casado con su evidencia. Si
 casan varias reglas de maniobra en conflicto, el resultado se queda en

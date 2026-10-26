@@ -120,7 +120,8 @@ La ruta del `openapi.json` se puede sobrescribir con `OPENAPI_JSON_PATH`
 | `VITE_API_BASE_URL` | `""` | URL base del backend. Vacío = mismo origen. |
 | `MODE`, `DEV`, `PROD` | según Vite | establecidas por Vite |
 
-No hay secretos en el bundle: la autenticación la gestiona el proxy inverso, y
-el despliegue sirve la SPA y `/api/v1/*` desde el mismo origen. En desarrollo,
+No se incluyen secretos en el bundle. Este repositorio no configura
+autenticación para la API ni un proxy de producción: el despliegue debe aportar
+los controles de acceso y el enrutado que necesite. En desarrollo,
 `vite.config.ts` redirige `/api/v1` y `/health` al backend en `:8000`, de modo
-que el código del cliente sigue hablando de mismo origen en los dos entornos.
+que el cliente usa el mismo origen local.

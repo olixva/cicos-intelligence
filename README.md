@@ -102,6 +102,7 @@ make check-all       # backend + frontend + contratos OpenAPI
 | [docs/operacion.md](docs/operacion.md) | Servicios, variables y comandos |
 | [docs/entrega/README.md](docs/entrega/README.md) | Índice de entrega y trazabilidad con el enunciado |
 | [docs/entrega/memoria.md](docs/entrega/memoria.md) | Memoria técnica del TFM |
+| [docs/entrega/validacion.md](docs/entrega/validacion.md) | Resultados de validación y límites actuales |
 | [docs/entrega/presentacion.pptx](docs/entrega/presentacion.pptx) | Presentación de defensa |
 | [backend/README.md](backend/README.md) | Backend en detalle |
 | [frontend/README.md](frontend/README.md) | Frontend en detalle |

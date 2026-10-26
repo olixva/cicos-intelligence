@@ -1,15 +1,12 @@
-# Memoria de decisiones — CICOS Intelligence
+# Memoria técnica — CICOS Intelligence
 
 Sistema RAG sobre el *Manual de convenios CIDE/ASCIDE/CICOS* (edición de
 noviembre de 2004, 111 páginas), construido como prototipo técnico y preparado
 para su presentación como Trabajo Fin de Máster (TFM).
 
-**Cómo leer este documento.** Cada área técnica se cuenta con la misma
-estructura: *qué se decidió y por qué*, *cómo está hoy* (lo que existe y se puede
-comprobar en el repositorio) y, cuando hay una distancia entre lo que existe y lo
-que un despliegue real necesitaría, *cómo debería ser* y *cómo se llegaría*. Lo
-que no está implementado se dice como tal; no se presenta un diseño como si fuera
-una funcionalidad.
+El documento describe la solución implementada, las decisiones que la
+fundamentan, los resultados medidos y los controles que aún faltan para un uso
+operativo. Las propuestas futuras se identifican como tales.
 
 ---
 
@@ -57,14 +54,14 @@ se llamó a Sol. Los modelos se configuran por
 `OPENAI_ANSWER_MODEL`, `OPENAI_CLAIM_EXTRACTION_MODEL` y
 `ALLIANZ_ROUTER_MODEL`.
 
-Todas las llamadas usan la Responses API con **salida estructurada** (esquema
-cerrado, `extra="forbid"`) y `store=False`: se desactiva la persistencia de
-estado de la respuesta para recuperarla después. Esto **no** desactiva los
-registros de monitorización de abuso, que pueden incluir contenido y se
-conservan hasta 30 días por defecto. La exclusión de contenido requiere que la
-organización tenga aprobados controles como Zero Data Retention o Modified
-Abuse Monitoring; hay que verificarlo antes de enviar relatos reales con datos
-personales ([política de datos de OpenAI](https://developers.openai.com/api/docs/guides/your-data)).
+Las llamadas OpenAI de texto usan la Responses API con **salida estructurada**
+(esquema cerrado, `extra="forbid"`) y `store=False`, por lo que la respuesta no
+queda disponible para recuperarla después mediante la API. Esto **no** excluye
+por sí solo el contenido de los registros de monitorización de abuso, que
+pueden conservarlo hasta 30 días por defecto. La exclusión requiere controles
+aprobados como Zero Data Retention o Modified Abuse Monitoring; deben
+verificarse antes de enviar relatos reales con datos personales
+([política de datos de OpenAI](https://developers.openai.com/api/docs/guides/your-data)).
 
 ### 2.1.1 Un modelo de decisiones para las tareas de elegir
 
@@ -74,17 +71,16 @@ manipular al asistente, si una página sirve para una pregunta, si una afirmaci�
 está sostenida por su cita. Para ellas se integró **Jev** (TypeSafe, modelo
 «System One»): un modelo discriminativo que recibe un estado y preguntas tipadas
 (`noul`, sí/no con probabilidad; `choice`, una opción de varias; `score`) y
-devuelve probabilidades, no texto. La llamada real de humo devolvió
-`jev-1.14.0`, respuestas `noul` y `choice`, y uso de tokens.
+devuelve probabilidades, no texto.
 
 Por qué encaja: (1) **la salida es un valor de un conjunto cerrado**, así que un
 texto malicioso en el estado sólo puede desplazar una probabilidad, no producir
 contenido; (2) la **confianza es un dato**, lo que permite abstenerse por umbral
-en lugar de por prompt. La latencia se midió en el conjunto probado; no se
-concluye ahorro monetario porque no hay tarifa TypeSafe configurada.
+en lugar de por prompt. La campaña guarda su duración total; no se concluye
+ahorro monetario porque no hay una tarifa TypeSafe configurada para calcularlo.
 
-Se usa en tres sitios; el router y guardarraíl quedan activados por defecto tras
-superar sus puertas, mientras el juez permanece opt-in:
+Se usa en tres sitios; router y guardarraíl son los defaults del prototipo, y
+el juez permanece opt-in:
 
 | Uso | Dónde | Estado |
 |---|---|---|
@@ -92,17 +88,16 @@ superar sus puertas, mientras el juez permanece opt-in:
 | Guardarraíl semántico (`ALLIANZ_INPUT_GUARD=jev`) | tras filtro regex; falla abierto | Red-team: 0/27 ataques exitosos y 0/3 controles benignos rechazados; default Jev |
 | Juez (`run_baseline.py --judge jev`) | *context precision* y *groundedness* | Implementado; opt-in y no calibrado con humanos |
 
-**A/B del router (26-10-2026).** Se compararon 110 casos en modo `auto`, con
+**Comparación del router.** Se compararon 110 casos en modo `auto`, con
 OpenAI Luna en respuesta/extracción, concurrencia 2 y el mismo golden,
 fingerprint de código, hash del manual e identidad activa de Qdrant. Jev
 (`jev-latest`, umbral 0,4) y OpenAI Luna acertaron 97/110 (88,2 %) cada uno,
 sin errores tras reanudar una llamada OpenAI que agotó el timeout. En esta
 muestra no hay diferencia de exactitud; Jev queda como default tipado y OpenAI
 Luna sigue disponible con `ALLIANZ_ROUTER_BACKEND=openai`, sin fallback
-silencioso. Los resultados anteriores del 22-10 carecen de huella e identidad
-activa y quedan como históricos. El barrido 0,4/0,6/0,8 también es histórico.
+silencioso. Los resultados reproducibles están en el anexo de evidencias.
 
-**Red-team (26-10-2026; 30 casos por configuración).** Con router Jev y guard
+**Red-team (30 casos por configuración).** Con router Jev y guard
 `off`, router Jev y guard Jev, y router OpenAI Luna y guard Jev, las tres
 configuraciones registraron 0/27 ataques exitosos y 0/3 controles benignos
 rechazados. Esta muestra no demuestra mejora causal al activar Jev; sí confirma
@@ -110,14 +105,6 @@ que no vulneró los casos incluidos. `ALLIANZ_INPUT_GUARD=off` sigue disponible
 explícitamente. El guard falla abierto si TypeSafe no responde; el filtro regex
 se ejecuta antes y no llama a Jev si ya bloquea. Las campañas tienen hash del
 dataset, huella del código e identidad del índice activo.
-
-**Humo sintético OpenAI (22-10-2026, commit `9aa5fd9`).** Los adaptadores de
-respuesta, extracción de hechos y router aceptaron salida estructurada con `gpt-6-luna`: respuesta
-`insufficient_evidence` sin bloques, extracción en estado `ask` con tres hechos
-sintéticos y ruta `question`. Esta corrida valida compatibilidad de esquema. La
-calidad en golden, latencia, uso/coste y el acceso a Sol siguen pendientes; no se
-llamó a `gpt-6.1-sol`. La exportación de trazas no conectó con Langfuse local en
-`127.0.0.1:3000`.
 
 **Límites.** El juez Jev no se ha calibrado con etiquetas humanas, así que sus
 puntuaciones siguen siendo exploratorias. No se comparó Sol/Luna para
@@ -315,23 +302,12 @@ experta revise la política de ámbito y el golden antes de presentar el flujo
 `claim` como resolutor. No se concluye ahorro monetario: los tokens de Jev y
 OpenAI no son medidas comparables de coste y no hay tarifa TypeSafe configurada.
 
-Los artefactos completos están versionados en
-[`docs/entrega/evidencias/`](evidencias/README.md), incluidos manifiestos,
-métricas, casos y checksums. La corrida histórica de `2026-09-03` que sigue no
-se puede recalcular con los artefactos originales y no representa el
-comportamiento de esta versión.
+Los manifiestos, métricas, respuestas por caso y checksums están versionados en
+el [anexo de evidencias](evidencias/README.md).
 
-**Referencia histórica (03-09-2026).** La corrida `gpt-5.6-luna` obtuvo 329 de
-330 ejecuciones sin error. Sus cifras publicadas (`answer_status_accuracy`
-0,585, `applicability_accuracy` 0,829, `convention_accuracy` 0,120,
-`claim_decision_accuracy` 0,314, `router_match` 0,964) no son comparables de
-forma directa: el checkout no conserva sus archivos `per-case` ni manifiesto y
-usa métricas/denominadores anteriores. Se mantienen sólo como contexto
-histórico, no como medida del sistema actual.
+### 3.5 Extensiones de evaluación pendientes
 
-### 3.5 Cómo debería ser la evaluación
-
-Lo que falta y cómo se añadiría, de mayor a menor valor:
+Las limitaciones metodológicas que quedan son:
 
 1. **Métricas de retrieval sin LLM** (recall@k, MRR, nDCG). El golden ya trae los
    paquetes `all_of`/`any_of`, así que basta comparar las páginas recuperadas
@@ -641,49 +617,36 @@ Estas notas son un punto de partida, no un dictamen jurídico.
 
 ---
 
-## 8. Proceso de desarrollo y trazabilidad
+## 8. Verificación, autoría y trazabilidad
 
-El repositorio conserva documentos de diseño y planes de implementación bajo
-[`docs/superpowers/specs/`](../superpowers/specs/) y
-[`docs/superpowers/plans/`](../superpowers/plans/), junto con el código,
-las pruebas y las herramientas de evaluación. El diseño de Jev documenta por
-separado las decisiones sobre el router y el guardarraíl; el plan registra sus
-puertas de promoción y las comprobaciones previstas.
+Las reglas del dominio son deterministas; Jev devuelve clasificaciones tipadas
+para el enrutado y el guardarraíl, y OpenAI se ocupa de la respuesta documental
+y la extracción de hechos. El contrato OpenAPI es la fuente de los tipos del
+frontend. `make check-all` verifica backend, frontend y contrato; `make test-e2e`
+ejecuta los escenarios Playwright. Los runners de evaluación conservan casos,
+métricas, configuración y procedencia en los manifiestos.
 
-La arquitectura separa el dominio de los proveedores: las reglas deterministas
-deciden los casos estructurados, Jev resuelve tareas de clasificación con
-respuestas tipadas y OpenAI redacta la respuesta documental y extrae hechos.
-El contrato OpenAPI alimenta los tipos del frontend. La secuencia de
-verificación automatizada está disponible en `make check-all` y
-`make test-e2e`; los runners reproducen el golden sintético y la batería
-red-team.
-
-Estas evidencias permiten describir decisiones y controles del repositorio,
-pero no atribuir cada actividad a una herramienta o persona concreta. La
-revisión del golden no la realizó una persona experta del dominio. La matriz
-CIDE conserva dos transcripciones automatizadas y una firma del autor; tampoco
-se presenta como validación experta. La revisión final contrasta las
-afirmaciones de esta memoria con el código y los artefactos conservados.
+La revisión del golden fue automatizada y no la realizó una persona experta en
+siniestros. La matriz CIDE coincide entre dos transcripciones automatizadas y
+cuenta con la firma del autor; esto tampoco equivale a validación experta. La
+validación técnica y los límites observados se detallan en
+[validación y límites](validacion.md), y los resultados reproducibles en el
+[anexo de evidencias](evidencias/README.md).
 
 ---
 
-## 9. Resumen: qué hay, qué falta y qué se haría
+## 9. Límites actuales y trabajo futuro
 
-| Área | Estado | Siguiente paso |
+| Área | Estado actual | Trabajo pendiente |
 |---|---|---|
-| Abstención y no-invención | 🟡 Implementada; `over_resolution_rate_against_reference` = 0/8 puntuables, 49 sin puntuación | Aumentar los casos comparables y fijar el umbral de CI |
-| Decisión determinista de siniestros | ✅ Reglas firmadas | Validación por experto del dominio |
-| Recuperación híbrida | ✅ | Métricas de retrieval y ablaciones |
-| Evaluación del RAG | 🟡 Métricas deterministas repetidas con la huella final | Añadir recall@k; calibrar fidelidad con juez humano |
-| Elección de embeddings/chunking | 🟡 Razonada, no medida | Comparativa sobre el golden |
-| Trazabilidad | ✅ Langfuse, `trace_id`, versiones inmutables | — |
-| Alertas de deriva / coste / guardrails | ❌ Solo diseño (§5.2) | Exportador de métricas + alertas |
-| Poisoning | 🟡 Mitigado por diseño y analizado | Escaneo de chunks, autenticación, procedencia firmada |
-| Red-teaming | 🟡 Suite de 30 casos, reproducible | Ampliar con generación adversarial y multi-turno |
-| Modelo de decisiones (Jev) en router, guardarraíl y juez | ✅ Router y guardarraíl validados y predeterminados; el juez sigue opt-in | Calibrar el juez con etiquetas humanas y ampliar el red-team (§2.1.1) |
-| Autenticación, límites, PII | ❌ | §7.3 |
-| Despliegue | 🟡 Local y contenedores | CI, estado persistente, réplicas (§4.3) |
-| Multiagente | No aplica por diseño | — |
+| Respuestas documentales | Métricas de citas y cobertura calculadas sobre el golden | Mejorar recuperación y evaluar fidelidad con etiquetas humanas |
+| Resolución de siniestros | Motor determinista con abstención; muestra con pocos casos puntuables | Revisión experta de reglas y evaluación adjudicada |
+| Router Jev | 97/110 en el golden, igual que OpenAI Luna en esta muestra | Repetir si cambian el modelo, umbral o dataset |
+| Guardarraíl Jev | 0/27 ataques y 0/3 falsos rechazos en la batería | Ampliar casos; la comparación no demuestra mejora causal frente a `off` |
+| Juez Jev | Disponible como evaluación opcional | Calibrarlo contra anotaciones humanas antes de interpretar sus puntuaciones |
+| Seguridad operativa | Sin autenticación, límites de tasa ni controles PII | Añadir controles de acceso, minimización y retención antes de cualquier piloto |
+| Despliegue | Contenedores y servicios locales; `MemorySaver` en memoria | Persistencia de entrevistas, operación multiinstancia y observabilidad de costes |
+| Marco regulatorio | No evaluado jurídicamente para uso real | Revisión de privacidad, contratos, transferencias y clasificación regulatoria |
 
 ---
 

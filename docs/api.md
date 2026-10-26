@@ -92,7 +92,8 @@ applicability : applicable | not_applicable | undetermined
 convention    : CIDE | ASCIDE | null
 decision      : resolved | conditional | undetermined | not_assessed
 party_ids, facts, contradictions, conditions, missing_information, blocks
-rules_evaluated : cada regla que corrió, con entradas, resultado y evidencia
+rules_evaluated : cada regla ejecutada, con hechos usados, resultado,
+                  justificación y evidence_ids
 trace_id, trace_url
 ```
 
@@ -107,6 +108,13 @@ missing_fields : los datos que faltan
 el cliente resuelve contra `/api/v1/manual/pdf`. `metadata.langfuse_url` es
 `null` cuando no se puede construir un enlace real; el frontend oculta el
 enlace en lugar de ofrecer uno que devuelve 404.
+
+En `rules_evaluated`, `evidence_ids` contiene los IDs declarados por la regla
+cuando el resultado es `matched`; en `not_matched` o `insufficient_data` el
+campo se devuelve vacío. `inputs` recoge los hechos registrados para la regla y
+puede quedar vacío, incluso en una consulta `matched` a la matriz CIDE. Un
+resultado `insufficient_data` puede señalar hechos ausentes o una regla sin
+condición automatizable.
 
 ## Streaming
 

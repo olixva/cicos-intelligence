@@ -77,10 +77,11 @@ catálogo oficial de [modelos OpenAI](https://developers.openai.com/api/docs/mod
   tras reanudar una llamada OpenAI que agotó el timeout. OpenAI sigue disponible
   seleccionando `ALLIANZ_ROUTER_BACKEND=openai`.
 
-Los IDs de `.env.example` son defaults de configuración. El humo sintético de
-Responses API con `gpt-6-luna` pasó para respuesta, extracción y router; Sol no
-se probó y la extracción sólo se cambiará a `gpt-6-luna` si la comparación no
-añade resoluciones injustificadas ni una regresión material de seguridad.
+Los IDs de `.env.example` son defaults de configuración, no una aprobación de
+calidad. La evaluación live usó `gpt-6-luna` para respuesta y extracción;
+`gpt-6.1-sol` permanece configurado por defecto, pero no se evaluó en esa
+campaña. No se atribuye una ventaja de calidad entre ambos modelos sin una
+comparación controlada.
 
 ### Modelo de decisiones (Jev)
 
@@ -227,10 +228,9 @@ arrancar como usuario sin privilegios. `host.docker.internal` sólo se acepta
 como alias local de Docker para Langfuse; los endpoints remotos se rechazan.
 La imagen recibe el commit y la huella del código como argumentos de build,
 porque no contiene `.git`; ambos aparecen en `/health/config` sin exponer
-credenciales. El 26-10-2026 se construyó
-`allianz-backend:tfm-final-20261026` desde el commit `2f31e866` con la huella
-`f9e6a230efee0209…`. `/health/ready` devolvió `ready`; `/health/config` mostró
-esa misma procedencia, Jev y Luna, el hash del manual y el índice activo de 118
-puntos. Una petición sintética por modo (`question`, `claim`, `auto`) devolvió
-HTTP 200; `claim` pidió aclaraciones y conservó el metadato de traza. El smoke
-usó un puerto y contenedor aislados y no reinició los servicios locales.
+credenciales. Tras arrancar el contenedor, comprueba `/health/ready` y
+`/health/config`: el primero informa del estado de dependencias y el segundo
+expone la procedencia de build, modelos y firma del índice activo sin revelar
+claves. Usa exclusivamente datos sintéticos para las peticiones de humo; la
+configuración de este repositorio no es apta para casos reales sin los controles
+de acceso y privacidad descritos en la [memoria técnica](entrega/memoria.md).

@@ -11,7 +11,7 @@ Intelligence como TFM. El alcance se contrasta con el
 | [Memoria técnica](memoria.md) | Arquitectura, decisiones, evaluación, riesgos y límites |
 | [Presentación](presentacion.pptx) | Exposición de 30–45 minutos |
 | [Guion de defensa](guion-defensa.md) | Agenda, demostración sintética y preguntas previsibles |
-| [Estado de validación](validacion-pendiente.md) | Pruebas, campañas, procedencia y comprobaciones humanas pendientes |
+| [Validación y límites](validacion.md) | Puertas ejecutadas, campañas y límites comprobables |
 | [Evidencias](evidencias/README.md) | Manifiestos, métricas y resultados por caso de las campañas finales |
 | [Código y documentación](../../README.md) | Aplicación, scripts, configuración y guías de operación |
 
@@ -23,7 +23,7 @@ Intelligence como TFM. El alcance se contrasta con el
 | Explicar el “entrenamiento” del modelo | [Memoria, §§2–3](memoria.md) | No se ajustaron pesos ni se hizo fine-tuning; el prototipo recupera contexto en tiempo de consulta y usa modelos preentrenados |
 | Analizar relatos de siniestro | `backend/src/`, [reglas y decisión](../reglas-y-decision.md) | Extracción tipada y motor determinista; la evaluación muestra que la resolución de siniestros aún no es fiable |
 | Demostrar preguntas y accidentes | [Guion de defensa](guion-defensa.md), `data/evaluation/golden/development.jsonl` | El golden incluye los cinco escenarios de accidente del enunciado y otros casos sintéticos |
-| Gestión del proyecto y plan de cinco días | Presentación, diapositiva «Plan de implementación» | Es una planificación propuesta conforme al plazo del enunciado, no un registro retrospectivo de jornadas |
+| Gestión del proyecto y plan de cinco días | Presentación, diapositiva «Plan de implementación» | Plan propuesto para el plazo del enunciado; la diapositiva no describe una cronología ejecutada |
 | Selección de modelos y librerías | [Memoria, §2](memoria.md), [operación](../operacion.md) | Jev para router y guard; OpenAI para respuesta y extracción. La evaluación live de OpenAI se hizo con Luna; Sol queda como default configurado |
 | Preprocesamiento del manual | `backend/scripts/`, `data/extractions/`, [ingesta y recuperación](../ingesta-y-recuperacion.md) | Publicación reproducible con parser baseline; la ingesta estructurada Docling se conserva como alternativa experimental |
 | Evaluación básica de respuestas | [Evaluación](../evaluacion.md), [anexos](evidencias/README.md) | Golden sintético, métricas deterministas y red-team; no es una validación de expertos ni una evaluación de producción |

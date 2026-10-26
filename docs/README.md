@@ -1,28 +1,31 @@
 # Documentación
 
-Documentación de lo que está construido en este repositorio.
+Esta documentación describe el comportamiento y la configuración actuales del
+repositorio. El [README principal](../README.md) es el punto de entrada; aquí
+están las guías técnicas y los materiales académicos.
+
+## Sistema
 
 | Documento | Contenido |
 |---|---|
-| [arquitectura.md](arquitectura.md) | Capas, flujos de ejecución y decisiones de diseño |
-| [ingesta-y-recuperacion.md](ingesta-y-recuperacion.md) | Del PDF a la evidencia citable y al índice consultable |
-| [reglas-y-decision.md](reglas-y-decision.md) | Artefactos firmados, motor de reglas, tabla CIDE y entrevista |
-| [api.md](api.md) | Contrato HTTP: sobre unificada, streaming y errores |
-| [evaluacion.md](evaluacion.md) | Golden set, métricas y resultados medidos |
-| [operacion.md](operacion.md) | Servicios locales, variables, puesta en marcha y verificación |
-| [entrega/README.md](entrega/README.md) | Índice de entrega y trazabilidad con el enunciado |
-| [entrega/memoria.md](entrega/memoria.md) | Memoria técnica del TFM |
-| [entrega/presentacion.pptx](entrega/presentacion.pptx) | Presentación de defensa |
-| [entrega/guion-defensa.md](entrega/guion-defensa.md) | Agenda y guion de demostración para 30–45 minutos |
+| [Arquitectura](arquitectura.md) | Capas, flujos y límites de ejecución |
+| [Ingesta y recuperación](ingesta-y-recuperacion.md) | Publicaciones, evidencia citable e índice vectorial |
+| [Reglas y decisión](reglas-y-decision.md) | Artefactos firmados, matriz CIDE y entrevista de siniestro |
+| [API](api.md) | Contrato HTTP y streaming |
+| [Evaluación](evaluacion.md) | Golden set, métricas, resultados y limitaciones |
+| [Operación local](operacion.md) | Requisitos, configuración, comandos y diagnóstico |
 
-## Otros contenidos
+## Entrega académica
 
-| Ruta | Qué es |
+| Material | Contenido |
 |---|---|
-| [`api/openapi.json`](api/openapi.json) | Especificación OpenAPI; fuente de los tipos del frontend |
-| [`entrega/`](entrega/) | Materiales de entrega |
-| [`enunciado/`](enunciado/) | Enunciado original de la prueba, tal como se recibió |
+| [Paquete de entrega](entrega/README.md) | Correspondencia con el enunciado y límites del trabajo |
+| [Memoria técnica](entrega/memoria.md) | Diseño, implementación, evaluación y seguridad |
+| [Presentación](entrega/presentacion.pptx) | Material para la defensa |
+| [Guion de defensa](entrega/guion-defensa.md) | Agenda de exposición y demostración |
+| [Validación y límites](entrega/validacion.md) | Puertas ejecutadas y límites que acompañan a la entrega |
+| [Evidencias](entrega/evidencias/README.md) | Campañas reproducibles, manifiestos y checksums |
 
-Los README de cada parte cubren su propia puesta en marcha:
-[raíz](../README.md), [backend](../backend/README.md),
-[frontend](../frontend/README.md).
+El [enunciado original](enunciado/GenAI_Interview_Instructions.docx) y el
+[contrato OpenAPI](api/openapi.json) se conservan como referencias de la
+entrega y fuente de los tipos del frontend.

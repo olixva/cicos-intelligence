@@ -190,10 +190,13 @@ su propia explicación de qué falta. Cuatro de los cinco siniestros del
 enunciado caen fuera del Convenio o quedan indeterminados sin más datos, y esa
 es la respuesta correcta.
 
-**Nada de placeholders en la auditoría.** `rules_evaluated` sólo contiene
-reglas que realmente corrieron, con sus entradas, su resultado y las páginas
-del manual que las sostienen. Una regla que no pudo evaluarse aparece como
-`insufficient_data`, con el hecho que le faltaba.
+**Trazabilidad de reglas ejecutadas.** `rules_evaluated` sólo contiene
+reglas que realmente corrieron, con `inputs` (los hechos registrados para cada
+regla; pueden estar vacíos, incluso en una consulta `matched` a la matriz CIDE), su
+estado y la justificación. `evidence_ids` contiene los IDs declarados por la
+regla cuando el estado es `matched`; para `not_matched` e `insufficient_data`
+se devuelve vacío. Las reglas que sostienen una decisión resuelta deben incluir
+referencias válidas.
 
 **Un índice se identifica por su firma completa.** `IndexSignature` reúne
 trece campos (hash del documento, parser, chunker, modelo y dimensiones de

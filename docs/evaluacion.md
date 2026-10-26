@@ -70,7 +70,7 @@ extracción y router OpenAI, por decisión del usuario. No se hizo ninguna llama
 real a GPT-6.1 Sol. Los IDs figuran en el
 [catálogo oficial](https://developers.openai.com/api/docs/models).
 
-**A/B end-to-end del router (26-10-2026).** Se repitió el modo `auto` con
+**A/B end-to-end del router (26-10-2026).** Se ejecutó el modo `auto` con
 110 casos en el mismo golden, perfil, prompts, huella de código e identidad
 activa de Qdrant; las dos corridas usaron Luna para respuesta y extracción y
 concurrencia 2. Jev (`jev-latest`, umbral 0,4) y OpenAI Luna acertaron 97/110
@@ -78,14 +78,10 @@ concurrencia 2. Jev (`jev-latest`, umbral 0,4) y OpenAI Luna acertaron 97/110
 generación; el resultado final fue 110/110 sin errores. No hay diferencia de
 exactitud en esta muestra.
 
-Artefactos locales ignorados por Git:
-`data/evaluation/results/2026-10-26-final-jev-luna-all-modes-f9e6a230/` y
-`data/evaluation/results/2026-10-26-router-openai-luna-e2e-current/`.
-Las comparaciones del 22-10 (Jev 97/110, OpenAI 95/110) se conservan como
-históricas: sus manifiestos no incluyen huella de código ni firma del índice
-activo, por lo que no se usan como gate de esta versión. El barrido de umbral
-0,4/0,6/0,8 también es histórico; debe repetirse si cambia el router o el
-golden. No se guardan credenciales en los manifiestos.
+Los manifiestos, métricas, respuestas por caso y checksums de esta comparación
+están versionados en el [anexo de evidencias](entrega/evidencias/README.md).
+No contienen credenciales. Hay que repetir la comparación si cambia el router,
+el golden o el índice.
 
 **Red-team actual (26-10-2026; 30 casos, 27 ataques y 3 controles).** Con router Jev y `guard=off`, router Jev y `guard=jev`, y router OpenAI Luna
 con `guard=jev`, se registraron 0/27 ataques exitosos y 0/3 controles
@@ -94,11 +90,8 @@ mejora causal del guard Jev frente a `off`; las tres configuraciones pasan los
 30 casos sintéticos. Los manifiestos registran huella de código, configuración
 y firma del índice activo.
 
-Resultados locales: `2026-10-26-redteam-jev-router-guard-off/`,
-`2026-10-26-redteam-jev-router-jev-guard/` y
-`2026-10-26-redteam-openai-router-jev-guard/` bajo
-`data/evaluation/results/`. Las carpetas del 22-10 son históricas; sus
-manifiestos no registran la identidad del índice activo.
+Los manifiestos, resultados por caso y checksums de las tres configuraciones
+están versionados en el [anexo de evidencias](entrega/evidencias/README.md).
 
 El uso de tokens observado queda en los manifiestos y salidas por caso. No se
 infiere ahorro monetario sin tarifas TypeSafe/Langfuse configuradas. El juez Jev
@@ -228,61 +221,20 @@ una mejora causal del guard Jev frente a `off`.
 
 Las campañas completas, sus manifiestos, métricas, salidas por caso y checksums
 están versionados en [el anexo de evidencias](entrega/evidencias/README.md).
-La corrida histórica del `2026-09-03` que sigue no se puede recalcular con sus
-artefactos originales y no representa el comportamiento de esta versión.
 
-Corrida completa sobre los 110 casos × 3 modos, `2026-09-03`, commit
-`3b452ee`, modelo `gpt-5.6-luna` en las tres etapas para acotar el coste,
-1379,9 s, 329 de 330 ejecuciones sin error:
+### Límites de interpretación
 
-Estos valores son una transcripción histórica. En este checkout no están los
-`per-case/*.json` originales ni el manifiesto de esa corrida, por lo que no se
-pueden recalcular con los denominadores y métricas AND/OR actuales. No
-representan una nueva medición del código actual; la tabla se mantiene sólo
-como referencia histórica hasta repetir la corrida y guardar sus artefactos
-completos.
-
-| Modo | Métrica | Valor | n |
-|---|---|---|---|
-| question | `answer_status_accuracy` | 0,585 | 110 |
-| question | `evidence_validity` | 0,370 | 110 |
-| claim | `applicability_accuracy` | 0,829 | 39 |
-| claim | `convention_accuracy` | 0,120 | 39 |
-| claim | `claim_decision_accuracy` | 0,314 | 39 |
-| claim | `evidence_validity` | 0,526 | 39 |
-| auto | `router_match` | 0,964 | 110 |
-
-Matriz de confusión del router (110 casos): 55 `claim→claim`, 51
-`question→question`, 2 `claim→question`, 2 `question→claim`.
-
-### Qué dicen estos números
-
-**El enrutado funciona.** 0,964 de acierto con cuatro confusiones sobre 110, y
-ninguna de ellas cambia la naturaleza de la respuesta hasta el punto de
-inventar una.
-
-**La aplicabilidad funciona.** 0,829: la puerta de dos vehículos, colisión
-directa, tercero identificado y colisión en cadena decide bien la mayoría de
-los casos.
-
-**La accuracy de convenio y decisión es engañosa a primera vista.** El
-análisis de los desajustes mostró que, cuando el ruleset dispara, el resultado
-suele ser correcto; el problema era que **no disparaba** en unos 19 de 25
-desajustes. La causa concreta: las guardas negativas estaban modeladas como
-`is_false` estricto —«dispara sólo si se constata el falso»— cuando la nota de
-la regla decía «dispara salvo que se contradiga explícitamente». Eso se
-corrigió introduciendo el operador `is_false_or_absent` y reescribiendo las
-dos reglas afectadas (`ascide-b6-exit-from-parking` y `cide-door-opening`);
-`is_false` estricto no cambió, y hay un test de regresión que lo fija. Los
-números de la tabla son anteriores a esa corrección.
-
-Un marco alternativo que se descartó al analizarlo: no es que el workflow deje
-campos en `None` en vez de emitir `undetermined` explícito. El workflow **sí**
-emite `undetermined`; era el ruleset el que no llegaba a disparar.
-
-**La abstención se comporta.** `unjustified_resolution_rate` = 0: el sistema
-no resolvió ningún caso sin una regla que lo sostuviera. Es la propiedad que
-más importa en un dominio donde una atribución inventada tiene coste real.
+- El golden es sintético y su revisión fue automatizada; no equivale a una
+  adjudicación experta ni a una evaluación de producción.
+- Las métricas de decisión de siniestros tienen pocos casos puntuables y muchas
+  salidas solicitan aclaraciones. No acreditan resolución fiable de siniestros.
+- La validez de citas y la cobertura de evidencia son bajas, especialmente en
+  `claim`; las cifras completas y sus denominadores están en las tablas de esta
+  sección y en los artefactos por caso.
+- La paridad de exactitud del router no demuestra ahorro monetario. No hay una
+  tarifa Jev configurada que permita comparar costes equivalentes.
+- La batería red-team cubre 27 ataques y 3 controles sintéticos; un resultado
+  limpio no demuestra seguridad frente a entradas no incluidas.
 
 ## Trazas
 
